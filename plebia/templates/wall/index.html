@@ -1,0 +1,15 @@
+<form action="/" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Add" />
+</form>
+
+{% if latest_post_list %}
+    <ul>
+    {% for post in latest_post_list %}
+    <li>{{ post.series_name }} (season {{ post.series_season }}, episode {{ post.series_episode }})</li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No posts yet.</p>
+{% endif %}

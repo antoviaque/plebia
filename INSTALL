@@ -1,0 +1,14 @@
+= 1. Dependencies =
+
+$ sudo apt-get install python-pip
+$ sudo pip install Django==1.2.5
+$ sudo easy_install South
+
+= 2. Configuration =
+
+$ plebia/manage.py syncdb
+
+= 3. Running =
+
+$ plebia/manage.py runserver 0.0.0.0:8000
+

@@ -1,0 +1,9 @@
+= Installation =
+
+See INSTALL file for installation instructions.
+
+= Migrations =
+
+$ ./manage.py schemamigration wall --auto
+$ ./manage.py migrate wall
+
