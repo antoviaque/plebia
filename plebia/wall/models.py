@@ -17,7 +17,7 @@ class Post(models.Model):
     torrent_hash = models.CharField(max_length=200, blank=True)
     torrent_name = models.CharField(max_length=200, blank=True)
     torrent_status = models.CharField(max_length=20, choices=TORRENT_STATUSES, default='New')
-    torrent_progress = models.IntegerField('progress', default=0)
+    torrent_progress = models.FloatField('progress', default=0)
     file_path = models.CharField(max_length=200, blank=True)
 
 class PostForm(ModelForm):

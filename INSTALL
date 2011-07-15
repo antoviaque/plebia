@@ -5,11 +5,15 @@ $ sudo pip install Django==1.2.5
 $ sudo easy_install South
 $ sudo apt-get install python-mechanize
 
++ Install deluge-console and deluged 1.3.3+ (development version: http://dev.deluge-torrent.org/wiki/GitRepo )
++ (temporary) get login/pass in ~/.config/deluge/auth
+
 = 2. Configuration =
 
 $ plebia/manage.py syncdb
 
 = 3. Running =
 
-$ plebia/manage.py runserver 0.0.0.0:8000
+$ deluged
+$ plebia/manage.py runserver 0.0.0.0:7070
 

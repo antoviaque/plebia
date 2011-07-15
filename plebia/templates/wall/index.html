@@ -26,7 +26,12 @@
     {% if latest_post_list %}
         <ul>
         {% for post in latest_post_list %}
-        <li>{{ post.series_name }} (season {{ post.series_season }}, episode {{ post.series_episode }})</li>
+        <li>{{ post.series_name }} (season {{ post.series_season }}, episode {{ post.series_episode }}) {{ post.torrent_progress }}%
+        {% if post.torrent_status == 'Completed' %}
+            <!-- FIXME Hard-coded location -->
+            <a href="http://localhost/downloads/{{ post.torrent_name }}">{{ post.torrent_name }}</a>
+        {% endif %}
+        </li>
         {% endfor %}
         </ul>
     {% else %}
