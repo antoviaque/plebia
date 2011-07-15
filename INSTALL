@@ -3,6 +3,7 @@
 $ sudo apt-get install python-pip
 $ sudo pip install Django==1.2.5
 $ sudo easy_install South
+$ sudo apt-get install python-mechanize
 
 = 2. Configuration =
 
