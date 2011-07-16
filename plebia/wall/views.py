@@ -11,7 +11,7 @@ import subprocess
 
 # FIXME Needs to be moved to config file
 DELUGE_COMMAND = ['/usr/bin/deluge-console', '-u', 'localclient', '-P', '5f783e797a66d690dd6e6e008ce2cde3924e9e2f']
-
+DOWNLOAD_DIR = '/home/antoviaque/Downloads/'
 
 def index(request):
     # Process new wall post submition
@@ -35,7 +35,7 @@ def index(request):
 
 
 def get_torrent(series_name, series_season, series_episode):
-    search_string = "tv %s s%02de%02d 720p" % (series_name, series_season, series_episode)
+    search_string = "tv %s s%02de%02d" % (series_name, series_season, series_episode)
 
     br = mechanize.Browser()
     br.open("http://torrentz.eu/")
@@ -62,7 +62,6 @@ def update_posts(request):
     torrent_list = parse_deluge_output(output)
 
     # Go over all posts to update their torrent info
-    cmd = list(DELUGE_COMMAND)
     for post in latest_post_list:
         cmd = list(DELUGE_COMMAND)
         torrent = get_torrent_by_hash(torrent_list, post.torrent_hash)
@@ -76,14 +75,22 @@ def update_posts(request):
             post.save()
 
         # Update status of downloading torrents
-        elif post.torrent_status == 'Downloading':
+        elif post.torrent_status == 'Downloading' and torrent:
             # FIXME Check for failed torrent
             post.torrent_progress = torrent['torrent_progress']
-            if post.torrent_progress == 100.0:
-                post.torrent_status = 'Completed'
             if torrent['torrent_name']:
                 post.torrent_name = torrent['torrent_name']
-            post.save()
+                post.file_path = torrent['torrent_name'][:-4]
+                post.save()
+            if post.torrent_progress == 100.0:
+                post.torrent_status = 'Completed'
+                post.save()
+
+                # FIXME Check for errors
+                # Generate thumbnail
+                subprocess.Popen(['ffmpeg', '-i', DOWNLOAD_DIR + post.torrent_name, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', DOWNLOAD_DIR + post.file_path + '.jpg'])
+                # Convert to WebM
+                subprocess.Popen(['ffmpeg', '-i', DOWNLOAD_DIR + post.torrent_name, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', DOWNLOAD_DIR + post.file_path + '.webm'])
 
     return render_to_response('blank.html')
 

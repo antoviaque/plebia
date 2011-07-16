@@ -6,37 +6,83 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 
     <link type="text/css" rel="stylesheet" href="http://freebaselibs.com/static/suggest/1.3/suggest.min.css" />
+    <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js.css"> 
+    <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js-vim.css"> 
+
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
     <script type="text/javascript" src="http://freebaselibs.com/static/suggest/1.3/suggest.min.js"></script>
+    <script type="text/javascript" src="/static/js/dist/video.js" charset="utf-8"></script> 
     <script type="text/javascript">
         $(function() {
+            // Load auto-suggest
             $("#id_series_name").suggest({type:'/tv/tv_program'});
+
+            // Load all videos on the page
+            var myManyPlayers = VideoJS.setup("All", {
+                controlsBelow: false, // Display control bar below video instead of in front of
+                controlsHiding: true, // Hide controls when mouse is not over the video
+                defaultVolume: 0.85, // Will be overridden by user's last volume if available
+                flashVersion: 9, // Required flash version for fallback
+                linksHiding: true // Hide download links when video is supported
+            });
         });
     </script>
 </head>
 
-<body>
- 
-    <form action="/" method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <input type="submit" value="Add" />
-    </form>
+<body> 
+    <div class="stream">
+        <h2>Stream</h2>
 
-    {% if latest_post_list %}
-        <ul>
+        <div class="stream-post-new">
+            <form action="/" method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="submit" value="Add" />
+            </form>
+        </div>
+
+        {% if latest_post_list %}
         {% for post in latest_post_list %}
-        <li>{{ post.series_name }} (season {{ post.series_season }}, episode {{ post.series_episode }}) {{ post.torrent_progress }}%
+        <div class="stream-post">
+            <img src="https://my-seed.com/uploads/images/thumb_small_de666bacc051c65193ff.jpg" class="user-avatar" />
+            <div class="user-name">Xavier Antoviaque</div>
+            <div class="post-time">{{ post.pub_date }}</div>
+            <div class="post-message">Bla bla bla</div>
+            <div class="post-title"><a href="http://localhost/downloads/{{ post.torrent_name }}">{{ post.series_name }} - Season {{ post.series_season }}, episode {{ post.series_episode }}</a></div>
+            {{ post.torrent_progress }}%
         {% if post.torrent_status == 'Completed' %}
             <!-- FIXME Hard-coded location -->
-            <a href="http://localhost/downloads/{{ post.torrent_name }}">{{ post.torrent_name }}</a>
+            <div class="video-js-box vim-css"> 
+                <video class="video-js" width="640" height="360" controls="controls" preload="auto" poster="http://localhost/downloads/{{ post.file_path }}.jpg"> 
+                    <!--<source src="http://localhost/downloads/{{ post.file_path }}.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' /> 
+                    <source src="http://localhost/downloads/{{ post.file_path }}.webm" type='video/webm; codecs="vp8, vorbis"' />
+                    <source src="http://localhost/downloads/{{ post.file_path }}.ogv" type='video/ogg; codecs="theora, vorbis"' />-->
+                    <source src="http://localhost/static/stream.php?file_path={{ post.file_path }}" type='video/webm; codecs="vp8, vorbis"' />
+                    <object class="vjs-flash-fallback" width="640" height="264" type="application/x-shockwave-flash" data="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf"> 
+                        <param name="movie" value="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf" /> 
+                        <param name="allowfullscreen" value="true" /> 
+                        <param name="flashvars" value='config={"playlist":["http://localhost/downloads/{{ post.file_path }}.jpg", {"url": "http://localhost/downloads/{{ post.file_path }}.mp4","autoPlay":false,"autoBuffering":true}]}' /> 
+                        <img src="http://localhost/downloads/{{ post.file_path }}.jpg" width="640" height="264" alt="Poster Image" title="No video playback capabilities." /> 
+                    </object> 
+                </video> 
+                <p class="vjs-no-video"><strong>Download Video:</strong> 
+                    <a href="http://localhost/downloads/{{ post.file_path }}.mp4">MP4</a>,
+                    <a href="http://localhost/downloads/{{ post.file_path }}.webm">WebM</a>,
+                    <a href="http://localhost/downloads/{{ post.file_path }}.ogv">Ogg</a><br> 
+                </p> 
+            </div> 
         {% endif %}
-        </li>
+        </div>
         {% endfor %}
-        </ul>
     {% else %}
         <p>No posts yet.</p>
     {% endif %}
 
+    <div class="footer">
+        Powered by
+        <a href="http://plebia.org/">Plebia Media Server</a> -
+        <a href="http://videojs.com">VideoJS</a> -
+        <a href="http://deluge-torrent.org/">Deluge Torrent</a>
+    </div>
 </body>
 </html>
