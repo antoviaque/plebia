@@ -1,0 +1,82 @@
+html, body {
+    font-family: "arial";
+    font-size: 11pt;
+    line-height: 150%;
+    color: #2d2d2d;
+}
+
+a {
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.clear_both {
+    clear: both;
+}
+
+.stream .ui-widget {
+    font-size: 10pt;
+}
+
+.stream {
+    position: absolute;
+    width: 750px;
+    left: 50%;
+    margin-left: -375px;
+}
+
+.stream_new_post {
+    width: 300px;
+    margin-left: auto;
+    padding: 5px 20px 10px 20px;
+    margin-right: 20px;
+    background-color: #f1f1f1;
+    border: 1px solid #dedede;
+}
+
+.stream_new_post input {
+    float: right;
+    right: 0px;
+}
+
+.stream_post {
+    margin: 20px;
+    padding-left: 70px;
+    border-style: dotted;
+    border-width: 0 0 1px 0;
+    border-color: grey;
+    padding-bottom: 20px;
+}
+
+.stream_post .user_avatar {
+    position: absolute;
+    left: 0px;
+}
+
+.stream_post .user_name {
+    font-weight: bold;
+    display: inline;
+}
+
+.stream_post .post_time {
+    display: inline;
+    color: grey;
+    font-size: 10pt;
+}
+
+.stream_post .torrent_progress_info {
+    margin: 20px 0 20px 0;
+    text-align: center;
+}
+
+.stream_post .torrent_progress {
+    margin: 0 0 20px 0;
+}
+
+.footer {
+    font-size: 9pt;
+    width: 100%;
+    text-align: center;
+    margin: 20px;
+    color: grey;
+}
