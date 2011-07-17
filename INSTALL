@@ -28,6 +28,10 @@ Create database:
     $ plebia/manage.py syncdb
     $ plebia/manage.py migrate
 
+Add cron:
+
+    * * * * * /var/www/plebia/plebia/manage.py cron
+
 = 2a. Development environment =
 
 Configure apache to serve:
