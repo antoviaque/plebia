@@ -18,6 +18,7 @@ Change paths:
     - in plebia/settings.py
         * DOWNLOAD_DIR
         * DELUGE_COMMAND (login/pass in ~/.config/deluge/auth)
+        * FFMPEG_PATH
     - in static/stream.php
         * full_file_path
     - in webserver/apache/django.wsgi

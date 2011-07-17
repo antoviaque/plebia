@@ -70,7 +70,7 @@
             <div class="post_title"><a href="/downloads/{{ post.torrent_name }}">{{ post.series_name }} - Season {{ post.series_season }}, episode {{ post.series_episode }}</a></div>
         {% if post.torrent_status == 'Completed' %}
             <div class="video-js-box vim-css"> 
-                <video class="video-js" width="640" height="360" controls="controls" preload="auto" poster="/downloads/{{ post.file_path }}.jpg"> 
+                <video class="video-js" width="640" height="360" controls="controls" preload="none" poster="/downloads/{{ post.file_path }}.jpg"> 
                 <!--<source src="/downloads/{{ post.file_path }}.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' /> -->
                     <source src="/static/stream.php?file_path={{ post.file_path }}" type='video/webm; codecs="vp8, vorbis"' />
                     <object class="vjs-flash-fallback" width="640" height="264" type="application/x-shockwave-flash" data="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf"> 
