@@ -3,6 +3,5 @@ from wall.models import Post
 
 urlpatterns = patterns('wall.views',
     (r'^$', 'index'),
-    (r'^cron$', 'update_posts'),
 )
 
