@@ -8,6 +8,11 @@ ppath = lambda x: os.path.join(os.path.dirname(
 
 # Django settings for plebia project.
 
+#DELUGE_COMMAND = ['/usr/bin/deluge-console', '-u', 'localclient', '-P', '5f783e797a66d690dd6e6e008ce2cde3924e9e2f']
+DELUGE_COMMAND = ['/usr/local/bin/deluge-console']
+
+DOWNLOAD_DIR = '/var/www/downloads/'
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
