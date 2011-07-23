@@ -69,8 +69,12 @@ a {
     text-align: center;
 }
 
-.stream_post .torrent_progress {
+.stream_post .torrent_progress_bar {
     margin: 0 0 20px 0;
+}
+
+.stream_post .torrent_progress {
+    display: none;
 }
 
 .footer {
@@ -79,4 +83,18 @@ a {
     text-align: center;
     margin: 20px;
     color: grey;
+}
+
+.stream_post .post_title img.download_icon {
+    width: 15px;
+    height: 15px;
+}
+
+.stream_post .next_episode a {
+    float: right;
+    font-weight: normal;
+}
+
+.video-js-box {
+    margin-bottom: 10px !important;
 }

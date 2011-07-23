@@ -1,0 +1,16 @@
+            <div class="video-js-box vim-css"> 
+                <video id="post_{{ post.id }}_video" class="video-js" width="640" height="360" controls="controls" preload="{{ preload }}" poster="/downloads/{{ post.file_path }}.jpg"> 
+                <!--<source src="/downloads/{{ post.file_path }}.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' /> -->
+                    <source src="/static/stream.php?file_path={{ post.file_path }}" type='video/webm; codecs="vp8, vorbis"' />
+                    <object class="vjs-flash-fallback" width="640" height="264" type="application/x-shockwave-flash" data="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf"> 
+                        <param name="movie" value="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf" /> 
+                        <param name="allowfullscreen" value="true" /> 
+                        <param name="flashvars" value='config={"playlist":["/downloads/{{ post.file_path }}.jpg", {"url": "/downloads/{{ post.file_path }}.mp4","autoPlay":false,"autoBuffering":true}]}' /> 
+                        <img src="/downloads/{{ post.file_path }}.jpg" width="640" height="264" alt="Poster Image" title="No video playback capabilities." /> 
+                    </object> 
+                </video> 
+                <p class="vjs-no-video"><strong>Download Video:</strong> 
+                <!--<a href="/downloads/{{ post.file_path }}.mp4">MP4</a>,-->
+                    <a href="/downloads/{{ post.file_path }}.webm">WebM</a>
+                </p> 
+            </div> 

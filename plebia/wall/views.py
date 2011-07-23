@@ -3,6 +3,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
+from django.core import serializers
 
 from wall.models import Post, PostForm
 
@@ -27,9 +28,29 @@ def index(request):
 
     return render_to_response('wall/index.html', {
         'form': form,
+        'preload': "none",
         'latest_post_list': latest_post_list,
     }, context_instance=RequestContext(request))
 
+def post_detail(request, post_id):
+    '''Send individual post attributes in JSON format (ajax)'''
+    try: 
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        post = None
+    data = serializers.serialize('json', [post])
+    return HttpResponse(data, 'application/javascript')
+
+def video(request, post_id):
+    '''Return HTML to display when a video is getting ready (ajax)'''
+    try: 
+        post = Post.objects.get(id=post_id)
+    except Post.DoesNotExist:
+        post = "Could not load video"
+    return render_to_response('wall/video.html', {
+        'post': post,
+        'preload': "auto",
+    }, context_instance=RequestContext(request))
 
 def get_torrent(series_name, series_season, series_episode):
     search_string = "tv %s s%02de%02d" % (series_name, series_season, series_episode)
