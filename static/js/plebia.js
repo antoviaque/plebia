@@ -22,12 +22,16 @@ function update() {
                             linksHiding: true // Hide download links when video is supported
                         });
 
-                        // FIXME: Play it if no other video has been started on the page
-                        /*$('video').each(function() {
+                        // Play it if no other video has been started on the page
+                        $('video').each(function() {
                             video_curr_time = $(this)[0].player.currentTime();
-                            alert(video_curr_time);
-                        });*/
-                        video[0].player.play();
+                            if(video_curr_time > 0.0) {
+                                $('.stream').addClass('no_auto_play');
+                            }
+                        });
+                        if(!$('.stream').hasClass('no_auto_play')) {
+                            video[0].player.play();
+                        }
                     });
                 }, 5000);
             } else { // Otherwise update the progress bar
