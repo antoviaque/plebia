@@ -93,8 +93,10 @@ a {
 .stream_post .next_episode a {
     float: right;
     font-weight: normal;
+    margin-top: 10px;
 }
 
-.video-js-box {
-    margin-bottom: 10px !important;
+#uvTab {
+    z-index: 5 !important;
 }
+

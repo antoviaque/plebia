@@ -59,17 +59,17 @@
                     </div>
                     <div class="torrent_progress_bar" data="{{ post.torrent_progress }}"></div>
                 {% endif %}
-                <div class="next_episode">
-                    <form action="/" method="post">
-                        {% csrf_token %}
-                        <input id="id_series_name" type="hidden" name="series_name" value="{{ post.series_name }}" />
-                        <input type="hidden" name="series_season" id="id_series_season" value="{{ post.series_season }}" />
-                        <input type="hidden" name="series_episode" id="id_series_episode" value="{{ post.series_episode|add:1 }}" />
-                        <a href="javascript://">Next episode >></a>
-                        <div class="clear_both"></div>
-                    </form>
-                </div>
             </div> 
+            <div class="next_episode">
+                <form action="/" method="post">
+                    {% csrf_token %}
+                    <input id="id_series_name" type="hidden" name="series_name" value="{{ post.series_name }}" />
+                    <input type="hidden" name="series_season" id="id_series_season" value="{{ post.series_season }}" />
+                    <input type="hidden" name="series_episode" id="id_series_episode" value="{{ post.series_episode|add:1 }}" />
+                    <a href="javascript://">Next episode >></a>
+                    <div class="clear_both"></div>
+                </form>
+            </div>
         </div>
         {% endfor %}
     {% else %}
