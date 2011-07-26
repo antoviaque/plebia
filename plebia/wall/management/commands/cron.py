@@ -60,9 +60,9 @@ def update_posts():
                 # Generate thumbnail
                 subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + post.torrent_name, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + post.file_path + '.jpg'])
                 # Convert to WebM
-                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + post.torrent_name, '-b', '1000k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + post.file_path + '.webm'])
+                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + post.torrent_name, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + post.file_path + '.webm'])
                 # Convert to OGV
-                subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + post.torrent_name])
+                #subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + post.torrent_name])
 
 
 def get_torrent_by_hash(torrent_list, torrent_hash):
