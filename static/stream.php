@@ -17,7 +17,7 @@ while (true) {
     set_time_limit(10);
     $buf = fread($fp, 1024);
     echo $buf;
-    usleep(300); // 1kB every 0.004s (4000) = 250 kB/s = 2 Mbps
+    usleep(3000); // 1kB every 0.004s (4000) = 250 kB/s = 2 Mbps
 }
 fclose($fp);
 
