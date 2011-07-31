@@ -37,7 +37,7 @@
         <h2>Stream</h2>
         {% if latest_post_list %}
         {% for post in latest_post_list %}
-        <div class="stream_post{% if post.torrent_status != 'Completed' %} stream_post_in_progress{% endif %}" id="post_{{ post.id }}">
+        <div class="stream_post{% if post.torrent_status != 'Completed' and post.torrent_status != 'Transcoding' %} stream_post_in_progress{% endif %}" id="post_{{ post.id }}">
             <img src="/static/img/avatar.jpg" class="user_avatar" />
             <div class="user_name">Xavier Antoviaque</div>
             <div class="post_time">- {{ post.pub_date }}</div>
