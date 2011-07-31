@@ -100,3 +100,7 @@ a {
     z-index: 5 !important;
 }
 
+/* Hide the loading icon of video.js, which wrongly displays when the video is not preloaded */
+.vjs-spinner {
+    display: none !important;
+}
