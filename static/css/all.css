@@ -25,6 +25,17 @@ a {
     margin-left: -375px;
 }
 
+.plebia_updates {
+    width: 300px;
+    float: left;
+    padding: 5px 20px 10px 20px;
+    margin-right: 20px;
+    background-color: #f1f1f1;
+    border: 1px solid #dedede;
+    font-size: 9pt;
+    line-height: 150%;
+}
+
 .stream_new_post {
     width: 300px;
     margin-left: auto;
