@@ -14,6 +14,7 @@ FFMPEG_PATH = '/usr/local/bin/ffmpeg'
 FFMPEG2THEORA_PATH = '/usr/bin/ffmpeg2theora'
 
 DOWNLOAD_DIR = '/var/www/downloads/'
+BIN_DIR = spath('../bin/')
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG

@@ -53,7 +53,7 @@ def update_posts():
                 post.file_path = torrent['torrent_name'][:-4]
                 post.save()
             if post.torrent_progress == 100.0:
-                post.torrent_status = 'Completed'
+                post.torrent_status = 'Transcoding'
                 post.save()
 
                 # FIXME Check for errors
@@ -64,6 +64,13 @@ def update_posts():
                 # Convert to OGV
                 #subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + post.torrent_name])
 
+        # Check if video transcoding is over
+        # FIXME: Need proper queue handling
+        elif post.torrent_status == 'Transcoding':
+           retcode = subprocess.call([settings.BIN_DIR+"check_transcoding.sh", post.file_path])
+           if retcode: # ffmpeg process not found, transcoding over
+                post.torrent_status = 'Completed'
+                post.save()
 
 def get_torrent_by_hash(torrent_list, torrent_hash):
     for torrent in torrent_list:

@@ -4,6 +4,7 @@ from django.forms import ModelForm
 TORRENT_STATUSES = (
     ('New', 'New'),
     ('Downloading', 'Downloading'),
+    ('Transcoding', 'Transcoding'),
     ('Completed', 'Completed'),
     ('Not found', 'Not found'),
     ('Error', 'Error'),

@@ -47,7 +47,7 @@
                     <img src="/static/img/download.png" class="download_icon" />
                 </a></div>
             <div class="post_content">
-                {% if post.torrent_status == 'Completed' %}
+                {% if post.torrent_status == 'Completed' or post.torrent_status == 'Transcoding' %}
                     {% include "wall/video.html" %}            
                 {% else %}
                     <div class="torrent_progress_info">
