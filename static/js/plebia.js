@@ -29,15 +29,17 @@ function update_progress() {
                     // Load the video and play it automatically
                     show_video(id, function(player) {
                         // Play only if no other video is currently playing
-                        var play = true;
+                        var elems = $('video');
+                        var count = elems.length;
                         $('video').each(function() {
-                            if(!player.paused()) {
-                                play = false;
+                            if(!$(this)[0].player.paused()) {
+                                $('.stream').addClass('no_auto_play');
+                            }
+                            if(!--count && !$('.stream').hasClass('no_auto_play')) {
+                                player.play();
+                                $('.stream').removeClass('no_auto_play');
                             }
                         });
-                        if(play) {
-                            player.play();
-                        }
                     });
                 }, 5000);
             } else { // Otherwise update the progress bar
