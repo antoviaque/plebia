@@ -1,7 +1,7 @@
 
 function update() {
     // Do this synchronously to avoid iterating before the updates have been retreived
-    $.ajaxSetup({async:false});
+    //$.ajaxSetup({async:false});
     // Iter over the posts in progress to update the progress bar every 3 seconds
     $('.stream .stream_post_in_progress').each(function() {
         element = this;
