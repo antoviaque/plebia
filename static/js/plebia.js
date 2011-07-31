@@ -1,5 +1,7 @@
 
-function update() {
+// Updates the progress bar of the posts with a download in progress
+// and show the video once it is done
+function update_progress() {
     // Count the elements to invoke the the next update only after the each() loop is finished
     var elems = $('.stream .stream_post_in_progress');
     var count = elems.length;
@@ -7,35 +9,34 @@ function update() {
     // Iter over the posts in progress to update the progress bar every x seconds
     elems.each(function() {
         var id = $(this).attr('id').substring(5);
+        var element = this;
         $.getJSON("/ajax/post_detail/"+id+"/", function(data) {
-            var id = data[0].pk;
-            var element = '#post_'+id;
             var torrent_progress = Math.round(data[0].fields.torrent_progress*100)/100;
             var torrent_status = data[0].fields.torrent_status;
 
+            // If transcoding is still in progress, mark the post so that the trasncoding loop
+            // can refresh it when it's done
+            if(torrent_status == 'Transcoding') {
+                $(element).addClass('stream_post_transcoding_in_progress'); 
+            }
+
             // If download is over, play the video after 5 seconds
             if(torrent_status == 'Completed' || torrent_status == 'Transcoding') {
-                $(element).removeClass('stream_post_in_progress');
-                setTimeout(function() { // Give time for the transcoding to take some advance
-                    $('.post_content', $(element)).load('/ajax/video/'+id+'/', function() {
-                        var video = $("#post_"+id+"_video");
-                        video.VideoJS({
-                            controlsBelow: false, // Display control bar below video instead of in front of
-                            controlsHiding: true, // Hide controls when mouse is not over the video
-                            defaultVolume: 0.85, // Will be overridden by user's last volume if available
-                            flashVersion: 9, // Required flash version for fallback
-                            linksHiding: true // Hide download links when video is supported
-                        });
+                // Make sure we don't do this twice
+                $(element).removeClass('stream_post_in_progress'); 
 
-                        // Play it if no other video has been started on the page
+                setTimeout(function() { // Give time for the transcoding to take some advance
+                    // Load the video and play it automatically
+                    show_video(id, function(player) {
+                        // Play only if no other video is currently playing
+                        var play = true;
                         $('video').each(function() {
-                            var video_curr_time = $(this)[0].player.currentTime();
-                            if(video_curr_time > 0.0) {
-                                $('.stream').addClass('no_auto_play');
+                            if(!player.paused()) {
+                                play = false;
                             }
                         });
-                        if(!$('.stream').hasClass('no_auto_play')) {
-                            video[0].player.play();
+                        if(play) {
+                            player.play();
                         }
                     });
                 }, 5000);
@@ -53,11 +54,75 @@ function update() {
             }
         });
 
-        // Call update() again x seconds after the last each()
-        if(!--count) setTimeout("update()", 2000);
+        // Call update_progress() again x seconds after the last each()
+        if(!--count) setTimeout("update_progress()", 2000);
     });
 }
 
+// Update the video and warning once the transcoding is done by monitoring all 
+// elements currently being transcoded
+function update_transcoding() {
+    // Count the elements to invoke the the next update only after the each() loop is finished
+    var elems = $('.stream .stream_post_transcoding_in_progress');
+    var count = elems.length;
+
+    if(count == 0) { // no transcoding found - still keep looking for them, as some could be downloading
+        setTimeout("update_transcoding()", 10000);
+    }
+
+    // Iter over the posts with transcoding in progress
+    elems.each(function() {
+        var id = $(this).attr('id').substring(5);
+        var element = this;
+        $.getJSON("/ajax/post_detail/"+id+"/", function(data) {
+            var torrent_status = data[0].fields.torrent_status;
+
+            if(torrent_status == 'Completed') {
+                // Make sure we don't do this twice
+                $(element).removeClass('stream_post_transcoding_in_progress'); 
+
+                // Don't reload the video automatically if it is paused
+                if($('video', element)[0].player.paused()) {
+                    show_video(id);
+                } else { // Otherwise simply update the warning
+                    $('.video_transcoding_in_progress', element).css('display', 'none');
+                    $('.video_transcoding_done', element).css('display', 'block');
+
+                    // Allow the user to reload the video himself (and then autoplay)
+                    $('.video_transcoding_done a', element).click(function() {
+                        show_video(id, function(player) {
+                            player.play();
+                        });
+                    });
+                }
+            }
+        });
+
+        // Call update_progress() again x seconds after the last each()
+        if(!--count) setTimeout("update_transcoding()", 5000);
+    });
+}
+
+// Ajax loading of a video
+function show_video(id, callback) {
+    var element = $('#post_'+id);
+    $('.post_content', $(element)).load('/ajax/video/'+id+'/', function() {
+        var video = $("#post_"+id+"_video");
+        video.VideoJS({
+            controlsBelow: false, // Display control bar below video instead of in front of
+            controlsHiding: true, // Hide controls when mouse is not over the video
+            defaultVolume: 0.85, // Will be overridden by user's last volume if available
+            flashVersion: 9, // Required flash version for fallback
+            linksHiding: true // Hide download links when video is supported
+        });
+
+        if(callback) {
+            callback(video[0].player);
+        }
+    });
+}
+
+// Main /////////////////
 $(function() {
     // Dress buttons
     $('input:submit').button();
@@ -88,7 +153,8 @@ $(function() {
     });
 
     // Start page refreshes
-    update();
+    update_progress();
+    update_transcoding();
 
     // Add feedback tab
     var uv = document.createElement('script'); uv.type = 'text/javascript'; uv.async = true;

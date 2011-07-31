@@ -19,3 +19,8 @@
                     <a href="/downloads/{{ post.file_path }}.webm">WebM</a>
                 </p> 
             </div> 
+            {% if post.torrent_status == "Transcoding" %}
+                <div class="video_transcoding_in_progress"><img src="/static/img/loading.gif" /> This video is still being converted. You will only be able to pause, resume or move it forward/backward when this is completed (takes ~10-30 minutes in total).</div>
+                <div class="video_transcoding_done"><img src="/static/img/ok.png" /> Video conversion done! <a href="javascript://">Refresh</a> the video if you need to pause, resume or move it forward/backward.</div>
+            {% endif %}
+

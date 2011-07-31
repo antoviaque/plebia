@@ -88,6 +88,25 @@ a {
     display: none;
 }
 
+.stream_post .video_transcoding_in_progress,
+.stream_post .video_transcoding_done {
+    font-size: 9pt;
+    font-style: italic;
+    margin: 5px;
+}
+
+.stream_post .video_transcoding_done {
+    display: none;
+}
+
+.stream_post .video_transcoding_in_progress img,
+.stream_post .video_transcoding_done img {
+    width: 20px;
+    height: 20px;
+    float: left;
+    margin-right: 5px;
+}
+
 .footer {
     font-size: 9pt;
     width: 100%;
