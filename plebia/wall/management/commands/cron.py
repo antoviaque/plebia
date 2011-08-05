@@ -20,6 +20,7 @@ class Command(BaseCommand):
             next += DELAY
             time.sleep(next - time.time())
 
+
 def update_posts():
     latest_post_list = Post.objects.all().order_by('-date_added')[:50]
 
@@ -38,61 +39,88 @@ def update_posts():
         cmd = list(settings.DELUGE_COMMAND)
         deluge_torrent_info = get_torrent_by_hash(torrent_list, torrent.hash)
 
-        # Start download of new torrents
         if torrent.status == 'New':
-            cmd.append('add magnet:?xt=urn:btih:%s' % torrent.hash)
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-            (result, errors) = p.communicate()
-            # FIXME Check return result
-            torrent.status = 'Downloading'
-            torrent.save()
+            start_download(torrent)
 
-        # Update status of downloading torrents
         elif torrent.status == 'Downloading' and deluge_torrent_info:
-            # FIXME Check for failed torrent
-            torrent.progress = deluge_torrent_info['torrent_progress']
-            torrent.save()
-           
-            # As soon as we get the torrent name, create video object
-            if deluge_torrent_info['torrent_name'] and episode.video is None:
-                torrent.name = deluge_torrent_info['torrent_name']
-                torrent.save()
-
-                video = Video()
-                video.original_path = deluge_torrent_info['torrent_name']
-                video.save()
-
-                episode.video = video
-                episode.save()
+            update_download_status(episode, deluge_torrent_info)
 
             if torrent.progress == 100.0:
-                torrent.status = 'Transcoding'
-                torrent.save()
+                start_transcoding(episode)
 
-                video = episode.video
-                prefix = video.original_path[:-4]
-                video.webm_path = prefix + '.webm'
-                video.mp4_path = prefix + '.mp4'
-                video.ogv_path = prefix + '.ogv'
-                video.image_path = prefix + '.jpg'
-                video.save()
-
-                # FIXME Check for errors
-                # Generate thumbnail
-                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + video.image_path])
-                # Convert to WebM
-                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + video.webm_path])
-                # Convert to OGV
-                #subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + video.original_path])
-
-        # Check if video transcoding is over
-        # FIXME: Need proper queue handling
         elif torrent.status == 'Transcoding':
-            video = episode.video
-            retcode = subprocess.call([settings.BIN_DIR+"check_transcoding.sh", video.original_path])
-            if retcode: # ffmpeg process not found, transcoding over
-                torrent.status = 'Completed'
-                torrent.save()
+            update_transcoding_status(episode)
+
+
+def start_download(torrent):
+    '''Start download of new torrents'''
+
+    cmd = list(settings.DELUGE_COMMAND)
+    cmd.append('add magnet:?xt=urn:btih:%s' % torrent.hash)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    (result, errors) = p.communicate()
+    # FIXME Check return result
+    torrent.status = 'Downloading'
+    torrent.save()
+
+
+def update_download_status(episode, deluge_torrent_info):
+    '''Update status of downloading torrents'''
+
+    # FIXME Check for failed torrent
+
+    torrent = episode.torrent
+    torrent.progress = deluge_torrent_info['torrent_progress']
+    torrent.save()
+   
+    # As soon as we get the torrent name, create video object
+    if deluge_torrent_info['torrent_name'] and episode.video is None:
+        torrent.name = deluge_torrent_info['torrent_name']
+        torrent.save()
+
+        video = Video()
+        video.original_path = deluge_torrent_info['torrent_name']
+        video.save()
+
+        episode.video = video
+        episode.save()
+
+
+def start_transcoding(episode):
+    torrent = episode.torrent
+    torrent.status = 'Transcoding'
+    torrent.save()
+
+    video = episode.video
+    prefix = video.original_path[:-4]
+    video.webm_path = prefix + '.webm'
+    video.mp4_path = prefix + '.mp4'
+    video.ogv_path = prefix + '.ogv'
+    video.image_path = prefix + '.jpg'
+    video.save()
+
+    # FIXME Check for errors
+    # Generate thumbnail
+    subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + video.image_path])
+    # Convert to WebM
+    subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + video.webm_path])
+    # Convert to OGV
+    #subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + video.original_path])
+
+
+def update_transcoding_status(episode):
+    '''Check if video transcoding is over'''
+
+    # FIXME: Need proper queue handling
+    torrent = episode.torrent
+    video = episode.video
+
+    retcode = subprocess.call([settings.BIN_DIR+"check_transcoding.sh", video.original_path])
+    
+    if retcode: # ffmpeg process not found, transcoding over
+        torrent.status = 'Completed'
+        torrent.save()
+
 
 def get_torrent_by_hash(torrent_list, torrent_hash):
     for torrent in torrent_list:
