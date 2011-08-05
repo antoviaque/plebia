@@ -2,7 +2,10 @@
 
 cd /var/www/plebia 
 
-rm plebia/db/plebia.sqlite 
+cp -f plebia/db/plebia.sqlite.save.2 plebia/db/plebia.sqlite.save.3
+cp -f plebia/db/plebia.sqlite.save plebia/db/plebia.sqlite.save.2
+mv -f plebia/db/plebia.sqlite plebia/db/plebia.sqlite.save
+
 ./plebia/manage.py syncdb 
 ./plebia/manage.py migrate
 
