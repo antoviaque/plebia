@@ -9,10 +9,10 @@
 
 Install packages (Debian/Ubuntu):
 
-    $ sudo apt-get install python-pip
+    $ sudo apt-get install python-pip python-mechanize python-lxml
     $ sudo pip install Django==1.2.5
+    $ sudo pip install django-tastypie
     $ sudo easy_install South
-    $ sudo apt-get install python-mechanize
 
 Install development version of ffmpeg, with libvpx: http://ubuntuforums.org/showthread.php?t=786095 (works for Ubuntu and Debian - for Debian repositories to add: http://debian-multimedia.org/ )
 

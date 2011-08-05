@@ -1,25 +1,26 @@
             <div class="video-js-box vim-css"> 
-                <video id="post_{{ post.id }}_video" class="video-js" width="640" height="360" controls="controls" preload="{{ preload }}" poster="/downloads/{{ post.file_path }}.jpg"> 
-                <!--<source src="/downloads/{{ post.file_path }}.mp4" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' /> 
-                    <source src="/downloads/{{ post.file_path }}.ogv" type='video/ogg; codecs="theora, vorbis"' />-->
-                {% if post.torrent_status == "Transcoding" %}
-                    <source src="/static/stream.php?file_path={{ post.file_path }}" type='video/webm; codecs="vp8, vorbis"' />
+                <video id="post_{{ post.id }}_video" class="video-js" width="640" height="360" controls="controls" preload="{{ preload }}" poster="/downloads/{{ video.image_path }}"> 
+                <!--<source src="/downloads/{{ video.mp4_path }}" type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"' /> 
+                    <source src="/downloads/{{ video.ogv_path }}" type='video/ogg; codecs="theora, vorbis"' />-->
+                {% if torrent.status == "Transcoding" %}
+                    <source src="/static/stream.php?file_path={{ video.webm_path }}" type='video/webm; codecs="vp8, vorbis"' />
                 {% else %}
-                    <source src="/downloads/{{ post.file_path }}.webm" type='video/webm; codecs="vp8, vorbis"' />
+                    <source src="/downloads/{{ video.webm_path }}" type='video/webm; codecs="vp8, vorbis"' />
                 {% endif %}
                     <object class="vjs-flash-fallback" width="640" height="264" type="application/x-shockwave-flash" data="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf"> 
                         <param name="movie" value="http://releases.flowplayer.org/swf/flowplayer-3.2.1.swf" /> 
                         <param name="allowfullscreen" value="true" /> 
-                        <param name="flashvars" value='config={"playlist":["/downloads/{{ post.file_path }}.jpg", {"url": "/downloads/{{ post.file_path }}.mp4","autoPlay":false,"autoBuffering":true}]}' /> 
-                        <img src="/downloads/{{ post.file_path }}.jpg" width="640" height="264" alt="Poster Image" title="No video playback capabilities." /> 
+                        <param name="flashvars" value='config={"playlist":["/downloads/{{ video.image_path }}", {"url": "/downloads/{{ video.mp4_path }}","autoPlay":false,"autoBuffering":true}]}' /> 
+                        <img src="/downloads/{{ video.image_path }}" width="640" height="264" alt="Poster Image" title="No video playback capabilities." /> 
                     </object> 
                 </video> 
                 <p class="vjs-no-video"><strong>Download Video:</strong> 
-                <!--<a href="/downloads/{{ post.file_path }}.mp4">MP4</a>,-->
-                    <a href="/downloads/{{ post.file_path }}.webm">WebM</a>
+                <!--<a href="/downloads/{{ video.mp4_path }}">MP4</a>,
+                    <a href="/downloads/{{ video.ogv_path }}">OGV</a>,-->
+                    <a href="/downloads/{{ video.webm_path }}">WebM</a>
                 </p> 
             </div> 
-            {% if post.torrent_status == "Transcoding" %}
+            {% if torrent.status == "Transcoding" %}
                 <div class="video_transcoding_in_progress"><img src="/static/img/loading.gif" /> This video is still being converted. You will only be able to pause, resume or move it forward/backward when this is completed (takes ~10-30 minutes in total).</div>
                 <div class="video_transcoding_done"><img src="/static/img/ok.png" /> Video conversion done! <a href="javascript://">Refresh</a> the video if you need to pause, resume or move it forward/backward.</div>
             {% endif %}

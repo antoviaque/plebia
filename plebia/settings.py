@@ -15,6 +15,7 @@ FFMPEG2THEORA_PATH = '/usr/bin/ffmpeg2theora'
 
 DOWNLOAD_DIR = '/var/www/downloads/'
 BIN_DIR = spath('../bin/')
+STATIC_DIR = spath('../static/')
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -104,7 +105,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.admin',
-    # 'django.contrib.admindocs',
     'south',
+    'tastypie',
     'wall',
 )

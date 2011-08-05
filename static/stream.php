@@ -7,8 +7,8 @@
 // FIXME Path is hardcoded
 // FIXME Need to validate file_path
 $file_path = $_GET['file_path'];
-$full_file_path = "/var/www/downloads/$file_path.webm";
-if(!file_exists($full_file_path)) {
+$full_file_path = "/var/www/downloads/$file_path";
+if(substr($full_file_path, -5) !== '.webm' || !file_exists($full_file_path)) {
     exit(0);
 }
 

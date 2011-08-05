@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from plebia.wall.models import Post
+from plebia.wall.models import Post, Video
 from django.conf import settings
 
 import re
@@ -21,7 +21,7 @@ class Command(BaseCommand):
             time.sleep(next - time.time())
 
 def update_posts():
-    latest_post_list = Post.objects.all().order_by('-pub_date')[:100]
+    latest_post_list = Post.objects.all().order_by('-date_added')[:50]
 
     # Get current torrents status in deluge
     cmd = list(settings.DELUGE_COMMAND)
@@ -32,45 +32,67 @@ def update_posts():
 
     # Go over all posts to update their torrent info
     for post in latest_post_list:
+        episode = post.episode
+        torrent = episode.torrent
+
         cmd = list(settings.DELUGE_COMMAND)
-        torrent = get_torrent_by_hash(torrent_list, post.torrent_hash)
+        deluge_torrent_info = get_torrent_by_hash(torrent_list, torrent.hash)
 
         # Start download of new torrents
-        if post.torrent_status == 'New':
-            cmd.append('add magnet:?xt=urn:btih:%s' % post.torrent_hash)
+        if torrent.status == 'New':
+            cmd.append('add magnet:?xt=urn:btih:%s' % torrent.hash)
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
             (result, errors) = p.communicate()
             # FIXME Check return result
-            post.torrent_status = 'Downloading'
-            post.save()
+            torrent.status = 'Downloading'
+            torrent.save()
 
         # Update status of downloading torrents
-        elif post.torrent_status == 'Downloading' and torrent:
+        elif torrent.status == 'Downloading' and deluge_torrent_info:
             # FIXME Check for failed torrent
-            post.torrent_progress = torrent['torrent_progress']
-            if torrent['torrent_name']:
-                post.torrent_name = torrent['torrent_name']
-                post.file_path = torrent['torrent_name'][:-4]
-                post.save()
-            if post.torrent_progress == 100.0:
-                post.torrent_status = 'Transcoding'
-                post.save()
+            torrent.progress = deluge_torrent_info['torrent_progress']
+            torrent.save()
+           
+            # As soon as we get the torrent name, create video object
+            if deluge_torrent_info['torrent_name'] and episode.video is None:
+                torrent.name = deluge_torrent_info['torrent_name']
+                torrent.save()
+
+                video = Video()
+                video.original_path = deluge_torrent_info['torrent_name']
+                video.save()
+
+                episode.video = video
+                episode.save()
+
+            if torrent.progress == 100.0:
+                torrent.status = 'Transcoding'
+                torrent.save()
+
+                video = episode.video
+                prefix = video.original_path[:-4]
+                video.webm_path = prefix + '.webm'
+                video.mp4_path = prefix + '.mp4'
+                video.ogv_path = prefix + '.ogv'
+                video.image_path = prefix + '.jpg'
+                video.save()
 
                 # FIXME Check for errors
                 # Generate thumbnail
-                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + post.torrent_name, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + post.file_path + '.jpg'])
+                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + video.image_path])
                 # Convert to WebM
-                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + post.torrent_name, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + post.file_path + '.webm'])
+                subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + video.webm_path])
                 # Convert to OGV
-                #subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + post.torrent_name])
+                #subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + video.original_path])
 
         # Check if video transcoding is over
         # FIXME: Need proper queue handling
-        elif post.torrent_status == 'Transcoding':
-           retcode = subprocess.call([settings.BIN_DIR+"check_transcoding.sh", post.file_path])
-           if retcode: # ffmpeg process not found, transcoding over
-                post.torrent_status = 'Completed'
-                post.save()
+        elif torrent.status == 'Transcoding':
+            video = episode.video
+            retcode = subprocess.call([settings.BIN_DIR+"check_transcoding.sh", video.original_path])
+            if retcode: # ffmpeg process not found, transcoding over
+                torrent.status = 'Completed'
+                torrent.save()
 
 def get_torrent_by_hash(torrent_list, torrent_hash):
     for torrent in torrent_list:

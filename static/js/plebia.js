@@ -10,18 +10,19 @@ function update_progress() {
     elems.each(function() {
         var id = $(this).attr('id').substring(5);
         var element = this;
-        $.getJSON("/ajax/post_detail/"+id+"/", function(data) {
-            var torrent_progress = Math.round(data[0].fields.torrent_progress*100)/100;
-            var torrent_status = data[0].fields.torrent_status;
+        var torrent_api_url = $('input.torrent_api_url', element).attr('value');
 
-            // If transcoding is still in progress, mark the post so that the trasncoding loop
+        $.getJSON(torrent_api_url, function(torrent) {
+            torrent.progress = Math.round(torrent.progress*100)/100;
+
+            // If transcoding is still in progress, mark the post so that the transcoding loop
             // can refresh it when it's done
-            if(torrent_status == 'Transcoding') {
+            if(torrent.status == 'Transcoding') {
                 $(element).addClass('stream_post_transcoding_in_progress'); 
             }
 
             // If download is over, play the video after 5 seconds
-            if(torrent_status == 'Completed' || torrent_status == 'Transcoding') {
+            if(torrent.status == 'Completed' || torrent.status == 'Transcoding') {
                 // Make sure we don't do this twice
                 $(element).removeClass('stream_post_in_progress'); 
 
@@ -43,16 +44,16 @@ function update_progress() {
                     });
                 }, 5000);
             } else { // Otherwise update the progress bar
-                if(torrent_progress > 99) {
+                if(torrent.progress > 99) {
                     $('.torrent_status', $(element)).html('Preparing to stream...');
                     $('.torrent_progress', $(element)).css('display', 'none');
-                } else if(torrent_progress > 1) {
+                } else if(torrent.progress > 1) {
                     $('.torrent_status', $(element)).html('Downloading the video...');
                     $('.torrent_progress', $(element)).css('display', 'inline');
                 }
                     
-                $('.torrent_progress_percent', $(element)).html(torrent_progress);
-                $('.torrent_progress_bar', $(element)).progressbar('option', 'value', Math.round(torrent_progress));
+                $('.torrent_progress_percent', $(element)).html(torrent.progress);
+                $('.torrent_progress_bar', $(element)).progressbar('option', 'value', Math.round(torrent.progress));
             }
         });
 
@@ -76,10 +77,10 @@ function update_transcoding() {
     elems.each(function() {
         var id = $(this).attr('id').substring(5);
         var element = this;
-        $.getJSON("/ajax/post_detail/"+id+"/", function(data) {
-            var torrent_status = data[0].fields.torrent_status;
+        var torrent_api_url = $('input.torrent_api_url', element).attr('value');
 
-            if(torrent_status == 'Completed') {
+        $.getJSON(torrent_api_url, function(torrent) {
+            if(torrent.status == 'Completed') {
                 // Make sure we don't do this twice
                 $(element).removeClass('stream_post_transcoding_in_progress'); 
 
@@ -108,7 +109,7 @@ function update_transcoding() {
 // Ajax loading of a video
 function show_video(id, callback) {
     var element = $('#post_'+id);
-    $('.post_content', $(element)).load('/ajax/video/'+id+'/', function() {
+    $('.post_content', element).load('/ajax/video/'+id+'/', function() {
         var video = $("#post_"+id+"_video");
         video.VideoJS({
             controlsBelow: false, // Display control bar below video instead of in front of
@@ -137,7 +138,7 @@ $(function() {
     });
 
     // Load auto-suggest
-    $("#id_series_name").suggest({type:'/tv/tv_program'});
+    $("#id_name").suggest({type:'/tv/tv_program'});
 
     // Load all videos on the page
     var myManyPlayers = VideoJS.setup("All", {

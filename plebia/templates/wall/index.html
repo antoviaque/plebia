@@ -44,40 +44,54 @@
         <h2>Stream</h2>
         {% if latest_post_list %}
         {% for post in latest_post_list %}
-        <div class="stream_post{% if post.torrent_status != 'Completed' and post.torrent_status != 'Transcoding' %} stream_post_in_progress{% endif %}{% if post.torrent_status == 'Transcoding' %} stream_post_transcoding_in_progress{% endif %}" id="post_{{ post.id }}">
-            <img src="/static/img/avatar.jpg" class="user_avatar" />
-            <div class="user_name">Xavier Antoviaque</div>
-            <div class="post_time">- {{ post.pub_date }}</div>
-            <div class="post_title">
-                <a href="/downloads/{{ post.torrent_name }}">
-                    {{ post.series_name }} - Season {{ post.series_season }}, episode {{ post.series_episode }}
-                    <img src="/static/img/download.png" class="download_icon" />
-                </a></div>
-            <div class="post_content">
-                {% if post.torrent_status == 'Completed' or post.torrent_status == 'Transcoding' %}
-                    {% include "wall/video.html" %}            
-                {% else %}
-                    <div class="torrent_progress_info">
-                        <img src="/static/img/loading.gif" class="loading_icon" />
-                        &nbsp;<span class="torrent_status">Locating the video... (takes 30-90 seconds)</span>
-                        <span class="torrent_progress">
-                            <span class="torrent_progress_percent">{{ post.torrent_progress }}</span>% done.
-                        </span>
-                    </div>
-                    <div class="torrent_progress_bar" data="{{ post.torrent_progress }}"></div>
-                {% endif %}
-            </div> 
-            <div class="next_episode">
-                <form action="/" method="post">
-                    {% csrf_token %}
-                    <input id="id_series_name" type="hidden" name="series_name" value="{{ post.series_name }}" />
-                    <input type="hidden" name="series_season" id="id_series_season" value="{{ post.series_season }}" />
-                    <input type="hidden" name="series_episode" id="id_series_episode" value="{{ post.series_episode|add:1 }}" />
-                    <a href="javascript://">Next episode >></a>
-                    <div class="clear_both"></div>
-                </form>
+
+            {% with post.episode as episode %}
+            {% with episode.season as season %}
+            {% with episode.torrent as torrent %}
+            {% with episode.video as video %}
+            {% with season.series as series %}
+
+            <div class="stream_post{% if torrent.status != 'Completed' and torrent.status != 'Transcoding' %} stream_post_in_progress{% endif %}{% if torrent.status == 'Transcoding' %} stream_post_transcoding_in_progress{% endif %}" id="post_{{ post.id }}">
+                <input type="hidden" name="torrent_api_url" class="torrent_api_url" value="/api/v1/torrent/{{ torrent.id }}/" />
+                <img src="/static/img/avatar.jpg" class="user_avatar" />
+                <div class="user_name">Xavier Antoviaque</div>
+                <div class="post_time">- {{ post.date_added }}</div>
+                <div class="post_title">
+                    <a href="/downloads/{{ video.original_path }}">
+                        {{ series.name }} - Season {{ season.number }}, episode {{ episode.number }}
+                        <img src="/static/img/download.png" class="download_icon" />
+                    </a></div>
+                <div class="post_content">
+                    {% if torrent.status == 'Completed' or torrent.status == 'Transcoding' %}
+                        {% include "wall/video.html" %}            
+                    {% else %}
+                        <div class="torrent_progress_info">
+                            <img src="/static/img/loading.gif" class="loading_icon" />
+                            &nbsp;<span class="torrent_status">Locating the video... (takes 30-90 seconds)</span>
+                            <span class="torrent_progress">
+                                <span class="torrent_progress_percent">{{ torrent.progress }}</span>% done.
+                            </span>
+                        </div>
+                        <div class="torrent_progress_bar" data="{{ torrent.progress }}"></div>
+                    {% endif %}
+                </div> 
+                <div class="next_episode">
+                    <form action="/" method="post">
+                        {% csrf_token %}
+                        <input id="id_name2" type="hidden" name="name" value="{{ series.name }}" />
+                        <input type="hidden" name="season" id="id_season2" value="{{ season.number }}" />
+                        <input type="hidden" name="episode" id="id_episode2" value="{{ episode.number|add:1 }}" />
+                        <a href="javascript://">Next episode >></a>
+                        <div class="clear_both"></div>
+                    </form>
+                </div>
             </div>
-        </div>
+
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
+            {% endwith %}
         {% endfor %}
     {% else %}
         <p>No posts yet.</p>
