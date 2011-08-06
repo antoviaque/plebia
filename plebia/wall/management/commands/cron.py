@@ -38,6 +38,9 @@ def update_posts():
         episode = post.episode
         torrent = episode.torrent
 
+        if torrent is None:
+            continue
+
         cmd = list(settings.DELUGE_COMMAND)
         deluge_torrent_info = get_torrent_by_hash(torrent_list, torrent.hash)
 
