@@ -9,12 +9,12 @@
 
 Install packages (Debian/Ubuntu):
 
-    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev
+    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar
     $ sudo pip install Django==1.2.5
     $ sudo pip install django-tastypie==0.9.9
     $ sudo pip install lxml==2.3
     $ sudo pip install BeautifulSoup==3.2.0
-    $ sudo easy_install South==0.7.3
+    $ sudo easy_install South
 
 Install development version of ffmpeg, with libvpx: http://ubuntuforums.org/showthread.php?t=786095 (works for Ubuntu and Debian - for Debian repositories to add: http://debian-multimedia.org/ )
 

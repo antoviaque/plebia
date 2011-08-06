@@ -29,6 +29,7 @@ class SeriesSeasonEpisodeAdmin(admin.ModelAdmin):
         ('Files',             {'fields': ['torrent','video']}),
     ]
     inlines = [PostInline]
+    list_display = ('season', 'number', 'name')
 
 admin.site.register(SeriesSeasonEpisode, SeriesSeasonEpisodeAdmin)
 
@@ -79,6 +80,7 @@ class TorrentAdmin(admin.ModelAdmin):
         ('State information', {'fields': ['status','progress','seeds','peers']}),
     ]
     inlines = [SeriesSeasonInline, SeriesSeasonEpisodeInline]
+    list_display = ('name', 'status', 'progress', 'seeds', 'peers')
 
 admin.site.register(Torrent, TorrentAdmin)
 

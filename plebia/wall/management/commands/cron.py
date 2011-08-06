@@ -5,6 +5,8 @@ from django.conf import settings
 import re
 import subprocess
 import time
+import os
+import mimetypes
 
 DELAY = 5
 
@@ -46,6 +48,7 @@ def update_posts():
             update_download_status(episode, deluge_torrent_info)
 
             if torrent.progress == 100.0:
+                locate_video(episode)
                 start_transcoding(episode)
 
         elif torrent.status == 'Transcoding':
@@ -73,17 +76,85 @@ def update_download_status(episode, deluge_torrent_info):
     torrent.progress = deluge_torrent_info['torrent_progress']
     torrent.save()
    
-    # As soon as we get the torrent name, create video object
-    if deluge_torrent_info['torrent_name'] and episode.video is None:
+    # As soon as we get the torrent name, update it
+    if deluge_torrent_info['torrent_name'] and torrent.name == "":
         torrent.name = deluge_torrent_info['torrent_name']
         torrent.save()
 
-        video = Video()
-        video.original_path = deluge_torrent_info['torrent_name']
-        video.save()
 
-        episode.video = video
-        episode.save()
+def locate_video(episode):
+    torrent = episode.torrent
+    torrent_path = torrent.name
+
+    # Check if the video has already been located for this torrent/episode
+    if episode.video is not None:
+        return episode.video
+
+    video = Video()
+    # If the torrent is a single file, that's the one we want
+    if os.path.isfile(os.path.join(settings.DOWNLOAD_DIR, torrent_path)):
+        video.original_path = torrent_path
+
+    # If the torrent is a directory, look inside
+    elif os.path.isdir(os.path.join(settings.DOWNLOAD_DIR, torrent_path)):
+        video_filename_list = get_videos_from_directory(torrent_path)
+        # If didn't find any video, can't create the video object
+        if len(video_filename_list) == 0: 
+            return None
+
+        # Select the biggest video
+        max_filename = None 
+        max_size = 0
+        for video_filename in video_filename_list:
+            video_size = os.stat(os.path.join(settings.DOWNLOAD_DIR, video_filename))
+            if video_size > max_size:
+                max_filename = video_filename
+                max_size = video_size
+
+        video.original_path = max_filename
+
+    # Save everything
+    video.save()
+    episode.video = video
+    episode.save()
+
+
+def extract_archives_in_directory(dir_path):
+    for filename_short in os.listdir(os.path.join(settings.DOWNLOAD_DIR, dir_path)):
+        filename = os.path.join(settings.DOWNLOAD_DIR, dir_path, filename_short)
+
+        # Change to the file directory (otherwise unrar extracts elsewhere)
+        os.chdir(os.path.join(settings.DOWNLOAD_DIR, dir_path))
+
+        # Uncompress any archives (rar)
+        if filename.lower().endswith('.rar'):
+            # Run unrar
+            cmd = (settings.UNRAR_PATH, 'x', '-y', filename)
+            (result, errors) = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()
+            print result
+
+
+def get_videos_from_directory(dir_path):
+    # First, extract files from archives in this directory to be able to find those files too
+    extract_archives_in_directory(dir_path)
+
+    video_filename_list = list()
+    for filename_short in os.listdir(os.path.join(settings.DOWNLOAD_DIR, dir_path)):
+        filename = os.path.join(dir_path, filename_short)
+        print filename
+
+        # Go recursively into subdirectories
+        if os.path.isdir(os.path.join(settings.DOWNLOAD_DIR, filename)):
+            sub_list = get_videos_from_directory(filename)
+            video_filename_list.extend(sub_list)
+
+        # Keep a list of videos
+        (file_type, file_encoding) = mimetypes.guess_type(os.path.join(settings.DOWNLOAD_DIR, filename))
+        if file_type is not None and file_type.startswith('video'):
+            video_filename_list.append(filename)
+            print 'VIDEO => ' + filename
+
+    return video_filename_list
 
 
 def start_transcoding(episode):
@@ -101,9 +172,9 @@ def start_transcoding(episode):
 
     # FIXME Check for errors
     # Generate thumbnail
-    subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + video.image_path])
+    subprocess.Popen([settings.FFMPEG_PATH, '-i', os.path.join(settings.DOWNLOAD_DIR, video.original_path), '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + video.image_path])
     # Convert to WebM
-    subprocess.Popen([settings.FFMPEG_PATH, '-i', settings.DOWNLOAD_DIR + video.original_path, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + video.webm_path])
+    subprocess.Popen([settings.FFMPEG_PATH, '-i', os.path.join(settings.DOWNLOAD_DIR, video.original_path), '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + video.webm_path])
     # Convert to OGV
     #subprocess.Popen([settings.FFMPEG2THEORA_PATH, '-p', 'pro', settings.DOWNLOAD_DIR + video.original_path])
 

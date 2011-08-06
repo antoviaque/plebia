@@ -12,6 +12,7 @@ ppath = lambda x: os.path.join(os.path.dirname(
 DELUGE_COMMAND = ['/usr/local/bin/deluge-console']
 FFMPEG_PATH = '/usr/local/bin/ffmpeg'
 FFMPEG2THEORA_PATH = '/usr/bin/ffmpeg2theora'
+UNRAR_PATH = '/usr/bin/unrar'
 
 DOWNLOAD_DIR = '/var/www/downloads/'
 BIN_DIR = spath('../bin/')

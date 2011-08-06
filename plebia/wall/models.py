@@ -41,8 +41,8 @@ class SeriesSeasonEpisode(models.Model):
     number = models.IntegerField('number')
     name = models.CharField('name', max_length=200, blank=True)
     season = models.ForeignKey(SeriesSeason)
-    torrent = models.ForeignKey(Torrent, null=True)
-    video = models.ForeignKey(Video, null=True)
+    torrent = models.ForeignKey(Torrent, null=True, blank=True)
+    video = models.ForeignKey(Video, null=True, blank=True)
 
 class Post(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
