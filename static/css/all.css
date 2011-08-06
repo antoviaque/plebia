@@ -75,6 +75,18 @@ a {
     font-size: 10pt;
 }
 
+.stream_post .torrent_not_found img {
+    width: 200px;
+    height: 200px;
+    float: left;
+    margin: 10px 20px 10px 50px;
+}
+
+.stream_post .torrent_not_found .torrent_not_found_msg {
+    padding-top: 70px;
+    padding-bottom: 70px;
+}
+
 .stream_post .torrent_progress_info {
     margin: 20px 0 20px 0;
     text-align: center;
