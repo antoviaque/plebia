@@ -51,7 +51,8 @@ Create database:
 
 Add cron:
 
-    * * * * * /var/www/plebia/plebia/manage.py cron &>> /var/www/plebia/log/cron.log
+    * * * * * /var/www/plebia/plebia/manage.py torrent-update &>> /var/www/plebia/log/torrent-update.log
+    * * * * * /var/www/plebia/plebia/manage.py video-update &>> /var/www/plebia/log/video-update.log
 
 = 2a. Development environment =
 

@@ -51,9 +51,11 @@
             {% with episode.video as video %}
             {% with season.series as series %}
 
-            <div class="stream_post{% if torrent and torrent.status != 'Completed' and torrent.status != 'Transcoding' %} stream_post_in_progress{% endif %}{% if torrent.status == 'Transcoding' %} stream_post_transcoding_in_progress{% endif %}" id="post_{{ post.id }}">
+            <div class="stream_post{% if torrent.status == 'New' or torrent.status == 'Downloading' %} stream_post_torrent_update{% endif %}{% if video.status == 'New' or video.status == 'Transcoding' %} stream_post_video_update{% endif %}" id="post_{{ post.id }}">
 
-                {% if torrent %}<input type="hidden" name="torrent_api_url" class="torrent_api_url" value="/api/v1/torrent/{{ torrent.id }}/" />{% endif %}
+                <input type="hidden" name="episode_api_url" class="episode_api_url" value="{% if episode %}/api/v1/seriesseasonepisode/{{ episode.id }}/{% endif %}" />
+                <input type="hidden" name="torrent_api_url" class="torrent_api_url" value="{% if torrent %}/api/v1/torrent/{{ torrent.id }}/{% endif %}" />
+                <input type="hidden" name="video_api_url" class="video_api_url" value="{% if video %}/api/v1/video/{{ video.id }}/{% endif %}" />
                 <img src="/static/img/avatar.jpg" class="user_avatar" />
                 <div class="user_name">Xavier Antoviaque</div>
                 <div class="post_time">- {{ post.date_added }}</div>
@@ -68,15 +70,15 @@
                             <img src="/static/img/monster.jpg" class="monster_icon" />
                             <div class="torrent_not_found_msg">I'm sorry, I couldn't find your video : (<br />But try to enter another one, I'll go get it! :D</div>
                         </div>
-                    {% else %} {% if torrent.status == 'Completed' or torrent.status == 'Transcoding' %}
+                    {% else %} {% if video.status == 'Transcoding' or video.status == 'Completed' %}
                         {% include "wall/video.html" %}            
                     {% else %}
                         <div class="torrent_progress_info">
-                            <img src="/static/img/loading.gif" class="loading_icon" />
-                            &nbsp;<span class="torrent_status">Video found! Step 2/4: Initializing... (takes 30-90 seconds)</span>
+                            <span class="torrent_status">Video found! Initializing download... (takes 30-90 seconds)</span>
                             <span class="torrent_progress">
-                                <span class="torrent_progress_percent">{{ torrent.progress }}</span>% done.
+                                (<span class="torrent_progress_percent">{{ torrent.progress }}</span>% done)
                             </span>
+                            &nbsp;<img src="/static/img/loading.gif" class="loading_icon" />
                         </div>
                         <div class="torrent_progress_bar" data="{{ torrent.progress }}"></div>
                     {% endif %} {% endif %}

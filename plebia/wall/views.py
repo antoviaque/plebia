@@ -1,3 +1,24 @@
+#
+# Copyright (C) 2011 Xavier Antoviaque <xavier@antoviaque.org>
+#
+# This software's license gives you freedom; you can copy, convey,
+# propagate, redistribute and/or modify this program under the terms of
+# the GNU Affero General Public License (AGPL) as published by the Free
+# Software Foundation (FSF), either version 3 of the License, or (at your
+# option) any later version of the AGPL published by the FSF.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero
+# General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program in a file in the toplevel directory called
+# "AGPLv3".  If not, see <http://www.gnu.org/licenses/>.
+#
+
+# Includes ##########################################################
+
 from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render_to_response
@@ -14,6 +35,8 @@ import subprocess
 
 from wall.models import *
 
+
+# Views #############################################################
 
 def index(request):
     # Process new wall post submition
@@ -32,33 +55,6 @@ def index(request):
         'preload': "none",
         'latest_post_list': latest_post_list,
     }, context_instance=RequestContext(request))
-
-def add_new_post(form):
-    if form.is_valid():
-        # Find or create objects needed to create this post:
-        # Series
-        name = form.cleaned_data['name']
-        series, created = Series.objects.get_or_create(name=name)
-        # SeriesSeason
-        season_number = form.cleaned_data['season']
-        season, created = SeriesSeason.objects.get_or_create(number=season_number, series=series)
-        # SeriesSeasonEpisode
-        episode_number = form.cleaned_data['episode']
-        episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number,
-                season=season)
-
-        if created:
-            # Since the episode object was just created, we need to find the right torrent
-            episode.torrent = get_torrent_by_episode(episode)
-            episode.save()
-
-        # And finally the Post object itself
-        post = Post()
-        post.episode = episode
-        post.save()
-        return post
-    else:
-        return None
 
 def video(request, post_id):
     '''Return HTML to display when a video is getting ready (ajax)'''
@@ -84,13 +80,62 @@ def video(request, post_id):
     }, context_instance=RequestContext(request))
 
 
+# Helpers - Adding a post ###########################################
+
+def add_new_post(form):
+    if form.is_valid():
+        # Find or create objects needed to create this post:
+        # Series
+        name = form.cleaned_data['name']
+        series, created = Series.objects.get_or_create(name=name)
+        # SeriesSeason
+        season_number = form.cleaned_data['season']
+        season, created = SeriesSeason.objects.get_or_create(number=season_number, series=series)
+        # SeriesSeasonEpisode
+        episode_number = form.cleaned_data['episode']
+        episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number,
+                season=season)
+
+        if created:
+            # Since the episode object was just created, we need to find the right torrent
+            get_torrent_by_episode(episode)
+
+        # And finally the Post object itself
+        post = Post()
+        post.episode = episode
+        post.save()
+        return post
+    else:
+        return None
+
+
 def get_torrent_by_episode(episode):
     season = episode.season
     series = season.series
 
-    search_string = "tv %s s%02de%02d" % (series.name, season.number, episode.number)
-    torrent = get_torrent_by_search(search_string)
+    # Check if the full season is not already there
+    if season.torrent is not None:
+        torrent = season.torrent
+    else:
+        # Try to get the single epside first
+        search_string = "(tv|television) %s s%02de%02d" % (series.name, season.number, episode.number)
+        torrent = get_torrent_by_search(search_string)
 
+        # Otherwise try to get the full season
+        if torrent is None or torrent.seeds < 10:
+            search_string = "(tv|television) %s season %d" % (series.name, season.number)
+            torrent = get_torrent_by_search(search_string)
+            torrent.type = 'season'
+            torrent.save()
+
+            season.torrent = torrent
+            season.save()
+        else:
+            torrent.type = 'episode'
+            torrent.save()
+
+    episode.torrent = torrent
+    episode.save()
     return torrent
 
 
@@ -104,6 +149,7 @@ def get_torrent_by_search(search_string):
     br["f"] = search_string
     response = br.submit()
     html_result = response.get_data()
+    print html_result
 
     # First check if any torrent was found at all
     if(re.search("Could not match your exact query", html_result)):

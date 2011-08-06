@@ -1,5 +1,29 @@
+#
+# Copyright (C) 2011 Xavier Antoviaque <xavier@antoviaque.org>
+#
+# This software's license gives you freedom; you can copy, convey,
+# propagate, redistribute and/or modify this program under the terms of
+# the GNU Affero General Public License (AGPL) as published by the Free
+# Software Foundation (FSF), either version 3 of the License, or (at your
+# option) any later version of the AGPL published by the FSF.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero
+# General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program in a file in the toplevel directory called
+# "AGPLv3".  If not, see <http://www.gnu.org/licenses/>.
+#
+
+# Includes ##########################################################
+
 from wall.models import *
 from django.contrib import admin
+
+
+# Admin interfaces ##################################################
 
 # Post ##
 
@@ -77,7 +101,7 @@ class TorrentAdmin(admin.ModelAdmin):
     fieldsets = [
         (None,                {'fields': ['name','hash']}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
-        ('State information', {'fields': ['status','progress','seeds','peers']}),
+        ('State information', {'fields': ['status','progress','seeds','peers','type']}),
     ]
     inlines = [SeriesSeasonInline, SeriesSeasonEpisodeInline]
     list_display = ('name', 'status', 'progress', 'seeds', 'peers')
@@ -95,7 +119,7 @@ class VideoAdmin(admin.ModelAdmin):
     fieldsets = [
         (None,                {'fields': ['original_path']}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
-        ('Transcoding',       {'fields': ['image_path','webm_path','mp4_path','ogv_path']}),
+        ('Transcoding',       {'fields': ['status','image_path','webm_path','mp4_path','ogv_path']}),
     ]
     inlines = [SeriesSeasonEpisodeInline]
 

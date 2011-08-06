@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2011 Xavier Antoviaque <xavier@antoviaque.org>
+ *
+ * This software's license gives you freedom; you can copy, convey,
+ * propagate, redistribute and/or modify this program under the terms of
+ * the GNU Affero Gereral Public License (AGPL) as published by the Free
+ * Software Foundation (FSF), either version 3 of the License, or (at your
+ * option) any later version of the AGPL published by the FSF.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program in a file in the toplevel directory called
+ * "AGPLv3".  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/* Global **********************************************************/
+
 html, body {
     font-family: "arial";
     font-size: 11pt;
@@ -14,6 +35,9 @@ a {
     clear: both;
 }
 
+
+/* Stream **********************************************************/
+
 .stream .ui-widget {
     font-size: 10pt;
 }
@@ -25,6 +49,9 @@ a {
     margin-left: -375px;
 }
 
+
+/* Header **********************************************************/
+
 .plebia_updates {
     width: 300px;
     float: left;
@@ -35,6 +62,9 @@ a {
     font-size: 9pt;
     line-height: 150%;
 }
+
+
+/* New post ********************************************************/
 
 .stream_new_post {
     width: 300px;
@@ -49,6 +79,9 @@ a {
     float: right;
     right: 0px;
 }
+
+
+/* Post ************************************************************/
 
 .stream_post {
     margin: 20px;
@@ -75,17 +108,18 @@ a {
     font-size: 10pt;
 }
 
-.stream_post .torrent_not_found img {
-    width: 200px;
-    height: 200px;
-    float: left;
-    margin: 10px 20px 10px 50px;
+.stream_post .post_title img.download_icon {
+    width: 15px;
+    height: 15px;
 }
 
-.stream_post .torrent_not_found .torrent_not_found_msg {
-    padding-top: 70px;
-    padding-bottom: 70px;
+.stream_post .next_episode a {
+    float: right;
+    font-weight: normal;
+    margin-top: 10px;
 }
+
+/* Progress */
 
 .stream_post .torrent_progress_info {
     margin: 20px 0 20px 0;
@@ -119,6 +153,23 @@ a {
     margin-right: 5px;
 }
 
+/* Not found */
+
+.stream_post .torrent_not_found img {
+    width: 200px;
+    height: 200px;
+    float: left;
+    margin: 10px 20px 10px 50px;
+}
+
+.stream_post .torrent_not_found .torrent_not_found_msg {
+    padding-top: 70px;
+    padding-bottom: 70px;
+}
+
+
+/* Footer **********************************************************/
+
 .footer {
     font-size: 9pt;
     width: 100%;
@@ -127,22 +178,19 @@ a {
     color: grey;
 }
 
-.stream_post .post_title img.download_icon {
-    width: 15px;
-    height: 15px;
-}
 
-.stream_post .next_episode a {
-    float: right;
-    font-weight: normal;
-    margin-top: 10px;
-}
+/* UserVoice *******************************************************/
 
 #uvTab {
     z-index: 5 !important;
 }
 
+
+/* Video.js ********************************************************/
+
 /* Hide the loading icon of video.js, which wrongly displays when the video is not preloaded */
 .vjs-spinner {
     display: none !important;
 }
+
+
