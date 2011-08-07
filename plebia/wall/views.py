@@ -26,13 +26,6 @@ from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from django.core import serializers
 
-from lxml.html import soupparser
-from lxml.cssselect import CSSSelector
-
-import re
-import mechanize
-import subprocess
-
 from wall.models import *
 
 
@@ -96,10 +89,6 @@ def add_new_post(form):
         episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number,
                 season=season)
 
-        if created:
-            # Since the episode object was just created, we need to find the right torrent
-            get_torrent_by_episode(episode)
-
         # And finally the Post object itself
         post = Post()
         post.episode = episode
@@ -109,66 +98,4 @@ def add_new_post(form):
         return None
 
 
-def get_torrent_by_episode(episode):
-    season = episode.season
-    series = season.series
-
-    # Check if the full season is not already there
-    if season.torrent is not None:
-        torrent = season.torrent
-    else:
-        # Try to get the single epside first
-        search_string = "(tv|television) %s s%02de%02d" % (series.name, season.number, episode.number)
-        torrent = get_torrent_by_search(search_string)
-
-        # Otherwise try to get the full season
-        if torrent is None or torrent.seeds < 10:
-            search_string = "(tv|television) %s season %d" % (series.name, season.number)
-            torrent = get_torrent_by_search(search_string)
-            torrent.type = 'season'
-            torrent.save()
-
-            season.torrent = torrent
-            season.save()
-        else:
-            torrent.type = 'episode'
-            torrent.save()
-
-    episode.torrent = torrent
-    episode.save()
-    return torrent
-
-
-def get_torrent_by_search(search_string):
-    torrent = Torrent()
-
-    br = mechanize.Browser()
-    br.open("http://torrentz.eu/")
-
-    br.select_form(nr=0)
-    br["f"] = search_string
-    response = br.submit()
-    html_result = response.get_data()
-    print html_result
-
-    # First check if any torrent was found at all
-    if(re.search("Could not match your exact query", html_result)):
-        return None
-    
-    # Get the list of torrents results
-    root = soupparser.fromstring(html_result)
-    sel = CSSSelector(".results dl")
-    element = sel(root)
-    if element is None:
-        return None
-    else:
-        # Build the torrent object
-        torrent.hash = element[0].cssselect("dt a")[0].get("href")[1:]
-        torrent.seeds = element[0].cssselect("dd .u")[0].text_content().translate(None, ',')
-        torrent.peers = element[0].cssselect("dd .d")[0].text_content().translate(None, ',')
-        if torrent.hash is None or torrent.seeds is None or torrent.seeds <= 0:
-            return None
-        else:
-            torrent.save()
-            return torrent
 

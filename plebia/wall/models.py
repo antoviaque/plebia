@@ -19,6 +19,7 @@
 
 # Includes ##########################################################
 
+from django.db.models.signals import pre_save, post_save
 from django.db import models
 from django import forms
 
@@ -95,5 +96,58 @@ class PostForm(forms.Form):
     name = forms.CharField(max_length=200)
     season = forms.IntegerField('season')
     episode = forms.IntegerField('episode', required=False)
+
+
+# Signals & data consistency ########################################
+
+def episode_pre_save(sender, **kwargs):
+    episode = kwargs['instance']
+    torrent = episode.torrent
+
+
+def episode_post_save(sender, **kwargs):
+    from plebia.wall.torrentutils import get_torrent_by_episode
+    from plebia.wall.videoutils import locate_video
+    created = kwargs['created']
+    episode = kwargs['instance']
+
+    # Immediately get torrent for new episodes
+    if created and episode.torrent is None:
+        torrent = get_torrent_by_episode(episode)
+        episode.torrent = torrent
+        episode.save()
+
+    # Also immediately try to get the video object for new episodes
+    if created and episode.video is None \
+            and episode.torrent and episode.torrent.status == 'Completed':
+        episode.video = locate_video(episode)
+        episode.save()
+
+
+def torrent_pre_save(sender, **kwargs):
+    from plebia.wall.videoutils import locate_video
+    torrent = kwargs['instance']
+
+    # Make sure that videos are located for each episode related to a completed torrent
+    if torrent.status == 'Completed':
+        # There can be several episodes per torrent
+        episode_list = torrent.seriesseasonepisode_set.all()
+        for episode in episode_list:
+            if episode.video is None:
+                episode.video = locate_video(episode)
+                episode.save()
+
+
+def torrent_post_save(sender, **kwargs):
+    episode = kwargs['instance']
+    created = kwargs['created']
+
+
+# Register signal handlers
+pre_save.connect(episode_pre_save, sender=SeriesSeasonEpisode, dispatch_uid="episode_pre_save")
+post_save.connect(episode_post_save, sender=SeriesSeasonEpisode, dispatch_uid="episode_post_save")
+pre_save.connect(torrent_pre_save, sender=Torrent, dispatch_uid="torrent_pre_save")
+post_save.connect(torrent_post_save, sender=Torrent, dispatch_uid="torrent_post_save")
+
 
 
