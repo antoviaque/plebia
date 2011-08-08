@@ -9,11 +9,13 @@
 
 Install packages (Debian/Ubuntu):
 
-    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar
+    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar python-coverage
     $ sudo pip install Django==1.2.5
     $ sudo pip install django-tastypie==0.9.9
     $ sudo pip install lxml==2.3
     $ sudo pip install BeautifulSoup==3.2.0
+    $ sudo pip install django-coverage==1.2
+    $ sudo pip install mock==0.7.2
     $ sudo easy_install South
 
 Install development version of ffmpeg, with libvpx: http://ubuntuforums.org/showthread.php?t=786095 (works for Ubuntu and Debian - for Debian repositories to add: http://debian-multimedia.org/ )
@@ -51,8 +53,8 @@ Create database:
 
 Add cron:
 
-    * * * * * /var/www/plebia/plebia/manage.py torrent-update &>> /var/www/plebia/log/torrent-update.log
-    * * * * * /var/www/plebia/plebia/manage.py video-update &>> /var/www/plebia/log/video-update.log
+    * * * * * /var/www/plebia/plebia/manage.py torrent_update &>> /var/www/plebia/log/torrent-update.log
+    * * * * * /var/www/plebia/plebia/manage.py video_update &>> /var/www/plebia/log/video-update.log
 
 = 2a. Development environment =
 
@@ -113,7 +115,20 @@ Add login/password:
     $ htpasswd -c /var/www/.htpasswd media
 
 
-= 3. Running =
+= 3. Running tests =
+
+Without coverage (faster):
+
+    $ plebia/manage.py test
+
+With coverage (slower):
+
+    $ plebia/manage.py test_coverage
+
+The coverage report will then be visible at http://localhost/static/tests/
+
+
+= 4. Running =
 
     $ deluged
 

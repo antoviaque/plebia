@@ -35,8 +35,10 @@ def index(request):
     # Process new wall post submition
     if request.method == 'POST':
         form = PostForm(request.POST)
-        post = add_new_post(form)
-        return HttpResponseRedirect('/')
+        if form.is_valid():
+            post = add_new_post(form)
+            if post:
+                return HttpResponseRedirect('/')
     else:
         form = PostForm()
 
@@ -76,26 +78,23 @@ def video(request, post_id):
 # Helpers - Adding a post ###########################################
 
 def add_new_post(form):
-    if form.is_valid():
-        # Find or create objects needed to create this post:
-        # Series
-        name = form.cleaned_data['name']
-        series, created = Series.objects.get_or_create(name=name)
-        # SeriesSeason
-        season_number = form.cleaned_data['season']
-        season, created = SeriesSeason.objects.get_or_create(number=season_number, series=series)
-        # SeriesSeasonEpisode
-        episode_number = form.cleaned_data['episode']
-        episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number,
-                season=season)
+    # Find or create objects needed to create this post:
+    # Series
+    name = form.cleaned_data['name']
+    series, created = Series.objects.get_or_create(name=name)
+    # SeriesSeason
+    season_number = form.cleaned_data['season']
+    season, created = SeriesSeason.objects.get_or_create(number=season_number, series=series)
+    # SeriesSeasonEpisode
+    episode_number = form.cleaned_data['episode']
+    episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number,
+            season=season)
 
-        # And finally the Post object itself
-        post = Post()
-        post.episode = episode
-        post.save()
-        return post
-    else:
-        return None
+    # And finally the Post object itself
+    post = Post()
+    post.episode = episode
+    post.save()
+    return post
 
 
 

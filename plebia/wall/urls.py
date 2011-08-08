@@ -30,6 +30,7 @@ from wall.models import Post
 v1_api = Api(api_name='v1')
 v1_api.register(VideoResource())
 v1_api.register(TorrentResource())
+v1_api.register(SeriesSeasonResource())
 v1_api.register(SeriesSeasonEpisodeResource())
 v1_api.register(PostResource())
 

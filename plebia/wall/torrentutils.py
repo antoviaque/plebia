@@ -60,14 +60,7 @@ def get_torrent_by_episode(episode):
 
 def get_torrent_by_search(search_string):
     torrent = Torrent()
-
-    br = mechanize.Browser()
-    br.open("http://torrentz.eu/")
-
-    br.select_form(nr=0)
-    br["f"] = search_string
-    response = br.submit()
-    html_result = response.get_data()
+    html_result = submit_form("http://torrentz.eu/", search_string)
 
     # First check if any torrent was found at all
     if(re.search("Could not match your exact query", html_result)):
@@ -89,5 +82,18 @@ def get_torrent_by_search(search_string):
         else:
             torrent.save()
             return torrent
+
+
+def submit_form(url, text):
+    br = mechanize.Browser()
+    br.open(url)
+
+    br.select_form(nr=0)
+    br["f"] = text
+    response = br.submit()
+    html_result = response.get_data()
+
+    return html_result
+
 
 

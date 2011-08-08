@@ -15,8 +15,11 @@ FFMPEG2THEORA_PATH = '/usr/bin/ffmpeg2theora'
 UNRAR_PATH = '/usr/bin/unrar'
 
 DOWNLOAD_DIR = '/var/www/downloads/'
-BIN_DIR = spath('../bin/')
-STATIC_DIR = spath('../static/')
+
+TEST_DOWNLOAD_DIR = spath('tests/')
+TEST_VIDEO_PATH = ppath('eben_moglen-freedom_in_the_cloud.avi')
+BIN_DIR = ppath('bin/')
+STATIC_DIR = ppath('static/')
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -78,6 +81,21 @@ ADMIN_MEDIA_PREFIX = '/media/'
 # Make this unique, and don't share it with anybody.
 SECRET_KEY = '_rjr7_fqo-1tcxx6izkqt+xk(3+h%&5k)vc6w$q9+nj+42xc=a'
 
+# Specify a list of regular expressions of module paths to exclude
+# from the coverage analysis. Examples are ``'tests$'`` and ``'urls$'``.
+# This setting is optional.
+COVERAGE_MODULE_EXCLUDES = ['tests$', 'settings$', 'urls$', 'locale$',
+                            'common.views.test', '__init__', 'django',
+                            'migrations', 'tastypie', 'south']
+
+
+# Specify the directory where you would like the coverage report to create
+# the HTML files.
+# You'll need to make sure this directory exists and is writable by the
+# user account running the test.
+# You should probably set this one explicitly in your own settings file.
+COVERAGE_REPORT_HTML_OUTPUT_DIR = spath('../static/tests/')
+
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
@@ -108,5 +126,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'south',
     'tastypie',
+    'django_coverage',
     'wall',
 )

@@ -36,12 +36,19 @@ class TorrentResource(ModelResource):
         queryset = Torrent.objects.all()
         fields = ["date_added","hash","id","name","peers","progress","seeds","status","type"]
 
+class SeriesSeasonResource(ModelResource):
+    torrent = fields.ForeignKey(TorrentResource, 'torrent', null=True)
+    class Meta:
+        queryset = SeriesSeason.objects.all()
+        fields = ["id","date_added","number","torrent"]
+
 class SeriesSeasonEpisodeResource(ModelResource):
     torrent = fields.ForeignKey(TorrentResource, 'torrent', null=True)
     video   = fields.ForeignKey(VideoResource, 'video', null=True)
+    season  = fields.ForeignKey(SeriesSeasonResource, 'season')
     class Meta:
         queryset = SeriesSeasonEpisode.objects.all()
-        fields = ["id","date_added","name","number","torrent"]
+        fields = ["id","date_added","name","number","torrent","season"]
 
 class PostResource(ModelResource):
     episode = fields.ForeignKey(SeriesSeasonEpisodeResource, 'episode')

@@ -19,7 +19,7 @@
 
 # Includes ##########################################################
 
-from django.conf.urls.defaults import patterns, include, url
+from django.conf.urls.defaults import patterns, include, url, handler500, handler404
 from django.conf import settings
 from django.contrib import admin
 

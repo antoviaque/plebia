@@ -95,7 +95,7 @@ class Post(models.Model):
 class PostForm(forms.Form):
     name = forms.CharField(max_length=200)
     season = forms.IntegerField('season')
-    episode = forms.IntegerField('episode', required=False)
+    episode = forms.IntegerField('episode')
 
 
 # Signals & data consistency ########################################
@@ -106,26 +106,26 @@ def episode_pre_save(sender, **kwargs):
 
 
 def episode_post_save(sender, **kwargs):
-    from plebia.wall.torrentutils import get_torrent_by_episode
-    from plebia.wall.videoutils import locate_video
+    from plebia.wall import torrentutils
+    from plebia.wall import videoutils
     created = kwargs['created']
     episode = kwargs['instance']
 
     # Immediately get torrent for new episodes
     if created and episode.torrent is None:
-        torrent = get_torrent_by_episode(episode)
+        torrent = torrentutils.get_torrent_by_episode(episode)
         episode.torrent = torrent
         episode.save()
 
     # Also immediately try to get the video object for new episodes
     if created and episode.video is None \
             and episode.torrent and episode.torrent.status == 'Completed':
-        episode.video = locate_video(episode)
+        episode.video = videoutils.locate_video(episode)
         episode.save()
 
 
 def torrent_pre_save(sender, **kwargs):
-    from plebia.wall.videoutils import locate_video
+    from plebia.wall import videoutils
     torrent = kwargs['instance']
 
     # Make sure that videos are located for each episode related to a completed torrent
@@ -134,7 +134,7 @@ def torrent_pre_save(sender, **kwargs):
         episode_list = torrent.seriesseasonepisode_set.all()
         for episode in episode_list:
             if episode.video is None:
-                episode.video = locate_video(episode)
+                episode.video = videoutils.locate_video(episode)
                 episode.save()
 
 
