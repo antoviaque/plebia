@@ -43,7 +43,7 @@ def index(request):
         form = PostForm()
 
     # Display lastest posts on the wall
-    latest_post_list = Post.objects.all().order_by('-date_added')[:20]
+    latest_post_list = Post.objects.all().order_by('-date_added')[:50]
 
     return render_to_response('wall/index.html', {
         'form': form,
