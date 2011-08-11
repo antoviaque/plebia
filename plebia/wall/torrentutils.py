@@ -38,20 +38,31 @@ def get_torrent_by_episode(episode):
     if season.torrent is not None:
         torrent = season.torrent
     else:
-        # Try to get the single epside first
+        # Episode
         search_string = "(tv|television) %s s%02de%02d" % (series.name, season.number, episode.number)
-        torrent = get_torrent_by_search(search_string)
+        episode_torrent = get_torrent_by_search(search_string)
+        # Season
+        search_string = "(tv|television) %s season %d" % (series.name, season.number)
+        season_torrent = get_torrent_by_search(search_string)
 
-        # Otherwise try to get the full season
-        if torrent is None or torrent.seeds < 10:
-            search_string = "(tv|television) %s season %d" % (series.name, season.number)
-            torrent = get_torrent_by_search(search_string)
+        # See if we should prefer the season or the episode
+        if season_torrent is None and episode_torrent is None:
+            return None
+        elif season_torrent is None \
+                or season_torrent.seeds < 10:
+            torrent = episode_torrent
+            torrent.type = 'episode'
+            torrent.save()
+        elif episode_torrent is None \
+                or episode_torrent.seeds < 10 \
+                or episode_torrent.seeds*10 < season_torrent.seeds:
+            torrent = season_torrent
             torrent.type = 'season'
             torrent.save()
-
             season.torrent = torrent
             season.save()
         else:
+            torrent = episode_torrent
             torrent.type = 'episode'
             torrent.save()
 
@@ -75,12 +86,11 @@ def get_torrent_by_search(search_string):
     else:
         # Build the torrent object
         torrent.hash = element[0].cssselect("dt a")[0].get("href")[1:]
-        torrent.seeds = element[0].cssselect("dd .u")[0].text_content().translate(None, ',')
-        torrent.peers = element[0].cssselect("dd .d")[0].text_content().translate(None, ',')
+        torrent.seeds = int(element[0].cssselect("dd .u")[0].text_content().translate(None, ','))
+        torrent.peers = int(element[0].cssselect("dd .d")[0].text_content().translate(None, ','))
         if torrent.hash is None or torrent.seeds is None or torrent.seeds <= 0:
             return None
         else:
-            torrent.save()
             return torrent
 
 

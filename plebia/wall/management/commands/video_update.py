@@ -34,6 +34,7 @@ import mimetypes
 # Globals ###########################################################
 
 DELAY = 5
+FNULL = open(os.devnull, 'w')
 
 
 # Main ##############################################################
@@ -76,9 +77,9 @@ def start_transcoding(video):
     video.image_path = prefix + '.jpg'
 
     # Generate thumbnail
-    subprocess.Popen([settings.FFMPEG_PATH, '-i', os.path.join(settings.DOWNLOAD_DIR, video.original_path), '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + video.image_path])
+    subprocess.Popen([settings.FFMPEG_PATH, '-i', os.path.join(settings.DOWNLOAD_DIR, video.original_path), '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', settings.DOWNLOAD_DIR + video.image_path], stdout = FNULL, stderr = FNULL)
     # Convert to WebM
-    subprocess.Popen([settings.FFMPEG_PATH, '-i', os.path.join(settings.DOWNLOAD_DIR, video.original_path), '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + video.webm_path])
+    subprocess.Popen([settings.FFMPEG_PATH, '-i', os.path.join(settings.DOWNLOAD_DIR, video.original_path), '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', settings.DOWNLOAD_DIR + video.webm_path], stdout = FNULL, stderr = FNULL)
 
     video.status = 'Transcoding'
     video.save()

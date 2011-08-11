@@ -20,7 +20,7 @@
 # Includes ##########################################################
 
 from django.conf import settings
-from plebia.wall.models import Video
+from plebia.wall.models import Video, SeriesSeason
 
 import re
 import subprocess
@@ -43,7 +43,8 @@ def locate_video(episode):
     video = Video()
     # If it's a season torrent, need to find the right episode file/directory first
     if torrent.type == 'season':
-        torrent_path = locate_episode_in_season_torrent(episode)
+        season_path = locate_season_in_season_torrent(episode)
+        torrent_path = locate_episode_in_season_torrent(episode, subpath=season_path)
 
         # If the episode path couldn't be found, we won't find the video for this torrent
         if torrent_path is None:
@@ -78,20 +79,60 @@ def locate_video(episode):
     return video
 
 
-def locate_episode_in_season_torrent(episode):
+def locate_season_in_season_torrent(episode, subpath=''):
+    """A season torrent can contain several seasons - Register all seasons found and return path to the current episode's season"""
+
     torrent = episode.torrent
-    torrent_path = torrent.name
+    torrent_path = os.path.join(torrent.name, subpath)
+    torrent_dir = os.path.join(settings.DOWNLOAD_DIR, torrent_path)
+    season = episode.season
+    season_path = ''
+
+    # Try to match the directories against a season name/number
+    for filename in os.listdir(torrent_dir):
+        if os.path.isdir(os.path.join(torrent_dir, filename)):
+            # If the dir name matches a season name, get its number
+            m1 = re.search(r"season[ -_\.]*([0-9])+", filename, re.IGNORECASE)
+            m2 = re.search(r"s[ -_\.]*([0-9])+$", filename, re.IGNORECASE)
+            if m1 is not None:
+                number = int(m1.group(1))
+            elif m2 is not None:
+                number = int(m2.group(1))
+            else:
+                locate_season_in_season_torrent(episode, subpath=os.path.join(subpath, filename))
+                continue
+
+            # Register the torrent for this season if necessary
+            cur_season = SeriesSeason.objects.get_or_create(number=number, series=season.series)[0]
+            if cur_season.torrent is None:
+                cur_season.torrent = torrent
+
+            cur_season.save()
+
+            # If it's the season we are looking for, return it
+            if season.number == number:
+                season_path = os.path.join(subpath, filename)
+
+    return season_path
+
+
+def locate_episode_in_season_torrent(episode, subpath=''):
+    """A season contains several episodes - find the path to the one from the episode object (from within subpath)"""
+
+    torrent = episode.torrent
+    torrent_path = os.path.join(torrent.name, subpath)
     season = episode.season
 
     # Try to match the file/dirs against the episode number
     for filename in os.listdir(os.path.join(settings.DOWNLOAD_DIR, torrent_path)):
-        print 'locate_episode_in_season_torrent: ' + filename
-        if re.search(r"s%02de%02d" % (season.number, episode.number), filename) \
-                or re.search(r"s%de%02d" % (season.number, episode.number), filename) \
-                or re.search(r"s%de%d" % (season.number, episode.number), filename) \
-                or re.search(r"s%02de%d" % (season.number, episode.number), filename):
+        if re.search(r"s%02de%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
+        or re.search(r"s%de%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
+        or re.search(r"s%de%d" % (season.number, episode.number), filename, re.IGNORECASE) \
+        or re.search(r"s%02de%d" % (season.number, episode.number), filename, re.IGNORECASE) \
+        or re.search(r"s%02d%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
+        or re.search(r"s%d%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
+        or re.search(r"s%d%d" % (season.number, episode.number), filename, re.IGNORECASE):
             episode_path = os.path.join(torrent_path, filename)
-            print 'FOUND EPISODE PATH => ' + episode_path
             return episode_path
 
     return None
@@ -104,7 +145,6 @@ def get_videos_from_directory(dir_path):
     video_filename_list = list()
     for filename_short in os.listdir(os.path.join(settings.DOWNLOAD_DIR, dir_path)):
         filename = os.path.join(dir_path, filename_short)
-        print filename
 
         # Go recursively into subdirectories
         if os.path.isdir(os.path.join(settings.DOWNLOAD_DIR, filename)):
@@ -115,7 +155,6 @@ def get_videos_from_directory(dir_path):
         (file_type, file_encoding) = mimetypes.guess_type(os.path.join(settings.DOWNLOAD_DIR, filename))
         if file_type is not None and file_type.startswith('video'):
             video_filename_list.append(filename)
-            print 'VIDEO => ' + filename
 
     return video_filename_list
 

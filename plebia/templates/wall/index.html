@@ -24,10 +24,9 @@
 <body> 
     <div class="stream">
         <div class="plebia_updates">
-            <b>Last updates (Sun Jul 31st):</b><br />
+            <b>Last updates (Thu Aug 12th):</b><br />
             <ul>
-                <li>Now videos can be paused, resumed and moved forward/backward at any point, once they have been fully transcoded</li>
-                <li>Fixed mulitple issues with progress bars when several videos are loading at the same time</li>
+                <li>Improved finding of torrents (now retreives full seasons too)</li>
             </ul>
         </div>
         <div class="stream_new_post">
@@ -65,7 +64,7 @@
                         <img src="/static/img/download.png" class="download_icon" />
                     </a></div>
                 <div class="post_content">
-                    {% if not torrent %}
+                    {% if not torrent or video.status == 'Not found' %}
                         <div class="torrent_not_found">
                             <img src="/static/img/monster.jpg" class="monster_icon" />
                             <div class="torrent_not_found_msg">I'm sorry, I couldn't find your video : (<br />But try to enter another one, I'll go get it! :D</div>

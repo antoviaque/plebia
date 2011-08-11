@@ -24,6 +24,7 @@ from django.conf import settings
 
 from plebia.wall.management.commands import torrent_update
 from plebia.wall.management.commands import video_update
+from plebia.wall.models import *
 
 from mock import Mock, patch
 import json
@@ -81,7 +82,7 @@ class CardstoriesTest(TestCase):
         self.assertContains(response, '<p>No posts yet.</p>', count=1)
 
 
-    def test_010_add_post_new_episode(self):
+    def test_add_post_new_episode(self):
         """Add a new episode to the stream (real search engine query, individual episode)"""
 
         c = self.client
@@ -140,7 +141,7 @@ class CardstoriesTest(TestCase):
 
 
     @patch('plebia.wall.torrentutils.submit_form')
-    def test_020_add_post_season(self, mock_submit_form):
+    def test_add_post_season(self, mock_submit_form):
         """Add an episode by downloading a full season (first and second episode of the same season)"""
 
         # Part 1 - Add first episode of this season #################
@@ -285,6 +286,125 @@ Tracker status: """
         self.api_check('video', 2, {'status': 'Transcoding'})
 
 
+
+    def create_fake_season(self, name="Test"):
+        series = Series()
+        series.name = name
+        series.save()
+
+        season = SeriesSeason()
+        season.number = 2
+        season.series = series
+        season.save()
+
+        return season
+
+
+    def create_fake_torrent(self, name="Test", status="Downloading", type="episode"):
+        # Fake the newly downloaded torrent
+        torrent = Torrent()
+        torrent.hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent.name = name
+        torrent.type = type
+        torrent.status = status
+        torrent.seeds = 10
+        torrent.peers = 10
+        torrent.save()
+
+        # Create torrent directory
+        shutil.rmtree(settings.TEST_DOWNLOAD_DIR, ignore_errors=True)
+        os.mkdir(settings.TEST_DOWNLOAD_DIR)
+        os.mkdir(os.path.join(settings.TEST_DOWNLOAD_DIR, torrent.name))
+        settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
+
+        return torrent
+
+
+    def test_video_not_found_in_torrent(self):
+        """When a season torrent is successfully downloaded, but the video for this episode can't be found"""
+
+        # Fake episode & post
+        name = 'Test episode not found in season'
+        episode = SeriesSeasonEpisode(number=10)
+        episode.season = self.create_fake_season(name=name)
+        episode.torrent = self.create_fake_torrent(name=name)
+        episode.save()
+        post = Post(episode=episode).save()
+
+        # Go to 'Completed mode to trigger episode search within torrent downloaded files
+        episode.torrent.status = 'Completed'
+        episode.torrent.save()
+
+        # Directory is empty so video should be marked as not found
+        self.api_check('video', 1, {'status': 'Not found'})
+
+        # And homepage should display error message
+        response = self.client.get("/")
+        self.assertContains(response, '<div class="torrent_not_found_msg">', count=1)
+
+
+    @patch('plebia.wall.torrentutils.submit_form')
+    def test_select_season_over_episode_when_few_seeds(self, mock_submit_form):
+        """When an episode torrent is found but has only a few seeds, prefer the season"""
+
+        c = self.client
+        url = "/"
+        data = {"name": "Test2",
+                "season": 2,
+                "episode": 4}
+        
+        # Fake the results from the search engine
+        values = [
+                """<div class="results"><dl>
+                        <dt><a href="/cccccccccccccccccccccccccccccccccccccccc">Test2 season 2</a></dt>
+                        <dd><span class="s">1000 Mb</span> <span class="u">103</span> <span class="d">38</span></dd>
+                   </dl></div>""",
+                """<div class="results"><dl>
+                        <dt><a href="/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb">Test2 s02e04</a></dt>
+                        <dd><span class="s">2643 Mb</span> <span class="u">3</span> <span class="d">4</span></dd>
+                   </dl></div>"""]
+        # Return different values for the two calls to the search engine (first: episode, second: season)
+        def side_effect(url, text):
+            return values.pop()
+        mock_submit_form.side_effect = side_effect
+        
+        # Submit & check state
+        response = c.post(url, data, follow=True)
+        self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'hash': 'cccccccccccccccccccccccccccccccccccccccc', 'name': '', 'type': 'season'})
+
+
+    def test_find_video_in_multiple_seasons_torrent(self):
+        """Support multiple seasons torrent - Register all included seasons & find video"""
+
+        # Fake episode & post
+        name = 'Test multiple seasons'
+        episode = SeriesSeasonEpisode(number=10)
+        episode.season = self.create_fake_season(name=name)
+        episode.torrent = self.create_fake_torrent(name=name, type="season")
+        episode.save()
+
+        # Build directory with multiple folders, one for each season
+        torrent_dir = os.path.join(settings.TEST_DOWNLOAD_DIR, episode.torrent.name)
+        os.mkdir(os.path.join(torrent_dir, 'Season 1'))
+        os.mkdir(os.path.join(torrent_dir, 'SeaSon2'))
+        shutil.copy2(settings.TEST_VIDEO_PATH, os.path.join(torrent_dir, 'SeaSon2', 'S02E10.avi'))
+        os.mkdir(os.path.join(torrent_dir, 'S3'))
+        os.mkdir(os.path.join(torrent_dir, 's04'))
+
+        # Go to Completed to trigger season & episode search within torrent downloaded files
+        episode.torrent.status = 'Completed'
+        episode.torrent.save()
+
+        # Check that the season/episode/video was found
+        self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, 'SeaSon2', 'S02E10.avi') })
+
+        # Check that all seasons have been matched
+        self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('seriesseason', 2, {'number': 1, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('seriesseason', 3, {'number': 3, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('seriesseason', 4, {'number': 4, 'torrent': '/api/v1/torrent/1/'})
+        
+        
 
 
 
