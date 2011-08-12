@@ -40,7 +40,7 @@ import os, shutil
 
 # TODO Test API along the way
 
-class CardstoriesTest(TestCase):
+class PlebiaTest(TestCase):
     #fixtures = ['video.json']
 
     def api_check(self, model, id, value_dict):
@@ -288,15 +288,8 @@ Tracker status: """
 
 
     def create_fake_season(self, name="Test"):
-        series = Series()
-        series.name = name
-        series.save()
-
-        season = SeriesSeason()
-        season.number = 2
-        season.series = series
-        season.save()
-
+        series = Series.objects.get_or_create(name=name)[0]
+        season = SeriesSeason.objects.get_or_create(number=2, series=series)[0]
         return season
 
 
@@ -376,7 +369,7 @@ Tracker status: """
     def test_find_video_in_multiple_seasons_torrent(self):
         """Support multiple seasons torrent - Register all included seasons & find video"""
 
-        # Fake episode & post
+        # Fake episode
         name = 'Test multiple seasons'
         episode = SeriesSeasonEpisode(number=10)
         episode.season = self.create_fake_season(name=name)
@@ -404,7 +397,40 @@ Tracker status: """
         self.api_check('seriesseason', 3, {'number': 3, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('seriesseason', 4, {'number': 4, 'torrent': '/api/v1/torrent/1/'})
         
-        
+    
+    def _test_find_single_episode_in_season_torrent(self, number, filename):
+        """Helper method, to test finding a single episode name inside a season torrent
+        The episode 'number' argument should be 1 on first call within same test method, and increase by 1 each call"""
+
+        # Fake episode
+        name = 'Test episode names within seasons'
+        episode = SeriesSeasonEpisode(number=number)
+        episode.season = self.create_fake_season(name=name)
+        episode.torrent = self.create_fake_torrent(name=name, type="season")
+        episode.save()
+
+        # Copy test file to episode name to test
+        torrent_dir = os.path.join(settings.TEST_DOWNLOAD_DIR, episode.torrent.name)
+        shutil.copy2(settings.TEST_VIDEO_PATH, os.path.join(torrent_dir, filename))
+
+        # Go to Completed to trigger season & episode search within torrent downloaded files
+        episode.torrent.status = 'Completed'
+        episode.torrent.save()
+
+        # Check that the season/episode/video was found
+        self.api_check('video', number, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, filename) })
+
+
+    def test_find_episodes_in_season_torrent(self):
+        """Match episodes against their number inside a season torrent"""
+
+        self._test_find_single_episode_in_season_torrent(1, 's02e01.avi')
+        self._test_find_single_episode_in_season_torrent(2, 'S2e02.avi')
+        self._test_find_single_episode_in_season_torrent(3, 's2e3.avi')
+        self._test_find_single_episode_in_season_torrent(4, '204.avi')
+        self._test_find_single_episode_in_season_torrent(5, '0205.avi')
+        self._test_find_single_episode_in_season_torrent(6, 'Season 2 - Episode 6.avi')
+        self._test_find_single_episode_in_season_torrent(7, 'season 02 episode 07.avi')
 
 
 
