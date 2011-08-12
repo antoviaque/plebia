@@ -123,8 +123,10 @@ def locate_episode_in_season_torrent(episode, subpath=''):
     torrent_path = os.path.join(torrent.name, subpath)
     season = episode.season
 
-    # Try to match the file/dirs against the episode number
     for filename in os.listdir(os.path.join(settings.DOWNLOAD_DIR, torrent_path)):
+        filename_fullpath = os.path.join(settings.DOWNLOAD_DIR, torrent_path, filename)
+        
+        # Try to match the file/dirs against the episode number
         if re.search(r"s%02de%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
         or re.search(r"s%de%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
         or re.search(r"s%de%d" % (season.number, episode.number), filename, re.IGNORECASE) \
@@ -134,8 +136,18 @@ def locate_episode_in_season_torrent(episode, subpath=''):
         or re.search(r"s%d%d" % (season.number, episode.number), filename, re.IGNORECASE) \
         or re.search(r"%d%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
         or re.search(r"season[ -_\.0]*%d[ -_\.]*episode[ -_\.0]*%d" % (season.number, episode.number), filename, re.IGNORECASE):
-            episode_path = os.path.join(torrent_path, filename)
-            return episode_path
+            # Check that this is a video or a folder
+            (file_type, file_encoding) = mimetypes.guess_type(filename_fullpath)
+            if (file_type is not None and file_type.startswith('video')) \
+                    or os.path.isdir(filename_fullpath):
+                episode_path = os.path.join(torrent_path, filename)
+                return episode_path
+
+        # Look for episodes recursively in folders
+        elif os.path.isdir(filename_fullpath):
+            episode_path = locate_episode_in_season_torrent(episode, os.path.join(subpath, filename))
+            if episode_path is not None:
+                return episode_path
 
     return None
         

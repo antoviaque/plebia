@@ -433,4 +433,29 @@ Tracker status: """
         self._test_find_single_episode_in_season_torrent(7, 'season 02 episode 07.avi')
 
 
+    def test_find_single_episode_in_season_torrent_subfolder(self):
+        """When a season torrent has one season, but all its episodes contained in a subfolder"""
+
+        # Fake episode
+        name = 'Test episode name within season torrent subfolder'
+        filename = 'Test - 201 - Title.avi'
+        episode = SeriesSeasonEpisode(number=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.torrent = self.create_fake_torrent(name=name, type="season")
+        episode.save()
+
+        # Copy test file to episode name to test
+        torrent_dir = os.path.join(settings.TEST_DOWNLOAD_DIR, episode.torrent.name, 'sub folder')
+        os.mkdir(torrent_dir)
+        shutil.copy2(settings.TEST_VIDEO_PATH,os.path.join(torrent_dir, filename))
+
+        # Go to Completed to trigger season & episode search within torrent downloaded files
+        episode.torrent.status = 'Completed'
+        episode.torrent.save()
+
+        # Check that the season/episode/video was found
+        self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, 'sub folder', filename) })
+
+
+
 
