@@ -33,7 +33,15 @@ import os, shutil
 
 # Helpers ###########################################################
 
+import os, errno
 
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST:
+            pass
+        else: raise
 
 
 # Tests #############################################################
@@ -305,9 +313,8 @@ Tracker status: """
         torrent.save()
 
         # Create torrent directory
-        shutil.rmtree(settings.TEST_DOWNLOAD_DIR, ignore_errors=True)
-        os.mkdir(settings.TEST_DOWNLOAD_DIR)
-        os.mkdir(os.path.join(settings.TEST_DOWNLOAD_DIR, torrent.name))
+        mkdir_p(settings.TEST_DOWNLOAD_DIR)
+        mkdir_p(os.path.join(settings.TEST_DOWNLOAD_DIR, torrent.name))
         settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
 
         return torrent
@@ -398,12 +405,11 @@ Tracker status: """
         self.api_check('seriesseason', 4, {'number': 4, 'torrent': '/api/v1/torrent/1/'})
         
     
-    def _test_find_single_episode_in_season_torrent(self, number, filename):
+    def _test_find_single_episode_in_season_torrent(self, name, number, filename):
         """Helper method, to test finding a single episode name inside a season torrent
         The episode 'number' argument should be 1 on first call within same test method, and increase by 1 each call"""
 
         # Fake episode
-        name = 'Test episode names within seasons'
         episode = SeriesSeasonEpisode(number=number)
         episode.season = self.create_fake_season(name=name)
         episode.torrent = self.create_fake_torrent(name=name, type="season")
@@ -421,16 +427,24 @@ Tracker status: """
         self.api_check('video', number, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, filename) })
 
 
+    def create_fake_video(self, name, video_filename):
+        torrent_dir = os.path.join(settings.TEST_DOWNLOAD_DIR, name)
+        shutil.copy2(settings.TEST_VIDEO_PATH, os.path.join(torrent_dir, video_filename))
+
     def test_find_episodes_in_season_torrent(self):
         """Match episodes against their number inside a season torrent"""
 
-        self._test_find_single_episode_in_season_torrent(1, 's02e01.avi')
-        self._test_find_single_episode_in_season_torrent(2, 'S2e02.avi')
-        self._test_find_single_episode_in_season_torrent(3, 's2e3.avi')
-        self._test_find_single_episode_in_season_torrent(4, '204.avi')
-        self._test_find_single_episode_in_season_torrent(5, '0205.avi')
-        self._test_find_single_episode_in_season_torrent(6, 'Season 2 - Episode 6.avi')
-        self._test_find_single_episode_in_season_torrent(7, 'season 02 episode 07.avi')
+        name = 'Test find episode in season'
+        shutil.rmtree(settings.TEST_DOWNLOAD_DIR, ignore_errors=True)
+
+        self._test_find_single_episode_in_season_torrent(name, 1, 's02e01.avi')
+        self.create_fake_video(name, 'S02E20.avi') # Create potential false positive
+        self._test_find_single_episode_in_season_torrent(name, 2, 'S02E02.avi')
+        self._test_find_single_episode_in_season_torrent(name, 3, 's2e3.avi')
+        self._test_find_single_episode_in_season_torrent(name, 4, '204.avi')
+        self._test_find_single_episode_in_season_torrent(name, 5, '0205.avi')
+        self._test_find_single_episode_in_season_torrent(name, 6, 'Season 2 - Episode 6.avi')
+        self._test_find_single_episode_in_season_torrent(name, 7, 'season 02 episode 07.avi')
 
 
     def test_find_single_episode_in_season_torrent_subfolder(self):
