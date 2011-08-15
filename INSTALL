@@ -74,6 +74,12 @@ Configure apache to serve:
         AllowOverride All
     </Directory>
 
+    Alias /media/ "/usr/local/lib/python2.6/dist-packages/django/contrib/admin/media/"
+    <Directory "/usr/local/lib/python2.6/dist-packages/django/contrib/admin/media/">
+        Options -Indexes
+        AllowOverride All
+    </Directory>
+
     ProxyPass / http://localhost:7070/
     ProxyPassReverse / http://localhost:7070/
 

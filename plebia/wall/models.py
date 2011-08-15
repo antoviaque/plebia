@@ -58,6 +58,10 @@ class Torrent(models.Model):
     seeds = models.IntegerField('seeds')
     peers = models.IntegerField('peers')
 
+    def __unicode__(self):
+        return ("%s %s %s" % (self.name, self.hash, self.type))
+
+
 class Video(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     status = models.CharField(max_length=20, choices=VIDEO_STATUSES, default='New')
@@ -67,15 +71,27 @@ class Video(models.Model):
     ogv_path = models.CharField(max_length=200, blank=True)
     image_path = models.CharField(max_length=200, blank=True)
 
+    def __unicode__(self):
+        return ("%s %s" % (self.original_path, self.status))
+
+
 class Series(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     name = models.CharField(max_length=200)
+
+    def __unicode__(self):
+        return ("%s" % (self.name))
+
 
 class SeriesSeason(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     number = models.IntegerField('number')
     series = models.ForeignKey(Series)
     torrent = models.ForeignKey(Torrent, null=True)
+    
+    def __unicode__(self):
+        return ("%s (season %s)" % (self.series, self.number))
+
 
 class SeriesSeasonEpisode(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
@@ -84,10 +100,17 @@ class SeriesSeasonEpisode(models.Model):
     season = models.ForeignKey(SeriesSeason)
     torrent = models.ForeignKey(Torrent, null=True, blank=True)
     video = models.ForeignKey(Video, null=True, blank=True)
+    
+    def __unicode__(self):
+        return ("%s (number %d)" % (self.season, self.number))
+
 
 class Post(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     episode = models.ForeignKey(SeriesSeasonEpisode)
+    
+    def __unicode__(self):
+        return ("%s" % (self.episode))
 
 
 # Forms #############################################################
