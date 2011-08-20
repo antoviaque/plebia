@@ -168,18 +168,12 @@ function show_video(id, callback) {
 // Main /////////////////////////////////////////////////////////////
 
 $(function() {
-    // Dress buttons
-    $('input:submit').button();
-
     // Dress progress bars
     $(".torrent_progress_bar").each(function() {
         $(this).progressbar({
             value: Math.round($(this).attr('data'))
         });
     });
-
-    // Load auto-suggest
-    $("#id_name").suggest({type:'/tv/tv_program'});
 
     // Load all videos on the page
     var myManyPlayers = VideoJS.setup("All", {
@@ -190,19 +184,9 @@ $(function() {
         linksHiding: true // Hide download links when video is supported
     });
 
-    // Next episode link submits a form
-    $('.stream_post .next_episode a').click(function(){
-        $(this).parent().submit();
-        return false;
-    });
-
     // Start page refreshes
     torrent_update();
     video_update();
 
-    // Add feedback tab
-    var uv = document.createElement('script'); uv.type = 'text/javascript'; uv.async = true;
-    uv.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'widget.uservoice.com/6PhXO6580egdGy3eefwsAg.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(uv, s);
 });
 

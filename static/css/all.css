@@ -38,11 +38,7 @@ a {
 
 /* Stream **********************************************************/
 
-.stream .ui-widget {
-    font-size: 10pt;
-}
-
-.stream {
+.plebia {
     position: absolute;
     width: 750px;
     left: 50%;
@@ -52,7 +48,7 @@ a {
 
 /* Header **********************************************************/
 
-.plebia_updates {
+.plebia .plebia_updates {
     width: 300px;
     float: left;
     padding: 5px 20px 10px 20px;
@@ -66,7 +62,7 @@ a {
 
 /* New post ********************************************************/
 
-.stream_new_post {
+.plebia .plebia_new_post {
     width: 300px;
     margin-left: auto;
     padding: 5px 20px 10px 20px;
@@ -75,15 +71,20 @@ a {
     border: 1px solid #dedede;
 }
 
-.stream_new_post input {
+.plebia_stream_new_post input {
     float: right;
     right: 0px;
 }
 
+/* Templates *******************************************************/
+
+.plebia .plebia_post_templates {
+    display: none;
+}
 
 /* Post ************************************************************/
 
-.stream_post {
+.plebia .plebia_stream .plebia_post {
     margin: 20px;
     padding-left: 70px;
     border-style: dotted;
@@ -92,28 +93,28 @@ a {
     padding-bottom: 20px;
 }
 
-.stream_post .user_avatar {
+.plebia .plebia_stream .plebia_post .plebia_user_avatar {
     position: absolute;
     left: 0px;
 }
 
-.stream_post .user_name {
+.plebia .plebia_stream .plebia_post .plebia_user_name {
     font-weight: bold;
     display: inline;
 }
 
-.stream_post .post_time {
+.plebia .plebia_stream .plebia_post .plebia_post_time {
     display: inline;
     color: grey;
     font-size: 10pt;
 }
 
-.stream_post .post_title img.download_icon {
+.plebia .plebia_stream .plebia_post .plebia_post_title img.plebia_download_icon {
     width: 15px;
     height: 15px;
 }
 
-.stream_post .next_episode a {
+.plebia .plebia_stream .plebia_post .plebia_next_episode a {
     float: right;
     font-weight: normal;
     margin-top: 10px;
@@ -121,32 +122,32 @@ a {
 
 /* Progress */
 
-.stream_post .torrent_progress_info {
+.plebia .plebia_stream .plebia_post .plebia_torrent_progress_info {
     margin: 20px 0 20px 0;
     text-align: center;
 }
 
-.stream_post .torrent_progress_bar {
+.plebia .plebia_stream .plebia_post .plebia_torrent_progress_bar {
     margin: 0 0 20px 0;
 }
 
-.stream_post .torrent_progress {
+.plebia .plebia_stream .plebia_post .plebia_torrent_progress {
     display: none;
 }
 
-.stream_post .video_transcoding_in_progress,
-.stream_post .video_transcoding_done {
+.plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress,
+.plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
     font-size: 9pt;
     font-style: italic;
     margin: 5px;
 }
 
-.stream_post .video_transcoding_done {
+.plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
     display: none;
 }
 
-.stream_post .video_transcoding_in_progress img,
-.stream_post .video_transcoding_done img {
+.plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress img,
+.plebia .plebia_stream .plebia_post .plebia_video_transcoding_done img {
     width: 20px;
     height: 20px;
     float: left;
@@ -155,14 +156,14 @@ a {
 
 /* Not found */
 
-.stream_post .torrent_not_found img {
+.plebia .plebia_stream .plebia_post .plebia_torrent_not_found img {
     width: 200px;
     height: 200px;
     float: left;
     margin: 10px 20px 10px 50px;
 }
 
-.stream_post .torrent_not_found .torrent_not_found_msg {
+.plebia .plebia_stream .plebia_post .plebia_torrent_not_found .plebia_torrent_not_found_msg {
     padding-top: 70px;
     padding-bottom: 70px;
 }
@@ -170,7 +171,7 @@ a {
 
 /* Footer **********************************************************/
 
-.footer {
+.plebia .plebia_footer {
     font-size: 9pt;
     width: 100%;
     text-align: center;
