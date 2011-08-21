@@ -62,8 +62,9 @@ def add_new_post(form):
     season, created = SeriesSeason.objects.get_or_create(number=season_number, series=series)
     # SeriesSeasonEpisode
     episode_number = form.cleaned_data['episode']
-    episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number,
-            season=season)
+    episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number, season=season)
+    # Also add next episode, to download it while we watch
+    next_episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number+1, season=season)
 
     # And finally the Post object itself
     post = Post()

@@ -444,26 +444,26 @@
                 if(episode.video) {
                     $this.set_object_id_in_dom('video', episode.video, post_dom);
                     $.when($this.get_api_object('video', post_dom)).done(function(video) {
-                        if(video.status == 'Error') {
-                            deferred.resolve('error');
+                        if(video.status == 'New') {
+                            deferred.resolve('downloading');
+                        } else if(video.status == 'Transcoding') {
+                            deferred.resolve('transcoding_not_ready');
                         } else if(video.status == 'Completed') {
                             deferred.resolve('all_ready');
-                        //} else if(video.status == 'Transcoding') {
-                        //    deferred.resolve('transcoding_ready');
                         } else {
-                            deferred.resolve('transcoding_not_ready');
+                            deferred.resolve('error');
                         }
                     });
                 // Torrent processing
                 } else if(episode.torrent) {
                     $this.set_object_id_in_dom('torrent', episode.torrent, post_dom);
                     $.when($this.get_api_object('torrent', post_dom)).done(function(torrent) {
-                        if(torrent.status == 'Error') {
-                            deferred.resolve('error');
-                        } else if(torrent.status == 'New') {
+                        if(torrent.status == 'New') {
                             deferred.resolve('searching');
-                        } else {
+                        } else if(torrent.status=='Downloading' || torrent.status=='Completed') {
                             deferred.resolve('downloading');
+                        } else {
+                            deferred.resolve('error');
                         }
                     });
                 } else {
@@ -575,7 +575,7 @@
                     $('.plebia_post_title', post_dom).html(title);
 
                     $this.get_download_url(post_dom).then(function(url) {
-                        $('.plebia_download .video_link').attr('href', url);
+                        $('.plebia_download .video_link', post_dom).attr('href', url);
 
                         deferred.resolve();
                     });
