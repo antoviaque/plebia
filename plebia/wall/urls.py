@@ -41,6 +41,5 @@ v1_api.register(PostResource())
 urlpatterns = patterns('wall.views',
     (r'^$', 'index'),
     (r'^api/', include(v1_api.urls)),
-    (r'^ajax/video/(?P<post_id>\d+)/$', 'video'),
 )
 

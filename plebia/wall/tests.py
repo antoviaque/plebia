@@ -78,16 +78,9 @@ class PlebiaTest(TestCase):
         response = c.get("/")
         self.assertEqual(response.status_code, 200)
         self.assertTrue('form' in response.context)
-        self.assertTrue('preload' in response.context)
-        self.assertTrue('latest_post_list' in response.context)
 
-        # We start with an empty db
-        self.assertEqual(len(response.context['latest_post_list']), 0)
-
-        # User should see one form
-        self.assertContains(response, '<form action="/" method="post">', count=1)
-        # and no post
-        self.assertContains(response, '<p>No posts yet.</p>', count=1)
+        # User should see one form + another one in templates
+        self.assertContains(response, '<form action="/" method="post">', count=2)
 
 
     def test_add_post_new_episode(self):
@@ -133,14 +126,6 @@ class PlebiaTest(TestCase):
         response = c.post(url, data)
         self.assertEqual(response.status_code, 302)
 
-        # Check that the episode is correctly visible on the home page
-        response = c.get("/")
-        self.assertEqual(len(response.context['latest_post_list']), 1)
-        self.assertContains(response, '<input type="hidden" name="episode_api_url" class="episode_api_url" value="/api/v1/seriesseasonepisode/1/" />', count=1)
-        self.assertContains(response, '<input type="hidden" name="torrent_api_url" class="torrent_api_url" value="/api/v1/torrent/1/" />', count=1)
-        self.assertContains(response, '<input type="hidden" name="video_api_url" class="video_api_url" value="" />', count=1)
-        self.assertContains(response, 'Pioneer One - Season 1, Episode 2', count=1)
-
         # Check model objects through API
         self.api_check('seriesseasonepisode', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
         self.api_check('seriesseason', 1, {'number': 1, 'torrent': None})
@@ -174,7 +159,6 @@ class PlebiaTest(TestCase):
         
         # Submit & check state
         response = c.post(url, data, follow=True)
-        self.assertContains(response, 'Test - Season 2, Episode 4', count=1)
         self.api_check('seriesseasonepisode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
         self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': ''})
@@ -189,7 +173,6 @@ class PlebiaTest(TestCase):
         
         # Submit & check state
         response = c.post(url, data, follow=True)
-        self.assertContains(response, 'Test - Season 2, Episode 8', count=1)
         self.api_check('seriesseasonepisode', 2, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
         self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': ''})
@@ -210,7 +193,7 @@ class PlebiaTest(TestCase):
         deluge_output = """
 Name: """ + torrent_name + """
 ID: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-State: Downloading Down Speed: 361.0 KiB/s Up Speed: 0.0 KiB/s ETA: 8m 4s
+State: Downloading Down Speed: 361.0 KiB/s Up Speed: 10.0 KiB/s ETA: 8m 4s
 Seeds: 25 (28) Peers: 4 (388) Availability: 29.01
 Size: 4.4 MiB/175.0 MiB Ratio: 0.000
 Seed time: 0 days 00:00:00 Active: 0 days 00:01:33
@@ -223,7 +206,7 @@ Progress: 2.50% [#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]""
         # Check state
         self.api_check('seriesseasonepisode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
         self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
-        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 2.50, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': torrent_name})
+        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 2.50, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': torrent_name, 'download_speed': '361.0 KiB/s', 'upload_speed': '10.0 KiB/s', 'eta': '8m 4s'})
         self.api_check('video', 1, None)
 
         # Part 4 - Complete download, start transcoding #############
@@ -273,17 +256,6 @@ Tracker status: """
                 'ogv_path': os.path.join(torrent_name, 's02e08', 'test2.ogv'), \
                 'image_path': os.path.join(torrent_name, 's02e08', 'test2.jpg'), \
         })
-
-        # Get the home page & ajax video pages, to check that the videos are now displayed there
-        response = c.get("/")
-        self.assertEqual(len(response.context['latest_post_list']), 2)
-        self.assertContains(response, '<source src="/static/stream.php?file_path=' + os.path.join(torrent_name, 's02e04', 'test1.webm') + "\" type='video/webm; codecs=\"vp8, vorbis\"' />", count=1)
-        self.assertContains(response, '<source src="/static/stream.php?file_path=' + os.path.join(torrent_name, 's02e08', 'test2.webm') + "\" type='video/webm; codecs=\"vp8, vorbis\"' />", count=1)
-
-        response = c.get("/ajax/video/1/")
-        self.assertContains(response, '<source src="/static/stream.php?file_path=' + os.path.join(torrent_name, 's02e04', 'test1.webm') + "\" type='video/webm; codecs=\"vp8, vorbis\"' />", count=1)
-        response = c.get("/ajax/video/2/")
-        self.assertContains(response, '<source src="/static/stream.php?file_path=' + os.path.join(torrent_name, 's02e08', 'test2.webm') + "\" type='video/webm; codecs=\"vp8, vorbis\"' />", count=1)
 
         # Part 5 - Video status update ##############################
 
@@ -337,10 +309,6 @@ Tracker status: """
 
         # Directory is empty so video should be marked as not found
         self.api_check('video', 1, {'status': 'Not found'})
-
-        # And homepage should display error message
-        response = self.client.get("/")
-        self.assertContains(response, '<div class="torrent_not_found_msg">', count=1)
 
 
     @patch('plebia.wall.torrentutils.submit_form')

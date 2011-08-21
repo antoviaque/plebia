@@ -34,7 +34,7 @@ class VideoResource(ModelResource):
 class TorrentResource(ModelResource):
     class Meta:
         queryset = Torrent.objects.all().order_by('-date_added')
-        fields = ["date_added","hash","id","name","peers","progress","seeds","status","type"]
+        fields = ["date_added","hash","id","name","peers","progress","seeds","status","type","download_speed","upload_speed","eta"]
 
 class SeriesResource(ModelResource):
     class Meta:

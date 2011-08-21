@@ -120,6 +120,27 @@ Tracker status:(?P<tracker_status>.+)\n?(?P<progress>.*)""", result, re.MULTILIN
             else:
                 torrent['torrent_name'] = None
 
+            # Download speed
+            m2 = re.search(r"Down Speed: (?P<download_speed>\d+\.\d+ .iB.s)", m.group('state'))
+            if m2:
+                torrent['torrent_download_speed'] = m2.group('download_speed')
+            else:
+                torrent['torrent_download_speed'] = "0 KiB/s"
+
+            # Upload speed
+            m2 = re.search(r"Up Speed: (?P<upload_speed>\d+\.\d+ .iB.s)", m.group('state'))
+            if m2:
+                torrent['torrent_upload_speed'] = m2.group('upload_speed')
+            else:
+                torrent['torrent_upload_speed'] = "0 KiB/s"
+
+            # ETA
+            m2 = re.search(r"ETA: (?P<eta>.*)$", m.group('state'))
+            if m2:
+                torrent['torrent_eta'] = m2.group('eta')
+            else:
+                torrent['torrent_eta'] = ""
+
             # Progress isn't shown once completed
             m2 = re.match(r"Progress: (?P<torrent_progress>\d+\.\d+)", m.group('progress'))
             if m2:
@@ -148,6 +169,10 @@ def update_download_progress(torrent, deluge_torrent_info):
     # As soon as we get the torrent name, update it
     if deluge_torrent_info['torrent_name'] and torrent.name == "":
         torrent.name = deluge_torrent_info['torrent_name']
+
+    torrent.download_speed = deluge_torrent_info['torrent_download_speed']
+    torrent.upload_speed = deluge_torrent_info['torrent_upload_speed']
+    torrent.eta = deluge_torrent_info['torrent_eta']
     
     torrent.save()
 

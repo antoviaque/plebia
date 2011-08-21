@@ -57,6 +57,9 @@ class Torrent(models.Model):
     progress = models.FloatField('progress', default=0)
     seeds = models.IntegerField('seeds')
     peers = models.IntegerField('peers')
+    download_speed = models.CharField(max_length=20, blank=True)
+    upload_speed = models.CharField(max_length=20, blank=True)
+    eta = models.CharField(max_length=20, blank=True)
 
     def __unicode__(self):
         return ("%s %s %s" % (self.name, self.hash, self.type))

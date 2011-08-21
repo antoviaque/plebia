@@ -63,7 +63,8 @@
 
         setInterval: function(cb, delay) { return $.plebia.window.setInterval(cb, delay); },
 
-        post_state_list: new Array("searching",
+        post_state_list: new Array("new",
+                                   "searching",
                                    "downloading",
                                    "transcoding_not_ready",
                                    "transcoding_ready",
@@ -97,6 +98,13 @@
             var elems = $('.plebia_post', stream);
             var count = elems.length;
 
+            // Make sure posts are loaded even if there is no post
+            if(count==0) {
+                $this.load_new_posts(loaded_post_list, stream, root).done(function() {
+                    deferred.resolve();
+                });
+            }
+
             // Look through posts that are already loaded
             elems.each(function() {
                 var post_dom = $(this);
@@ -107,22 +115,19 @@
 
                 // Refresh individual post when marked
                 if(post_dom.hasClass('plebia_post_update')) {
-                    $this.update_post(post_dom, stream, root);
+                    var dfr1 = $this.update_post(post_dom, stream, root);
+                } else {
+                    var dfr1 = null;
                 }
 
                 if(!--count) { // at the last item
-                    $this.load_new_posts(loaded_post_list, stream, root).done(function() {
+                    var dfr2 = $this.load_new_posts(loaded_post_list, stream, root);
+                    
+                    $.when(dfr1, dfr2).then(function() {
                         deferred.resolve();
                     });
                 }
             });
-
-            // Make sure posts are loaded even if there is no post
-            if(count==0) {
-                $this.load_new_posts(loaded_post_list, stream, root).done(function() {
-                    deferred.resolve();
-                });
-            }
 
            return deferred.promise();
         },
@@ -145,6 +150,9 @@
 
                 // Load them
                 var count = new_post_list.length;
+                if(count == 0) {
+                    deferred.resolve();
+                };
                 $.each(new_post_list, function() {
                     var post_obj = this;
                     count--;
@@ -398,7 +406,8 @@
             // Set the right state class on the post <div> (add current one & remove other states)
 
             $this = this;
-            for(state in $this.post_state_list) {
+            for(i in $this.post_state_list) {
+                var state = $this.post_state_list[i];
                 if(state != obj_state) {
                     post_dom.removeClass('plebia_post_'+state);
                 } else {
@@ -479,9 +488,58 @@
             // Check if we are entering this state now
             if(old_state != 'downloading') {
                 $this.set_post_content_from_template('downloading', post_dom, root);
+
+                // Click on "More" to show download details
+                $('.plebia_more', post_dom).toggle(
+                    function() {
+                        $('.plebia_download_details', post_dom).show('drop', { direction: "up" }, 200);
+                        $('.plebia_more', post_dom).html('Less details...');
+                    },
+                    function() {
+                        $('.plebia_download_details', post_dom).hide('drop', { direction: "up" }, 200);
+                        $('.plebia_more', post_dom).html('More details...');
+                    }                    
+                );
+
+                // Progress bar init
+                $('.plebia_progress_bar', post_dom).progressbar({value: 0});
             }
 
-            deferred.resolve();
+            $.when($this.get_api_object('torrent', post_dom)).done(function(torrent) {
+                // Info message
+                if(torrent.progress < 1.0) {
+                    $('.plebia_info_msg', post_dom).html('Video found! Starting download...');
+                } else if(torrent.progress < 99.0) {
+                    $('.plebia_info_msg', post_dom).html('Downloading...');
+                } else {
+                    $('.plebia_info_msg', post_dom).html('Finishing download...');
+                }
+
+                // Progress % and progress bar
+                var progress = Math.round(torrent.progress*100)/100;
+                $('.plebia_info_progress .plebia_percent', post_dom).html(progress);
+                $('.plebia_info_progress .plebia_eta', post_dom).html(torrent.eta);
+                $('.plebia_progress_bar', post_dom).progressbar('option', 'value', Math.round(progress));
+                // Do not show progress initially
+                if(torrent.progress > 1.0) {
+                    $('.plebia_progress_bar', post_dom).css('display', 'block');
+                    $('.plebia_info_progress', post_dom).css('display', 'inline');
+                } else {
+                    $('.plebia_progress_bar', post_dom).css('display', 'none');
+                    $('.plebia_info_progress', post_dom).css('display', 'none');
+                }
+
+                // Download details
+                var dl_details = $('.plebia_download_details', post_dom);
+                $('.plebia_torrent_name .plebia_value', dl_details).html(torrent.name);
+                $('.plebia_torrent_type .plebia_value', dl_details).html(torrent.type);
+                $('.plebia_torrent_seeds .plebia_value', dl_details).html(torrent.seeds);
+                $('.plebia_torrent_peers .plebia_value', dl_details).html(torrent.peers);
+                $('.plebia_torrent_download_speed .plebia_value', dl_details).html(torrent.download_speed);
+                $('.plebia_torrent_upload_speed .plebia_value', dl_details).html(torrent.upload_speed);
+
+                deferred.resolve();
+            });
 
             return deferred.promise();
         },
@@ -509,9 +567,14 @@
             // Check if we are entering this state now
             if(old_state != 'transcoding_ready') {
                 $this.set_post_content_from_template('transcoding_ready', post_dom, root);
-            }
 
-            deferred.resolve();
+                // Video init
+                $.when($this.get_api_object('video', post_dom)).done(function(video) {
+                    $this.init_video(video, post_dom, true);
+
+                    deferred.resolve();
+                });
+            }
 
             return deferred.promise();
         },
@@ -524,11 +587,42 @@
             // Check if we are entering this state now
             if(old_state != 'all_ready') {
                 $this.set_post_content_from_template('all_ready', post_dom, root);
+
+                // Don't update this post anymore
+                post_dom.removeClass('plebia_post_update');
+
+                // Video init
+                $.when($this.get_api_object('video', post_dom)).done(function(video) {
+                    $this.init_video(video, post_dom, false);
+
+                    deferred.resolve();
+                });
             }
 
-            deferred.resolve();
-
             return deferred.promise();
+        },
+
+        init_video: function(video_obj, post_dom, streaming) {
+            var video_dom = $('video', post_dom);
+
+            // URLs
+            if(streaming) {
+                var video_src = '/static/stream.php?file_path=' + video_obj.webm_path;
+            } else {
+                var video_src = '/downloads/' + video_obj.webm_path;
+            }
+            $('video', post_dom).attr('poster', '/downloads/' + video_obj.image_path);
+            $('source', post_dom).attr('src', video_src);
+            $('.vjs-no-video a', post_dom).attr('href', '/downloads/' + video_obj.webm_path);
+
+            // video.js
+            video_dom.VideoJS({
+                controlsBelow: false, // Display control bar below video instead of in front of
+                controlsHiding: true, // Hide controls when mouse is not over the video
+                defaultVolume: 0.85, // Will be overridden by user's last volume if available
+                flashVersion: 9, // Required flash version for fallback
+                linksHiding: true // Hide download links when video is supported
+            });
         },
 
         /** STATE: error ************************/
@@ -539,6 +633,9 @@
             // Check if we are entering this state now
             if(old_state != 'error') {
                 $this.set_post_content_from_template('error', post_dom, root);
+                
+                // Don't update this post anymore
+                post_dom.removeClass('plebia_post_update');
             }
 
             deferred.resolve();

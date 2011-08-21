@@ -120,20 +120,20 @@ a {
     margin-top: 10px;
 }
 
-/* Progress */
+/* All states */
 
-.plebia .plebia_stream .plebia_post .plebia_torrent_progress_info {
+.plebia .plebia_stream .plebia_post .plebia_info {
     margin: 20px 0 20px 0;
     text-align: center;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_torrent_progress_bar {
-    margin: 0 0 20px 0;
-}
+/* STATE: downloading */
 
-.plebia .plebia_stream .plebia_post .plebia_torrent_progress {
+.plebia .plebia_stream .plebia_post_downloading .plebia_download_details {
     display: none;
 }
+
+/* STATE: transcoding_ready */
 
 .plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress,
 .plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {

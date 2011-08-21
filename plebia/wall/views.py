@@ -47,31 +47,6 @@ def index(request):
 
     return render_to_response('wall/index.html', {
         'form': form,
-        'preload': "none",
-        'latest_post_list': latest_post_list,
-    }, context_instance=RequestContext(request))
-
-def video(request, post_id):
-    '''Return HTML to display when a video is getting ready (ajax)'''
-    try: 
-        post = Post.objects.get(id=post_id)
-    except Post.DoesNotExist:
-        post = "Could not load video"
-
-    episode = post.episode
-    season = episode.season
-    series = season.series
-    torrent = episode.torrent
-    video = episode.video
-
-    return render_to_response('wall/video.html', {
-        'post': post,
-        'episode': episode,
-        'season': season,
-        'series': series,
-        'torrent': torrent,
-        'video': video,
-        'preload': "auto",
     }, context_instance=RequestContext(request))
 
 

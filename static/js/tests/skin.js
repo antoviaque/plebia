@@ -33,6 +33,8 @@
             // Copy base template
             var post_dom = $.plebia.new_base_template(stream, root);
 
+            post_dom.addClass('plebia_post_'+state);
+
             // Post header
             $('.plebia_post_time', post_dom).html('Wed, Aug 3rd - 12:43pm');
             $('.plebia_post_title', post_dom).html(state+' - Season 2, Episode 1');
