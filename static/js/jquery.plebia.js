@@ -254,9 +254,10 @@
                 $.when($this.get_api_object('season', post_dom)).done(function(season) {
                     $.when($this.get_api_object('series', post_dom)).done(function(series) {
                         var title = series.name+' - Season '+season.number+', Episode '+episode.number;
-                        var title_with_icon = title+'&nbsp;&nbsp;<img src="/static/img/download.png" class="plebia_download_icon" />';
-                        $this.get_download_link(title_with_icon, post_dom).done(function(title_link) {
-                            deferred.resolve(title_link);
+                        $this.get_download_url(post_dom).done(function(url) {
+                            title += '&nbsp;&nbsp;<img src="/static/img/download.png" class="plebia_download_icon" />';
+                            var link = '<a href="'+url+'">'+title+'</a>';
+                            deferred.resolve(link);
                         }).fail(function() {
                             deferred.resolve(title);
                         });
@@ -267,21 +268,22 @@
             return deferred.promise();
         },
 
-        get_download_link: function(link_content, post_dom) {
-            // Build a HTML link to the original video of a given post, with link_content as content
+        get_download_url: function(post_dom) {
+            // Build the URL to the original video of a given post, if possible
             $this = this;
             var deferred= $.Deferred();
-            var title = null;
 
-            // See if we can put a download link
             $.when($this.get_api_object('video', post_dom)).done(function(video) {
                 if(video.status == 'Transcoding' || video.status == 'Completed') {
-                    title = '<a href="/downloads/'+video.original_path+'">'+link_content+'</a>';
+                    var url = '/downloads/' + video.original_path;
+                    deferred.resolve(url);
+                } else {
+                    deferred.reject();
                 }
-                deferred.resolve(title);
             }).fail(function() {
                 deferred.reject();
             });
+
             return deferred.promise();
         },
 
@@ -572,7 +574,11 @@
                 $this.get_post_title(post_dom).done(function(title) {
                     $('.plebia_post_title', post_dom).html(title);
 
-                    deferred.resolve();
+                    $this.get_download_url(post_dom).then(function(url) {
+                        $('.plebia_download .video_link').attr('href', url);
+
+                        deferred.resolve();
+                    });
                 });
             }
 
