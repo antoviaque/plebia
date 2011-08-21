@@ -39,7 +39,12 @@
 <body> 
     <div class="plebia">
         <div class="plebia_updates">
-            <b>Last updates (Thu Aug 12th):</b><br />
+            <b>Update - Sun Aug 21th:</b><br />
+            <ul>
+                <li>Improved updates/refreshes</li>
+                <li>Removed streaming during encoding</li>
+            </ul>
+            <b>Update - Thu Aug 12th:</b><br />
             <ul>
                 <li>Improved finding of torrents (now retreives full seasons too)</li>
             </ul>
@@ -119,8 +124,21 @@
                 <!-- STATE: transcoding_not_ready -->
                 <div class="plebia_post_transcoding_not_ready">
                     <div class="plebia_info">
-                        Video downloaded. Transcoding...
-                        &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                        Video successfully retreived! You can:
+                        <div>
+                            <div class="plebia_download">
+                                <a href="" class="video_link">
+                                    <img src="/static/img/download.png" class="plebia_download_icon"/><br />
+                                    Download it to your computer
+                                </a>
+                            </div>
+                            or
+                            <div class="plebia_wait">
+                                <img src="/static/img/wait.png" class="plebia_wait_icon" /><br />
+                                Wait for the streaming to become ready (currently converting the video)
+                            </div>
+                        </div>
+                        <div class="clear_both"></div>
                     </div>
                 </div>
                 

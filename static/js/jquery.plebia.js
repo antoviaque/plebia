@@ -254,12 +254,9 @@
                 $.when($this.get_api_object('season', post_dom)).done(function(season) {
                     $.when($this.get_api_object('series', post_dom)).done(function(series) {
                         var title = series.name+' - Season '+season.number+', Episode '+episode.number;
-                        // See if we can put a download link
-                        $.when($this.get_api_object('video', post_dom)).done(function(video) {
-                            if(video.status == 'Transcoding' || video.status == 'Completed') {
-                                title = '<a href="/downloads/'+video.original_path+'">'+title+'</a>';
-                            }
-                            deferred.resolve(title);
+                        var title_with_icon = title+'&nbsp;&nbsp;<img src="/static/img/download.png" class="plebia_download_icon" />';
+                        $this.get_download_link(title_with_icon, post_dom).done(function(title_link) {
+                            deferred.resolve(title_link);
                         }).fail(function() {
                             deferred.resolve(title);
                         });
@@ -267,6 +264,24 @@
                 });
             });
             
+            return deferred.promise();
+        },
+
+        get_download_link: function(link_content, post_dom) {
+            // Build a HTML link to the original video of a given post, with link_content as content
+            $this = this;
+            var deferred= $.Deferred();
+            var title = null;
+
+            // See if we can put a download link
+            $.when($this.get_api_object('video', post_dom)).done(function(video) {
+                if(video.status == 'Transcoding' || video.status == 'Completed') {
+                    title = '<a href="/downloads/'+video.original_path+'">'+link_content+'</a>';
+                }
+                deferred.resolve(title);
+            }).fail(function() {
+                deferred.reject();
+            });
             return deferred.promise();
         },
 
@@ -425,21 +440,21 @@
             $.when($this.get_api_object('episode', post_dom)).done(function(episode) {
                 // Video processing
                 if(episode.video) {
-                    $this.set_object_id_in_dom('video', episode.video);
+                    $this.set_object_id_in_dom('video', episode.video, post_dom);
                     $.when($this.get_api_object('video', post_dom)).done(function(video) {
                         if(video.status == 'Error') {
                             deferred.resolve('error');
                         } else if(video.status == 'Completed') {
                             deferred.resolve('all_ready');
-                        } else if(video.status == 'Transcoding') {
-                            deferred.resolve('transcoding_ready');
+                        //} else if(video.status == 'Transcoding') {
+                        //    deferred.resolve('transcoding_ready');
                         } else {
                             deferred.resolve('transcoding_not_ready');
                         }
                     });
                 // Torrent processing
                 } else if(episode.torrent) {
-                    $this.set_object_id_in_dom('torrent', episode.torrent);
+                    $this.set_object_id_in_dom('torrent', episode.torrent, post_dom);
                     $.when($this.get_api_object('torrent', post_dom)).done(function(torrent) {
                         if(torrent.status == 'Error') {
                             deferred.resolve('error');
@@ -552,15 +567,20 @@
             // Check if we are entering this state now
             if(old_state != 'transcoding_not_ready') {
                 $this.set_post_content_from_template('transcoding_not_ready', post_dom, root);
-            }
 
-            deferred.resolve();
+                // Download link on title
+                $this.get_post_title(post_dom).done(function(title) {
+                    $('.plebia_post_title', post_dom).html(title);
+
+                    deferred.resolve();
+                });
+            }
 
             return deferred.promise();
         },
 
         /** STATE: transcoding_ready ************/
-        update_post_transcoding_ready: function(old_state, post_dom, root) {
+        /*update_post_transcoding_ready: function(old_state, post_dom, root) {
             var $this = this;
             var deferred= $.Deferred();
 
@@ -577,7 +597,7 @@
             }
 
             return deferred.promise();
-        },
+        },*/
 
         /** STATE: all_ready ********************/
         update_post_all_ready: function(old_state, post_dom, root) {
@@ -592,9 +612,17 @@
                 post_dom.removeClass('plebia_post_update');
 
                 // Video init
-                $.when($this.get_api_object('video', post_dom)).done(function(video) {
+                var dfr1 = $this.get_api_object('video', post_dom);
+                $.when(dfr1).done(function(video) {
                     $this.init_video(video, post_dom, false);
+                });
 
+                // Download link on title
+                var dfr2 = $this.get_post_title(post_dom).done(function(title) {
+                    $('.plebia_post_title', post_dom).html(title);
+                });
+
+                $.when(dfr1, dfr2).done(function() {
                     deferred.resolve();
                 });
             }

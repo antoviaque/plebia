@@ -30,6 +30,10 @@
         $.each($.plebia.post_state_list, function() {
             var state = this;
 
+            if(state == 'new') {
+                return;
+            }
+
             // Copy base template
             var post_dom = $.plebia.new_base_template(stream, root);
 

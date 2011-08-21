@@ -133,6 +133,23 @@ a {
     display: none;
 }
 
+/* STATE: transcoding_not_ready */
+
+.plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_download {
+    float: left;
+    width: 45%;
+}
+
+.plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait {
+    float: right;
+    width: 45%;
+}
+
+.plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait img.plebia_wait_icon {
+    width: 120px;
+    height: 120px;
+}
+
 /* STATE: transcoding_ready */
 
 .plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress,
@@ -154,7 +171,7 @@ a {
     margin-right: 5px;
 }
 
-/* Not found */
+/* STATE: error */
 
 .plebia .plebia_stream .plebia_post .plebia_torrent_not_found img {
     width: 200px;

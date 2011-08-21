@@ -106,6 +106,9 @@ Add to apache config, in virtual host:
     <Directory "/var/www/downloads">
         Options -Indexes
         AllowOverride None
+        AddType application/octet-stream avi mpeg mpg mpe mp4 qt mov ogv webm flv wmv mkv
+        AddType application/octet-stream AVI MPEG MPG MPE MP4 QT MOV OGV WEBM FLV WMV MKV
+
     </Directory>
 
     Alias /static/ "/var/www/plebia/static/"
