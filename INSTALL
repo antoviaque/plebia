@@ -126,6 +126,8 @@ Add login/password:
 
 = 3. Running tests =
 
+== 3a. Django/Python tests ==
+
 Without coverage (faster):
 
     $ plebia/manage.py test
@@ -137,9 +139,33 @@ With coverage (slower):
 The coverage report will then be visible at http://localhost/static/tests/
 
 
+== 3b. JS/QUnit tests ==
+
+* Without coverage: Go to http://localhost/static/js/tests/
+
+* JSCoverage install (see http://siliconforks.com/jscoverage/manual.html )
+
+    $ svn co http://svn.siliconforks.com/jscoverage/trunk jscoverage
+    $ cd jscoverage/
+    $ bash ./bootstrap.sh
+    $ ./configure
+    $ make
+    $ sudo make install
+
+* Running JSCoverage:
+
+    $ cd static/
+    $ jscoverage --encoding=UTF-8 js/ jscoverage/
+
+The coverage report will be at: http://localhost/static/jscoverage/jscoverage.html?tests/ 
+
+
 = 4. Running =
 
     $ deluged
+    $ /etc/init.d/apache2 restart
+
+And go to http://localhost/
 
 If running the developer environment:
 

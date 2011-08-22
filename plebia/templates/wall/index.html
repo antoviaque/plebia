@@ -129,7 +129,7 @@
                         Video successfully retreived! You can:
                         <div>
                             <div class="plebia_download">
-                                <a href="" class="video_link">
+                                <a href="#" class="video_link">
                                     <img src="/static/img/download.png" class="plebia_download_icon"/><br />
                                     Download it to your computer
                                 </a>
@@ -148,10 +148,10 @@
                 <div class="plebia_post_transcoding_ready">
                     <div class="video-js-box vim-css"> 
                         <video class="video-js" width="640" height="360" controls="controls" preload="auto" poster=""> 
-                            <source src="" type='video/webm; codecs="vp8, vorbis"' />
+                            <source type='video/webm; codecs="vp8, vorbis"' />
                         </video> 
                         <p class="vjs-no-video"><strong>Download Video:</strong> 
-                            <a href="">WebM</a>
+                            <a href="#">WebM</a>
                         </p> 
                     </div> 
                     <div class="plebia_video_transcoding_in_progress"><img src="/static/img/loading.gif" /> This video is still being converted. You will only be able to pause, resume or move it forward/backward when this is completed.</div>
@@ -162,10 +162,10 @@
                 <div class="plebia_post_all_ready">
                     <div class="video-js-box vim-css"> 
                         <video class="video-js" width="640" height="360" controls="controls" preload="none" poster=""> 
-                            <source src="/downloads/{{ video.webm_path }}" type='video/webm; codecs="vp8, vorbis"' />
+                            <source type='video/webm; codecs="vp8, vorbis"' />
                         </video> 
                         <p class="vjs-no-video"><strong>Download Video:</strong> 
-                            <a href="/downloads/{{ video.webm_path }}">WebM</a>
+                            <a href="#">WebM</a>
                         </p> 
                     </div> 
                 </div>
@@ -179,7 +179,6 @@
                 </div>
 
             </div>
-
         </div>
 
         <div class="plebia_stream"></div>
@@ -194,5 +193,7 @@
             <a href="https://www.djangoproject.com/">django</a>)
         </div>
       
-    </body>
+    </div>
+
+</body>
 </html>

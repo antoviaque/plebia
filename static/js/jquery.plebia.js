@@ -35,7 +35,7 @@
         $('input:submit').button();
 
         // Display the stream
-        $.plebia.bootstrap_stream(stream, root);
+        $.plebia.stream_loop(stream, root);
 
         // Load auto-suggest
         $("#id_name").suggest({type:'/tv/tv_program'});
@@ -59,6 +59,10 @@
 
         error: function(error) { alert(error); },
 
+        xhr_error: function(xhr, status, error) {
+            $.plebia.error(error);
+        },
+
         setTimeout: function(cb, delay) { return $.plebia.window.setTimeout(cb, delay); },
 
         setInterval: function(cb, delay) { return $.plebia.window.setInterval(cb, delay); },
@@ -71,12 +75,12 @@
                                    "all_ready",
                                    "error"),
 
-        ajax: function(o) {
-            return jQuery.ajax(o);
-        },
-
-        bootstrap_stream: function(stream, root) {
-            this.refresh_stream(stream, root);
+        stream_loop: function(stream, root) {
+            this.refresh_stream(stream, root).done(function() {
+                $this.setTimeout(function() {
+                    $this.refresh_stream(stream, root);
+                }, 2000);
+            });
         },
 
         refresh_stream: function(stream, root) {
@@ -87,14 +91,6 @@
             // Empty the cache
             $this.cache = {};
 
-            // Do this every X seconds
-            deferred.done(function() {
-                $this.setTimeout(function() {
-                    $this.refresh_stream(stream, root);
-                }, 2000);
-            });
-
-            // Iter over the existing posts
             var elems = $('.plebia_post', stream);
             var count = elems.length;
 
@@ -376,14 +372,16 @@
             var cached_obj = $this.cache[obj_id];
             if(cached_obj) {
                 return cached_obj;
-            } else {
+            } else if(obj_id) {
                 // Otherwise return a deferred, to be able to handle both cases identically
                 var deferred = $.getJSON(obj_id);
                 deferred.done(function(obj) {
                     $this.cache[obj_id] = obj;
                 });
                 return deferred;
-            };
+            } else {
+                return {};
+            }
         },
 
         update_post: function(post_dom, stream, root) {
