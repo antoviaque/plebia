@@ -1,0 +1,198 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en-US" xml:lang="en-US" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Plebia - QUnit Test Suite</title>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+    <!-- CSS --> 
+    <link type="text/css" rel="stylesheet" href="/static/css/all.css"> 
+    <link type="text/css" rel="stylesheet" href="http://freebaselibs.com/static/suggest/1.3/suggest.min.css" /> 
+    <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js.css"> 
+    <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js-vim.css"> 
+    <link type="text/css" href="/static/css/dist/jquery-ui-le-frog/jquery-ui-1.8.14.custom.css" rel="stylesheet" /> 
+ 
+    <!-- JS --> 
+    <script type="text/javascript" src="/static/js/dist/jquery-1.6.2.min.js"></script> 
+    <script type="text/javascript" src="/static/js/dist/jquery.query-2.1.7.js"></script>
+    <script type="text/javascript" src="/static/js/dist/jquery-ui.min.js"></script> 
+    <script type="text/javascript" src="http://freebaselibs.com/static/suggest/1.3/suggest.min.js"></script>
+    <script type="text/javascript" src="/static/js/dist/video.js" charset="utf-8"></script> 
+    <script type="text/javascript" src="../jquery.plebia.js" charset="utf-8"></script> 
+    <script type="text/javascript" src="skin.js"></script> 
+
+    <!--QUnit -->
+    <link rel="stylesheet" href="/static/css/dist/qunit.css" type="text/css" media="screen">
+    <script type="text/javascript" src="/static/js/dist/qunit.js"></script>
+    <script type="text/javascript" src="/static/js/dist/jquery.mockjax.js"></script>
+    <script type="text/javascript" src="/static/js/tests/tests.js"></script>
+</head>
+
+  <body>
+    <h1 id="qunit-header">QUnit Test Suite</h1>
+    <h2 id="qunit-banner"></h2>
+    <div id="qunit-testrunner-toolbar"></div>
+    <h2 id="qunit-userAgent"></h2>
+    <ol id="qunit-tests"></ol>
+    <div id="qunit-fixture">
+
+    <div class="plebia">
+        <div class="plebia_updates">
+            <b>Update - Sun Aug 21th:</b><br />
+            <ul>
+                <li>Added details during download</li>
+                <li>Preemptively download and transcode next episode to reduce waiting</li>
+                <li>Improved updates/refreshes behavior</li>
+                <li>Removed streaming during encoding</li>
+            </ul>
+            <b>Update - Thu Aug 12th:</b><br />
+            <ul>
+                <li>Improved finding of torrents (now retreives full seasons too)</li>
+            </ul>
+        </div>
+        <div class="plebia_new_post">
+            <form action="/" method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="submit" value="Add" />
+                <div class="clear_both"></div>
+            </form>
+        </div>
+
+        <p>To add/upload a video to the stream, fill the form right on top. <br /><b>Warning</b>: videos can only be watched with Chromium/Chrome for now.</p>
+
+        <h2>Stream</h2>
+
+        <div class="plebia_post_templates">
+
+            <div class="plebia_post plebia_post_new plebia_post_update">
+                <input type="hidden" class="plebia_post_api_id" value="" />
+                <input type="hidden" class="plebia_episode_api_id" value="" />
+                <input type="hidden" class="plebia_season_api_id" value="" />
+                <input type="hidden" class="plebia_series_api_id" value="" />
+                <input type="hidden" class="plebia_torrent_api_id" value="" />
+                <input type="hidden" class="plebia_video_api_id" value="" />
+                <img src="/static/img/avatar.jpg" class="plebia_user_avatar" />
+                <div class="plebia_user_name">Xavier Antoviaque</div> -
+                <div class="plebia_post_time"></div>
+                <div class="plebia_post_title"></div>
+                <div class="plebia_post_content"></div>
+                <div class="plebia_next_episode">
+                    <form action="/" method="post">
+                        {% csrf_token %}
+                        <input class="plebia_name" type="hidden" name="name" value="" />
+                        <input class="plebia_season_nb" type="hidden" name="season" value="" />
+                        <input class="plebia_episode_nb" type="hidden" name="episode" value="" />
+                        <a href="javascript://">Next episode >></a>
+                        <div class="clear_both"></div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="plebia_post_content_states">
+
+                <!-- STATE: searching -->
+                <div class="plebia_post_searching">
+                    <div class="plebia_info">
+                        Searching for video...
+                        &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                    </div>
+                </div>
+
+                <!-- STATE: downloading -->
+                <div class="plebia_post_downloading">
+                    <div class="plebia_info">
+                        <span class="plebia_info_msg"></span>
+                        <span class="plebia_info_progress">
+                            (<span class="plebia_percent"></span>% done, 
+                            <span class="plebia_eta"></span> left)
+                        </span>
+                        &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                    </div>
+                    <div class="plebia_progress_bar"></div>
+
+                    <a class="plebia_more" href="javascript://">More details...</a>
+                    <div class="plebia_download_details">
+                        <div class="plebia_torrent_name">Torrent name: <span class="plebia_value"></span></div>
+                        <div class="plebia_torrent_type">Type: <span class="plebia_value"></span></div>
+                        <div class="plebia_torrent_seeds">Seeds: <span class="plebia_value"></span></div>
+                        <div class="plebia_torrent_peers">Peers: <span class="plebia_value"></span></div>
+                        <div class="plebia_torrent_download_speed">Download speed: <span class="plebia_value"></span></div>
+                        <div class="plebia_torrent_upload_speed">Upload speed: <span class="plebia_value"></span></div>
+                    </div>
+                </div>
+                
+                <!-- STATE: transcoding_not_ready -->
+                <div class="plebia_post_transcoding_not_ready">
+                    <div class="plebia_info">
+                        Video successfully retreived! You can:
+                        <div>
+                            <div class="plebia_download">
+                                <a href="#" class="video_link">
+                                    <img src="/static/img/download.png" class="plebia_download_icon"/><br />
+                                    Download it to your computer
+                                </a>
+                            </div>
+                            or
+                            <div class="plebia_wait">
+                                <img src="/static/img/wait.png" class="plebia_wait_icon" /><br />
+                                Wait for the streaming to become ready (currently converting the video)
+                            </div>
+                        </div>
+                        <div class="clear_both"></div>
+                    </div>
+                </div>
+                
+                <!-- STATE: transcoding_ready -->
+                <div class="plebia_post_transcoding_ready">
+                    <div class="video-js-box vim-css"> 
+                        <video class="video-js" width="640" height="360" controls="controls" preload="auto" poster=""> 
+                            <source type='video/webm; codecs="vp8, vorbis"' />
+                        </video> 
+                        <p class="vjs-no-video"><strong>Download Video:</strong> 
+                            <a href="#">WebM</a>
+                        </p> 
+                    </div> 
+                    <div class="plebia_video_transcoding_in_progress"><img src="/static/img/loading.gif" /> This video is still being converted. You will only be able to pause, resume or move it forward/backward when this is completed.</div>
+                    <div class="plebia_video_transcoding_done"><img src="/static/img/ok.png" /> Video conversion done! <a href="javascript://">Refresh</a> the video if you need to pause, resume or move it forward/backward.</div>
+                </div>
+                
+                <!-- STATE: all_ready -->
+                <div class="plebia_post_all_ready">
+                    <div class="video-js-box vim-css"> 
+                        <video class="video-js" width="640" height="360" controls="controls" preload="none" poster=""> 
+                            <source type='video/webm; codecs="vp8, vorbis"' />
+                        </video> 
+                        <p class="vjs-no-video"><strong>Download Video:</strong> 
+                            <a href="#">WebM</a>
+                        </p> 
+                    </div> 
+                </div>
+                
+                <!-- STATE: error -->
+                <div class="plebia_post_error">
+                    <div class="plebia_torrent_not_found">
+                        <img src="/static/img/monster.jpg" class="plebia_monster_icon" />
+                        <div class="plebia_torrent_not_found_msg">I'm sorry, I couldn't find your video : (<br />But try to enter another one, I'll go get it! :D</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="plebia_stream"></div>
+
+        <div class="plebia_footer">
+            Media server powered by
+            <a href="http://plebia.org/">plebia</a>
+            (with the help of
+            <a href="http://videojs.com">video.js</a>,
+            <a href="http://deluge-torrent.org/">deluge</a>,
+            <a href="http://www.ffmpeg.org/">ffmpeg</a> and
+            <a href="https://www.djangoproject.com/">django</a>)
+        </div>
+      
+    </div>
+
+</body>
+</html>
