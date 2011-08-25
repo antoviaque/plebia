@@ -173,7 +173,7 @@ class PlebiaTest(TestCase):
         
         # Submit & check state
         response = c.post(url, data, follow=True)
-        self.api_check('seriesseasonepisode', 2, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
+        self.api_check('seriesseasonepisode', 3, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
         self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': ''})
         self.api_check('video', 1, None)
@@ -183,7 +183,7 @@ class PlebiaTest(TestCase):
         self.run_cron_commands()
         
         # Check state
-        self.api_check('seriesseasonepisode', 2, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
+        self.api_check('seriesseasonepisode', 3, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
         self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 0.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': ''})
         self.api_check('video', 1, None)
@@ -249,7 +249,7 @@ Tracker status: """
                 'ogv_path': os.path.join(torrent_name, 's02e04', 'test1.ogv'), \
                 'image_path': os.path.join(torrent_name, 's02e04', 'test1.jpg'), \
         })
-        self.api_check('video', 2, {'status': 'Transcoding', \
+        self.api_check('video', 3, {'status': 'Transcoding', \
                 'original_path': os.path.join(torrent_name, 's02e08', 'test2.avi'), \
                 'webm_path': os.path.join(torrent_name, 's02e08', 'test2.webm'), \
                 'mp4_path': os.path.join(torrent_name, 's02e08', 'test2.mp4'), \
@@ -263,7 +263,7 @@ Tracker status: """
 
         # Check that the video is still transcoding
         self.api_check('video', 1, {'status': 'Transcoding'})
-        self.api_check('video', 2, {'status': 'Transcoding'})
+        self.api_check('video', 3, {'status': 'Transcoding'})
 
 
 
