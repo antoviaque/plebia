@@ -36,44 +36,80 @@ a {
 }
 
 
-/* Stream **********************************************************/
+/* Structure **********************************************************/
 
 .plebia {
     position: absolute;
-    width: 750px;
+    width: 1024px;
     left: 50%;
-    margin-left: -375px;
+    margin-left: -512px;
+}
+
+.plebia_column_left {
+    position: relative;
+    float: left;
+    width: 162px;
+    top: 0px;
+}
+
+.plebia_column_center {
+    position: relative;
+    width: 700px;
+    top: 0px;
+    left: 50%;
+    margin-left: -350px;
+}
+
+.plebia_column_right {
+    position: relative;
+    width: 162px;
+    top: 0px;
+    float: right;
+    top: 0px;
 }
 
 
 /* Header **********************************************************/
 
 .plebia .plebia_updates {
-    width: 300px;
+    width: 100%;
     float: left;
     padding: 5px 20px 10px 20px;
-    margin-right: 20px;
     background-color: #f1f1f1;
     border: 1px solid #dedede;
     font-size: 9pt;
     line-height: 150%;
 }
 
+.plebia .plebia_updates ul {
+    padding-left: 5px;
+    margin-left: 5px;
+}
 
 /* New post ********************************************************/
 
 .plebia .plebia_new_post {
-    width: 300px;
-    margin-left: auto;
-    padding: 5px 20px 10px 20px;
-    margin-right: 20px;
+    width: 90%;
+    left-margin: 5%;
+    padding: 5px 5px 30px 5px;
     background-color: #f1f1f1;
     border: 1px solid #dedede;
+    text-align: center;
+    font-style: italic;
 }
 
-.plebia_stream_new_post input {
-    float: right;
-    right: 0px;
+.plebia .plebia_new_post input.plebia_name {
+    width: 50%;
+    height: 20px;
+    font-size: 13pt;
+    margin-left: 50px;
+}
+
+.plebia .plebia_new_post img.plebia_search {
+    width: 50px;
+    height: 50px;
+    display: inline;
+    margin-bottom: -20px;
 }
 
 /* Templates *******************************************************/
@@ -114,7 +150,8 @@ a {
     height: 15px;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_next_episode a {
+.plebia .plebia_stream .plebia_post .plebia_next_episode a,
+.plebia .plebia_stream .plebia_post .plebia_next_episode p {
     float: right;
     font-weight: normal;
     margin-top: 10px;

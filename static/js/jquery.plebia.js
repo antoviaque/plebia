@@ -38,7 +38,7 @@
         $.plebia.stream_loop(stream, root);
 
         // Load auto-suggest
-        $("#id_name").suggest({type:'/tv/tv_program'});
+        $('.plebia_new_post input.plebia_name').liveSearch({url: '/ajax/search/'});
 
         // Add feedback tab
         var uv = document.createElement('script'); uv.type = 'text/javascript'; uv.async = true;
@@ -78,7 +78,7 @@
         stream_loop: function(stream, root) {
             this.refresh_stream(stream, root).done(function() {
                 $this.setTimeout(function() {
-                    $this.refresh_stream(stream, root);
+                    $this.stream_loop(stream, root);
                 }, 2000);
             });
         },
@@ -287,24 +287,30 @@
             // Add the callback to add the next episode when the link is clicked
             $this = this;
             var deferred= $.Deferred();
+            var next_episode_dom = $('.plebia_next_episode', post_dom);
 
-            $.when($this.get_api_object('episode', post_dom)).done(function(episode) {
-                $.when($this.get_api_object('season', post_dom)).done(function(season) {
-                    $.when($this.get_api_object('series', post_dom)).done(function(series) {
-                        next_episode_dom = $('.plebia_next_episode', post_dom);
+            $.when($this.get_api_object('series', post_dom)).done(function(series) {
+                $.when($this.get_api_object('episode', post_dom)).done(function(episode) {
+                    $.when($this.get_api_object_by_id(episode.next_episode)).done(function(next_episode) {
+                        $.when($this.get_api_object_by_id(next_episode.season)).done(function(next_episode_season) {
 
-                        // Set values of next episode
-                        $('.plebia_name', next_episode_dom).val(series.name);
-                        $('.plebia_season_nb', next_episode_dom).val(season.number);
-                        $('.plebia_episode_nb', next_episode_dom).val(episode.number+1);
+                            // Set values of next episode
+                            $('.plebia_name', next_episode_dom).val(series.name);
+                            $('.plebia_season_nb', next_episode_dom).val(next_episode_season.number);
+                            $('.plebia_episode_nb', next_episode_dom).val(next_episode.number);
 
-                        // Form submit
-                        $('a', next_episode_dom).click(function(){
-                            $(this).parent().submit();
-                            return false;
+                            // Form submit
+                            $('a', next_episode_dom).click(function(){
+                                $(this).parent().submit();
+                                return false;
+                            });
+
+                            deferred.resolve();
                         });
-
-                        deferred.resolve();
+                    // Last episode
+                    }).fail(function() {
+                        $('a', next_episode_dom).remove();
+                        $('form', next_episode_dom).prepend('<p>(Last episode)</p>')
                     });
                 });
             });

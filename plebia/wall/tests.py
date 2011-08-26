@@ -413,6 +413,7 @@ Tracker status: """
         self._test_find_single_episode_in_season_torrent(name, 5, '0205.avi')
         self._test_find_single_episode_in_season_torrent(name, 6, 'Season 2 - Episode 6.avi')
         self._test_find_single_episode_in_season_torrent(name, 7, 'season 02 episode 07.avi')
+        self._test_find_single_episode_in_season_torrent(name, 8, '02x05.avi')
 
 
     def test_find_single_episode_in_season_torrent_subfolder(self):

@@ -49,6 +49,13 @@ def index(request):
         'form': form,
     }, context_instance=RequestContext(request))
 
+def ajax_search(request, search_string):
+    series_list = Series.objects.filter(name__contains=search_string)[:10]
+    
+    return render_to_response('wall/search.html', {
+        'series_list': series_list,
+    }, context_instance=RequestContext(request))
+    
 
 # Helpers - Adding a post ###########################################
 
@@ -56,15 +63,22 @@ def add_new_post(form):
     # Find or create objects needed to create this post:
     # Series
     name = form.cleaned_data['name']
-    series, created = Series.objects.get_or_create(name=name)
+    series = Series.objects.get(name=name)
+
+    # Make sure the series seasons & episodes are up to date
+    series.update_seasons()
+
     # SeriesSeason
     season_number = form.cleaned_data['season']
-    season, created = SeriesSeason.objects.get_or_create(number=season_number, series=series)
+    season = SeriesSeason.objects.get(number=season_number, series=series)
+    
     # SeriesSeasonEpisode
     episode_number = form.cleaned_data['episode']
-    episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number, season=season)
-    # Also add next episode, to download it while we watch
-    next_episode, created = SeriesSeasonEpisode.objects.get_or_create(number=episode_number+1, season=season)
+    episode = SeriesSeasonEpisode.objects.get(number=episode_number, season=season)
+
+    # Start download of episode if needed (and of next episode, to download it while we watch)
+    episode.start_download()
+    episode.next_episode.start_download()
 
     # And finally the Post object itself
     post = Post()

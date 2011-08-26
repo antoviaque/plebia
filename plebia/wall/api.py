@@ -52,9 +52,10 @@ class SeriesSeasonEpisodeResource(ModelResource):
     torrent = fields.ForeignKey(TorrentResource, 'torrent', null=True)
     video   = fields.ForeignKey(VideoResource, 'video', null=True)
     season  = fields.ForeignKey(SeriesSeasonResource, 'season')
+    next_episode = fields.ForeignKey('self', 'next_episode')
     class Meta:
         queryset = SeriesSeasonEpisode.objects.all().order_by('-date_added')
-        fields = ["id","date_added","name","number","torrent","season"]
+        fields = ["id","date_added","name","number","torrent","season","next_episode"]
 
 class PostResource(ModelResource):
     episode = fields.ForeignKey(SeriesSeasonEpisodeResource, 'episode')

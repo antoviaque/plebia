@@ -83,7 +83,7 @@ class SeriesInline(admin.TabularInline):
 class SeriesAdmin(admin.ModelAdmin):
     readonly_fields = ("date_added",)
     fieldsets = [
-        (None,                {'fields': ['name']}),
+        (None,                {'fields': ['name','url']}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
     ]
     inlines = [SeriesSeasonInline]

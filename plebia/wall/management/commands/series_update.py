@@ -19,28 +19,17 @@
 
 # Includes ##########################################################
 
-from django.conf.urls.defaults import *
-from tastypie.api import Api
-from wall.api import *
-from wall.models import Post
+from django.core.management.base import BaseCommand, CommandError
+
+from plebia.wall.models import Series, SeriesSeason, SeriesSeasonEpisode, series_update
 
 
-# API init ##########################################################
+# Main ##############################################################
 
-v1_api = Api(api_name='v1')
-v1_api.register(VideoResource())
-v1_api.register(TorrentResource())
-v1_api.register(SeriesResource())
-v1_api.register(SeriesSeasonResource())
-v1_api.register(SeriesSeasonEpisodeResource())
-v1_api.register(PostResource())
+class Command(BaseCommand):
+    help = 'Updates series/seasons/episodes from listing'
 
+    def handle(self, *args, **options):
+        series_update()
 
-# URL patterns ######################################################
-
-urlpatterns = patterns('wall.views',
-    (r'^$', 'index'),
-    (r'^ajax/search/(?P<search_string>.+)$', 'ajax_search'),
-    (r'^api/', include(v1_api.urls)),
-)
 
