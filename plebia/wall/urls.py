@@ -31,8 +31,8 @@ v1_api = Api(api_name='v1')
 v1_api.register(VideoResource())
 v1_api.register(TorrentResource())
 v1_api.register(SeriesResource())
-v1_api.register(SeriesSeasonResource())
-v1_api.register(SeriesSeasonEpisodeResource())
+v1_api.register(SeasonResource())
+v1_api.register(EpisodeResource())
 v1_api.register(PostResource())
 
 
@@ -41,6 +41,8 @@ v1_api.register(PostResource())
 urlpatterns = patterns('wall.views',
     (r'^$', 'index'),
     (r'^ajax/search/(?P<search_string>.+)$', 'ajax_search'),
+    (r'^ajax/newpost/(?P<series_id>\d+)/$', 'ajax_new_post'),
+    (r'^ajax/startdownload/(?P<episode_id>\d+)/$', 'ajax_start_download'),
     (r'^api/', include(v1_api.urls)),
 )
 

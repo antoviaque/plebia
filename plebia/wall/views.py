@@ -25,6 +25,7 @@ from django.shortcuts import render_to_response
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
 from django.core import serializers
+from django.utils import simplejson
 
 from wall.models import *
 
@@ -32,59 +33,44 @@ from wall.models import *
 # Views #############################################################
 
 def index(request):
-    # Process new wall post submition
-    if request.method == 'POST':
-        form = PostForm(request.POST)
-        if form.is_valid():
-            post = add_new_post(form)
-            if post:
-                return HttpResponseRedirect('/')
-    else:
-        form = PostForm()
-
-    # Display lastest posts on the wall
-    latest_post_list = Post.objects.all().order_by('-date_added')[:50]
-
     return render_to_response('wall/index.html', {
-        'form': form,
+        'form': PostForm(),
     }, context_instance=RequestContext(request))
 
+
 def ajax_search(request, search_string):
-    series_list = Series.objects.filter(name__contains=search_string)[:10]
+    '''Perform a search in the db on the series before returning results'''
+
+    # Create all new series objects matching search_string on TVDB
+    Series.objects.add_by_search(search_string)
+
+    # Build a list of matching series (larger set than the one returned by TVDB, 
+    # which only contains entire word matches
+    series_list = Series.objects.filter(name__contains=search_string).order_by('-first_aired')[:20]
     
     return render_to_response('wall/search.html', {
         'series_list': series_list,
     }, context_instance=RequestContext(request))
-    
 
-# Helpers - Adding a post ###########################################
 
-def add_new_post(form):
-    # Find or create objects needed to create this post:
-    # Series
-    name = form.cleaned_data['name']
-    series = Series.objects.get(name=name)
+def ajax_new_post(request, series_id):
+    '''Add a new post to the feed'''
 
-    # Make sure the series seasons & episodes are up to date
-    series.update_seasons()
+    series = Series.objects.get(id=series_id)
+    # Make sure the series info and related seasons & episodes are up to date
+    series.update_from_tvdb()
 
-    # SeriesSeason
-    season_number = form.cleaned_data['season']
-    season = SeriesSeason.objects.get(number=season_number, series=series)
-    
-    # SeriesSeasonEpisode
-    episode_number = form.cleaned_data['episode']
-    episode = SeriesSeasonEpisode.objects.get(number=episode_number, season=season)
-
-    # Start download of episode if needed (and of next episode, to download it while we watch)
-    episode.start_download()
-    episode.next_episode.start_download()
-
-    # And finally the Post object itself
-    post = Post()
-    post.episode = episode
+    post = Post(series=series)
     post.save()
-    return post
+
+    return HttpResponse(simplejson.dumps(['/api/v1/post/%d/' % post.id,]))
 
 
+def ajax_start_download(request, episode_id):
+    '''Triggers an episode download on user request'''
+
+    episode = Episode.objects.get(id=episode_id)
+    episode.start_download()
+
+    return HttpResponse(simplejson.dumps(['ok',]))
 

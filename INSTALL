@@ -2,14 +2,14 @@
 
 = 1a. Requirements =
 
-    * Recent processor (i5), to be able to transcode faster than the movie display
+    * Recent processor to be able to transcode videos quickly
     * Bandwidth 20Mbps+ up/down 
 
 = 1b. Dependencies =
 
 Install packages (Debian/Ubuntu):
 
-    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar python-coverage
+    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar python-coverage libapache2-mod-php5 libapache2-mod-wsgi
     $ sudo pip install Django==1.2.5
     $ sudo pip install django-tastypie==0.9.9
     $ sudo pip install lxml==2.3
@@ -35,16 +35,22 @@ Then in configurations file (with deluged process not running):
 
 = 2. Configuration =
 
-Change paths:
-    - in plebia/settings.py
-        * DOWNLOAD_DIR
-        * DELUGE_COMMAND (login/pass in ~/.config/deluge/auth)
-        * FFMPEG_PATH
-        * FFMPEG2THEORA_PATH
-    - in static/stream.php
+Create plebia/settings_local.py and edit the values to fit your local environment:
+
+    $ cp plebia/settings_local.py.example plebia/settings_local.py
+    $ gvim plebia/settings_local.py
+
+Also edit paths in the following files (FIXME - hardcoded & PHP):
+
+    - in static/stream.php and static/banner.php
         * full_file_path
     - in webserver/apache/django.wsgi
         * path
+
+Create downloads directory (as configure above):
+
+    $ mkdir -p /var/www/downloads
+    $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank
 
 Create database:
 
@@ -204,8 +210,4 @@ deb http://www.debian-multimedia.org squeeze main non-free
 
     # apt-get update
     # apt-get dist-upgrade
-
-Install apache
-
-    # apt-get install libapache2-mod-php5 libapache2-mod-wsgi
 

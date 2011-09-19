@@ -1,14 +1,21 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html lang="en-US" xml:lang="en-US" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-</head>
+{% for series in series_list %}
+    <div class="plebia_result">
+        <input class="plebia_series_id" type="hidden" value="{{ series.id }}"></input>
+        <a class="plebia_name" href="javascript://">
+            <img class="plebia_banner_small" src="/static/banner.php?file_path={{ series.banner_url }}" />
+            {{ series.name }}
+        </a>
+        <div class="clear_both"></div>
+    </div>
+{% endfor %}
+<script>
+    $('#jquery-live-search .plebia_result a').click(function(ev) {
+        ev.preventDefault();
+        $('#jquery-live-search').hide();
 
-<body> 
+        var result_dom = $(this).parent();
+        var series_id = $('input.plebia_series_id', result_dom).val();
+        $('.plebia').plebia_post_to_stream(series_id);
+    });
+</script>
 
-    {% for series in series_list %}
-        <div class="plebia_series">{{ series.name }}</div>
-    {% endfor %}
-
-</body>
-</html>

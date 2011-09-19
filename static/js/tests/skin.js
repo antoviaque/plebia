@@ -44,7 +44,7 @@
             $('.plebia_post_title', post_dom).html(state+' - Season 2, Episode 1');
 
             // State-speicific update
-            $.plebia['update_post_'+state]('new', post_dom, root);
+            //$.plebia['update_post_'+state]('new', post_dom, root);
         });
     };
 

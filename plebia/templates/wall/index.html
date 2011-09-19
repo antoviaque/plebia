@@ -10,6 +10,7 @@
     <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js.css"> 
     <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js-vim.css"> 
     <link type="text/css" rel="stylesheet" href="/static/css/dist/jquery.liveSearch.css"> 
+    <link type="text/css" rel="stylesheet" href="/static/css/dist/jquery.fancybox-1.3.4.css"> 
     <link type="text/css" href="/static/css/dist/jquery-ui-le-frog/jquery-ui-1.8.14.custom.css" rel="stylesheet" />
 
     <!-- JS -->
@@ -17,6 +18,7 @@
     <script type="text/javascript" src="/static/js/dist/jquery.query-2.1.7.js"></script>
     <script type="text/javascript" src="/static/js/dist/jquery-ui.min.js"></script>
     <script type="text/javascript" src="/static/js/dist/jquery.liveSearch.js"></script>
+    <script type="text/javascript" src="/static/js/dist/jquery.fancybox-1.3.4.pack.js"></script>
     <script type="text/javascript" src="http://freebaselibs.com/static/suggest/1.3/suggest.min.js"></script>
     <script type="text/javascript" src="/static/js/dist/video.js" charset="utf-8"></script> 
     <script type="text/javascript" src="/static/js/jquery.plebia.js"></script> 
@@ -39,176 +41,310 @@
 
 <body> 
     <div class="plebia">
-        <div class="plebia_column_left">
-            &nbsp;
+        <!-- Header & Searchbox ---------------------------------------------------------->
+        <div class="plebia_header">
+            <div class="plebia_center">
+                <img class="plebia_logo" src="/static/img/logo.png" />
 
-        </div>
-
-        <div class="plebia_column_right">
-
-            <div class="plebia_updates">
-                <h3>Updates</h3>
-                <b>Sun Aug 21th:</b><br />
-                <ul>
-                    <li>Added details during download</li>
-                    <li>Preemptively download and transcode next episode to reduce waiting</li>
-                    <li>Improved updates/refreshes behavior</li>
-                    <li>Removed streaming during encoding</li>
-                </ul>
-                <b>Thu Aug 12th:</b><br />
-                <ul>
-                    <li>Improved finding of torrents (now retreives full seasons too)</li>
-                </ul>
-            </div>
-
-        </div>
-
-        <div class="plebia_column_center">
-
-            <div class="plebia_new_post">
-                <div><br />To add a series, enter its name:</div>
+                To add a series, enter its name:<br />
                 <input class="plebia_name"></input>
                 <img class="plebia_search" src="/static/img/search.png" />
+                
+                <p><b>Warning</b>: videos can only be watched with Chromium/Chrome for now.</p>
             </div>
+        </div>
 
-            <p><b>Warning</b>: videos can only be watched with Chromium/Chrome for now.</p>
+        <div class="plebia_columns">
 
-            <h2>Stream</h2>
+            <div class="plebia_column_left">
+                &nbsp;
+            </div> <!-- End 'plebia_column_left' -->
 
-            <div class="plebia_post_templates">
+            <div class="plebia_column_center">
+                <h2>Stream</h2>
 
-                <div class="plebia_post plebia_post_new plebia_post_update">
-                    <input type="hidden" class="plebia_post_api_id" value="" />
-                    <input type="hidden" class="plebia_episode_api_id" value="" />
-                    <input type="hidden" class="plebia_season_api_id" value="" />
-                    <input type="hidden" class="plebia_series_api_id" value="" />
-                    <input type="hidden" class="plebia_torrent_api_id" value="" />
-                    <input type="hidden" class="plebia_video_api_id" value="" />
-                    <img src="/static/img/avatar.jpg" class="plebia_user_avatar" />
-                    <div class="plebia_user_name">Xavier Antoviaque</div> -
-                    <div class="plebia_post_time"></div>
-                    <div class="plebia_post_title"></div>
-                    <div class="plebia_post_content"></div>
-                    <div class="plebia_next_episode">
-                        <form action="/" method="post">
-                            {% csrf_token %}
-                            <input class="plebia_name" type="hidden" name="name" value="" />
-                            <input class="plebia_season_nb" type="hidden" name="season" value="" />
-                            <input class="plebia_episode_nb" type="hidden" name="episode" value="" />
-                            <a href="javascript://">Next episode >></a>
-                            <div class="clear_both"></div>
-                        </form>
-                    </div>
+                <div class="plebia_stream">
+                    <input type="hidden" class="plebia_api_url" value="" />
                 </div>
 
-                <div class="plebia_post_content_states">
+                <!-- Templates ---------------------------------------------------------->
+                <div class="plebia_template plebia_no_display">
 
-                    <!-- STATE: searching -->
-                    <div class="plebia_post_searching">
-                        <div class="plebia_info">
-                            Searching for video...
-                            &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                    <!-- Post ------------------------------------------------------>
+                    <div class="plebia_post_template">
+                        <!-- Related API objects -->
+                        <input type="hidden" class="plebia_api_url" value="" />
+                        
+                        <img src="/static/img/avatar.jpg" class="plebia_user_avatar" />
+                        <div class="plebia_user_name">Xavier Antoviaque</div> -
+                        <div class="plebia_post_time"></div>
+                        
+                        <div class="plebia_post_content">
+
+                            <div class="plebia_series"></div>
                         </div>
                     </div>
 
-                    <!-- STATE: downloading -->
-                    <div class="plebia_post_downloading">
-                        <div class="plebia_info">
-                            <span class="plebia_info_msg"></span>
-                            <span class="plebia_info_progress">
-                                (<span class="plebia_percent"></span>% done, 
-                                <span class="plebia_eta"></span> left)
-                            </span>
-                            &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
-                        </div>
-                        <div class="plebia_progress_bar"></div>
+                    <!-- Series --------------------------------------------------->
+                    <div class="plebia_series_template">
+                        <!-- Related API objects -->
+                        <input type="hidden" class="plebia_api_url" value="" />
 
-                        <a class="plebia_more" href="javascript://">More details...</a>
-                        <div class="plebia_download_details">
-                            <div class="plebia_torrent_name">Torrent name: <span class="plebia_value"></span></div>
-                            <div class="plebia_torrent_type">Type: <span class="plebia_value"></span></div>
-                            <div class="plebia_torrent_seeds">Seeds: <span class="plebia_value"></span></div>
-                            <div class="plebia_torrent_peers">Peers: <span class="plebia_value"></span></div>
-                            <div class="plebia_torrent_download_speed">Download speed: <span class="plebia_value"></span></div>
-                            <div class="plebia_torrent_upload_speed">Upload speed: <span class="plebia_value"></span></div>
+                        <!-- Poster -->
+                        <img class="plebia_poster" src="javascript://" />
+
+                        <!-- Title & watch next -->
+                        <div class="plebia_content_right">
+                            <div class="plebia_name"></div>
+                            <a class="plebia_watch_next" href="javascript://">
+                                <img class="plebia_play" src="/static/img/play.png" />
+                                Watch next: Season <span class="plebia_season_nb">2</span> Episode <span class="plebia_episode_nb">3</span>
+                            </a>
+
+                            <!-- Overview -->
+                            <div class="plebia_overview"></div>
                         </div>
+
+                        <!-- Episodes tab -->
+                        <div class="plebia_episode_menu">
+                            <a class="plebia_trigger" href="javascript://">Episodes</a>
+                            <div class="plebia_season_list plebia_no_display"></div>
+                        </div> <!-- End episodes tab -->
                     </div>
-                    
-                    <!-- STATE: transcoding_not_ready -->
-                    <div class="plebia_post_transcoding_not_ready">
-                        <div class="plebia_info">
-                            Video successfully retreived! You can:
-                            <div>
-                                <div class="plebia_download">
-                                    <a href="#" class="video_link">
-                                        <img src="/static/img/download.png" class="plebia_download_icon"/><br />
-                                        Download it to your computer
-                                    </a>
+
+                    <!-- Season --------------------------------------------------->
+                    <div class="plebia_season_template">
+                        <div class="plebia_season_title">Season <span class="plebia_number">1</span></div>
+                        <div class="plebia_episode_list"></div>
+                    </div>
+
+                    <!-- Episode --------------------------------------------------->
+                    <div class="plebia_episode_template">
+                        <!-- Episode STATE: 'all_ready' +watched -->
+                        <a class="plebia_episode_link" href="javascript://">
+                            <div class="plebia_episode">
+                                <div class="plebia_number">01</div>
+                                <div class="plebia_status">
+                                    <img class="plebia_thumb" src="/static/tmp/thumb.jpg" />
+                                    <img class="plebia_play" src="/static/img/play.png" />
+                                    <img class="plebia_ok" src="/static/img/ok.png" />
                                 </div>
-                                or
-                                <div class="plebia_wait">
-                                    <img src="/static/img/wait.png" class="plebia_wait_icon" /><br />
-                                    Wait for the streaming to become ready (currently converting the video)
+                                <div class="plebia_description">
+                                    <div class="plebia_episode_title">Fire in the hole!</div>
+                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
                                 </div>
                             </div>
-                            <div class="clear_both"></div>
-                        </div>
+                        </a>
+
+                        <!-- Episode STATE: 'all_ready' +new -->
+                        <a class="plebia_episode_link" href="javascript://">
+                            <div class="plebia_episode">
+                                <div class="plebia_number">02</div>
+                                <div class="plebia_status">
+                                    <img class="plebia_thumb" src="/static/tmp/thumb.jpg" />
+                                    <img class="plebia_play" src="/static/img/play.png" />
+                                    <img class="plebia_new" src="/static/img/new.png" />
+                                </div>
+                                <div class="plebia_description">
+                                    <div class="plebia_episode_title">Fire in the hole!</div>
+                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
+                                </div>
+                            </div>
+                        </a>
+                        <!-- Episode STATE: 'transcoding_not_ready' -->
+                        <a class="plebia_episode_link" href="javascript://">
+                            <div class="plebia_episode">
+                                <div class="plebia_number">03</div>
+                                <div class="plebia_status">
+                                    <img src="/static/img/download.png" class="plebia_download"/><br />
+                                    <img src="/static/img/wait.png" class="plebia_wait" /><br />
+                                </div>
+                                <div class="plebia_description">
+                                    <div class="plebia_episode_title">Fire in the hole!</div>
+                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
+                                </div>
+                            </div>
+                        </a>
+                        <!-- Episode STATE: 'error' -->
+                        <a class="plebia_episode_link" href="javascript://">
+                            <div class="plebia_episode">
+                                <div class="plebia_number">04</div>
+                                <div class="plebia_status">
+                                    <img src="/static/img/error.png" class="plebia_error"/><br />
+                                </div>
+                                <div class="plebia_description">
+                                    <div class="plebia_episode_title">Fire in the hole!</div>
+                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
+                                </div>
+                            </div>
+                        </a>
+                        <!-- Episode STATE: 'downloading' -->
+                        <a class="plebia_episode_link" href="javascript://">
+                            <div class="plebia_episode">
+                                <div class="plebia_number">05</div>
+                                <div class="plebia_status">
+                                    <div class="plebia_percent">14<span class="plebia_percent_value"></span>%</div>
+                                    <div class="plebia_progress_bar"></div>
+                                    <div class="plebia_eta"><span class="plebia_eta_value">1m 2w 10h 23s</span> left</div>
+                                </div>
+                                <div class="plebia_description">
+                                    <div class="plebia_episode_title">Fire in the hole!</div>
+                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
+                                </div>
+                            </div>
+                        </a>
+                        <!-- Episode STATE: 'new' -->
+                        <a class="plebia_episode_link" href="javascript://">
+                            <div class="plebia_episode">
+                                <div class="plebia_number">06</div>
+                                <div class="plebia_status">
+                                    <div class="plebia_start">Start >></div>
+                                    <div class="plebia_progress_bar_new"></div>
+                                </div>
+                                <div class="plebia_description">
+                                    <div class="plebia_episode_title">Fire in the hole!</div>
+                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
+                                </div>
+                            </div>
+                        </a>
                     </div>
-                    
-                    <!-- STATE: transcoding_ready -->
-                    <div class="plebia_post_transcoding_ready">
-                        <div class="video-js-box vim-css"> 
-                            <video class="video-js" width="640" height="360" controls="controls" preload="auto" poster=""> 
-                                <source type='video/webm; codecs="vp8, vorbis"' />
-                            </video> 
-                            <p class="vjs-no-video"><strong>Download Video:</strong> 
-                                <a href="#">WebM</a>
-                            </p> 
-                        </div> 
-                        <div class="plebia_video_transcoding_in_progress"><img src="/static/img/loading.gif" /> This video is still being converted. You will only be able to pause, resume or move it forward/backward when this is completed.</div>
-                        <div class="plebia_video_transcoding_done"><img src="/static/img/ok.png" /> Video conversion done! <a href="javascript://">Refresh</a> the video if you need to pause, resume or move it forward/backward.</div>
-                    </div>
-                    
-                    <!-- STATE: all_ready -->
-                    <div class="plebia_post_all_ready">
-                        <div class="video-js-box vim-css"> 
-                            <video class="video-js" width="640" height="360" controls="controls" preload="none" poster=""> 
-                                <source type='video/webm; codecs="vp8, vorbis"' />
-                            </video> 
-                            <p class="vjs-no-video"><strong>Download Video:</strong> 
-                                <a href="#">WebM</a>
-                            </p> 
-                        </div> 
-                    </div>
-                    
-                    <!-- STATE: error -->
-                    <div class="plebia_post_error">
-                        <div class="plebia_torrent_not_found">
-                            <img src="/static/img/monster.jpg" class="plebia_monster_icon" />
-                            <div class="plebia_torrent_not_found_msg">I'm sorry, I couldn't find your video : (<br />But try to enter another one, I'll go get it! :D</div>
+
+                    <!-- Watchbox --------------------------------------------------->
+                    <div id="plebia_episode_lightbox" class="plebia_watchbox">
+                        <input type="hidden" class="plebia_post_api_id" value="" />
+                        <input type="hidden" class="plebia_episode_api_id" value="" />
+                        <input type="hidden" class="plebia_season_api_id" value="" />
+                        <input type="hidden" class="plebia_series_api_id" value="" />
+                        <input type="hidden" class="plebia_torrent_api_id" value="" />
+                        <input type="hidden" class="plebia_video_api_id" value="" />
+                                    
+                        <!-- Series name -->
+                        <div class="plebia_series_title">Pioneer One</div>
+
+                        <!-- Video & prev/next -->
+                        <a class="plebia_previous" href="javascript://"><img class="plebia_previous" src="/static/img/previous.png" /></a>
+                        <div class="plebia_watchbox_content"></div>
+                        <a class="plebia_next" href="javascript://"><img class="plebia_next" src="/static/img/next.png" /></a>
+
+                        <!-- Title & overview -->
+                        <div class="plebia_description">
+                            <div class="plebia_title">
+                                <span class="plebia_name">Fire in the hole!</span> - 
+                                Season <span class="plebia_episode_nb">3</span>
+                                Episode <span class="plebia_episode_nb">12</span>
+                            </div> 
+                            <div class="plebia_overview">Because the DNS lookup failed, the network service that translates a website's name to its Internet address. This error is most often caused by having no connection to the Internet or a misconfigured network. It can also be caused by an unresponsive DNS server or a firewall preventing Chromium from accessing the network.</div>
                         </div>
                     </div>
 
+                    <!-- Watchbox states ------------------------------------------->
+                    <div class="plebia_watchbox_content_states">
+                        <!-- STATE: searching -->
+                        <div class="plebia_watchbox_searching">
+                            <div class="plebia_info">
+                                Searching for video...
+                                &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                            </div>
+                        </div>
+
+                        <!-- STATE: downloading -->
+                        <div class="plebia_watchbox_downloading">
+                            <div class="plebia_info">
+                                <span class="plebia_info_msg"></span>
+                                <span class="plebia_info_progress">
+                                    (<span class="plebia_percent"></span>% done, 
+                                    <span class="plebia_eta"></span> left)
+                                </span>
+                                &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                            </div>
+                            <div class="plebia_progress_bar"></div>
+
+                            <a class="plebia_more" href="javascript://">More details...</a>
+                            <div class="plebia_download_details">
+                                <div class="plebia_torrent_name">Torrent name: <span class="plebia_value"></span></div>
+                                <div class="plebia_torrent_type">Type: <span class="plebia_value"></span></div>
+                                <div class="plebia_torrent_seeds">Seeds: <span class="plebia_value"></span></div>
+                                <div class="plebia_torrent_peers">Peers: <span class="plebia_value"></span></div>
+                                <div class="plebia_torrent_download_speed">Download speed: <span class="plebia_value"></span></div>
+                                <div class="plebia_torrent_upload_speed">Upload speed: <span class="plebia_value"></span></div>
+                            </div>
+                        </div>
+                        
+                        <!-- STATE: transcoding_not_ready -->
+                        <div class="plebia_watchbox_transcoding_not_ready">
+                            <div class="plebia_info">
+                                Video successfully retreived! You can:
+                                <div>
+                                    <div class="plebia_download">
+                                        <a href="#" class="video_link">
+                                            <img src="/static/img/download.png" class="plebia_download_icon"/><br />
+                                            Download it to your computer
+                                        </a>
+                                    </div>
+                                    or
+                                    <div class="plebia_wait">
+                                        <img src="/static/img/wait.png" class="plebia_wait_icon" /><br />
+                                        Wait for the streaming to become ready (currently converting the video)
+                                    </div>
+                                </div>
+                                <div class="clear_both"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- STATE: transcoding_ready -->
+                        <div class="plebia_watchbox_transcoding_ready">
+                            <div class="video-js-box vim-css"> 
+                                <video class="video-js" width="640" height="360" controls="controls" preload="auto" poster=""> 
+                                    <source type='video/webm; codecs="vp8, vorbis"' />
+                                </video> 
+                                <p class="vjs-no-video"><strong>Download Video:</strong> 
+                                    <a href="#">WebM</a>
+                                </p> 
+                            </div> 
+                            <div class="plebia_video_transcoding_in_progress"><img src="/static/img/loading.gif" /> This video is still being converted. You will only be able to pause, resume or move it forward/backward when this is completed.</div>
+                            <div class="plebia_video_transcoding_done"><img src="/static/img/ok.png" /> Video conversion done! <a href="javascript://">Refresh</a> the video if you need to pause, resume or move it forward/backward.</div>
+                        </div>
+                        
+                        <!-- STATE: all_ready -->
+                        <div class="plebia_watchbox_all_ready">
+                            <div class="video-js-box vim-css"> 
+                                <video class="video-js" width="640" height="360" controls="controls" preload="none" poster=""> 
+                                    <source type='video/webm; codecs="vp8, vorbis"' />
+                                </video> 
+                                <p class="vjs-no-video"><strong>Download Video:</strong> 
+                                    <a href="#">WebM</a>
+                                </p> 
+                            </div> 
+                        </div>
+                        
+                        <!-- STATE: error -->
+                        <div class="plebia_watchbox_error">
+                            <div class="plebia_torrent_not_found">
+                                <img src="/static/img/monster.jpg" class="plebia_monster_icon" />
+                                <div class="plebia_torrent_not_found_msg">I'm sorry, I couldn't find your video : (<br />But try to enter another one, I'll go get it! :D</div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
+
+            </div> <!-- End 'plebia_column_center' -->
+
+            <div class="clear_both"></div>
+
+            <div class="plebia_footer">
+                Media server powered by
+                <a href="http://plebia.org/">plebia</a>
+                (with the help of
+                <a href="http://videojs.com">video.js</a>,
+                <a href="http://deluge-torrent.org/">deluge</a>,
+                <a href="http://www.ffmpeg.org/">ffmpeg</a> and
+                <a href="https://www.djangoproject.com/">django</a>)
             </div>
-
-            <div class="plebia_stream"></div>
-
-        </div>
-
-
-        <div class="plebia_footer">
-            Media server powered by
-            <a href="http://plebia.org/">plebia</a>
-            (with the help of
-            <a href="http://videojs.com">video.js</a>,
-            <a href="http://deluge-torrent.org/">deluge</a>,
-            <a href="http://www.ffmpeg.org/">ffmpeg</a> and
-            <a href="https://www.djangoproject.com/">django</a>)
-        </div>
+    
+        </div> <!-- End 'plebia_columns' -->
       
-
-    </div>
+    </div> <!-- End 'plebia' -->
 
 </body>
 </html>

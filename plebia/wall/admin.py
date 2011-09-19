@@ -33,46 +33,46 @@ class PostInline(admin.TabularInline):
 class PostAdmin(admin.ModelAdmin):
     readonly_fields = ("date_added",)
     fieldsets = [
-        (None,                {'fields': ['episode']}),
+        (None,                {'fields': ['series']}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
     ]
 
 admin.site.register(Post, PostAdmin)
 
 
-# SeriesSeasonEpisode ##
+# Episode ##
 
-class SeriesSeasonEpisodeInline(admin.TabularInline):
-    model = SeriesSeasonEpisode
+class EpisodeInline(admin.TabularInline):
+    model = Episode
 
-class SeriesSeasonEpisodeAdmin(admin.ModelAdmin):
+class EpisodeAdmin(admin.ModelAdmin):
     readonly_fields = ("date_added",)
     fieldsets = [
-        (None,                {'fields': ['season','number','name']}),
+        (None,                {'fields': ['season','number','watched']}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
+        ('TVDB information',  {'fields': ['tvdb_id', 'name', 'overview', 'director', 'guest_stars', 'language', 'rating', 'writer', 'first_aired', 'image_url', 'imdb_id', 'tvdb_last_updated']}),
         ('Files',             {'fields': ['torrent','video']}),
     ]
-    inlines = [PostInline]
     list_display = ('season', 'number', 'name')
 
-admin.site.register(SeriesSeasonEpisode, SeriesSeasonEpisodeAdmin)
+admin.site.register(Episode, EpisodeAdmin)
 
 
-# SeriesSeason ##
+# Season ##
 
-class SeriesSeasonInline(admin.TabularInline):
-    model = SeriesSeason
+class SeasonInline(admin.TabularInline):
+    model = Season
 
-class SeriesSeasonAdmin(admin.ModelAdmin):
+class SeasonAdmin(admin.ModelAdmin):
     readonly_fields = ("date_added",)
     fieldsets = [
         (None,                {'fields': ['series','number']}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
         ('Files',             {'fields': ['torrent']}),
     ]
-    inlines = [SeriesSeasonEpisodeInline]
+    inlines = [EpisodeInline]
 
-admin.site.register(SeriesSeason, SeriesSeasonAdmin)
+admin.site.register(Season, SeasonAdmin)
 
 
 # Series ##
@@ -83,10 +83,11 @@ class SeriesInline(admin.TabularInline):
 class SeriesAdmin(admin.ModelAdmin):
     readonly_fields = ("date_added",)
     fieldsets = [
-        (None,                {'fields': ['name','url']}),
+        (None,                {'fields': ['name',]}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
+        ('TVDB information',  {'fields': ['tvdb_id', 'overview', 'language', 'rating', 'first_aired', 'airing_status', 'banner_url', 'poster_url', 'fanart_url', 'imdb_id', 'tvcom_id', 'zap2it_id', 'tvdb_last_updated']}),
     ]
-    inlines = [SeriesSeasonInline]
+    inlines = [SeasonInline]
 
 admin.site.register(Series, SeriesAdmin)
 
@@ -103,7 +104,7 @@ class TorrentAdmin(admin.ModelAdmin):
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
         ('State information', {'fields': ['status','progress','seeds','peers','type']}),
     ]
-    inlines = [SeriesSeasonInline, SeriesSeasonEpisodeInline]
+    inlines = [SeasonInline, EpisodeInline]
     list_display = ('name', 'status', 'progress', 'seeds', 'peers')
 
 admin.site.register(Torrent, TorrentAdmin)
@@ -121,7 +122,7 @@ class VideoAdmin(admin.ModelAdmin):
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
         ('Transcoding',       {'fields': ['status','image_path','webm_path','mp4_path','ogv_path']}),
     ]
-    inlines = [SeriesSeasonEpisodeInline]
+    inlines = [EpisodeInline]
 
 admin.site.register(Video, VideoAdmin)
 

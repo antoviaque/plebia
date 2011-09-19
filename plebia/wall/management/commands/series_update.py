@@ -21,7 +21,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from plebia.wall.models import Series, SeriesSeason, SeriesSeasonEpisode, series_update
+from plebia.wall.models import Series, Season, Episode
 
 
 # Main ##############################################################
@@ -30,6 +30,6 @@ class Command(BaseCommand):
     help = 'Updates series/seasons/episodes from listing'
 
     def handle(self, *args, **options):
-        series_update()
+        Series.objects.apply_tvdb_updates()
 
 

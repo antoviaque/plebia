@@ -20,102 +20,103 @@
 /* Global **********************************************************/
 
 html, body {
-    font-family: "arial";
+    font-family: "helevetica";
     font-size: 11pt;
     line-height: 150%;
     color: #2d2d2d;
+    padding: 0;
+    margin: 0;
 }
 
 a {
+    border-bottom: 1px dotted #4ca20b;
     text-decoration: none;
-    font-weight: bold;
+    color: #4ca20b;
 }
 
 .clear_both {
     clear: both;
 }
 
+.plebia_no_display {
+    display: none;
+}
 
 /* Structure **********************************************************/
 
 .plebia {
+    width: 100%;
+}
+
+.plebia .plebia_header {
+    position: relative;
+    width: 100%;
+    height: 100px;
+    padding: 30px 5px 30px 5px;
+    background-color: #f1f1f1;
+    border: 1px solid #dedede;
+    font-style: italic;
+}
+
+.plebia .plebia_header .plebia_center,
+.plebia .plebia_columns {
     position: absolute;
     width: 1024px;
     left: 50%;
     margin-left: -512px;
 }
 
-.plebia_column_left {
+.plebia .plebia_column_left {
     position: relative;
     float: left;
-    width: 162px;
-    top: 0px;
+    width: 180px;
+    margin-left: -90px;
 }
 
-.plebia_column_center {
+.plebia .plebia_column_center {
     position: relative;
-    width: 700px;
-    top: 0px;
-    left: 50%;
-    margin-left: -350px;
+    float: left;
+    width: 844px;
 }
 
-.plebia_column_right {
-    position: relative;
-    width: 162px;
-    top: 0px;
-    float: right;
-    top: 0px;
+.plebia .plebia_footer {
+    font-size: 9pt;
+    width: 1024px;
+    text-align: center;
+    margin: 20px;
+    color: grey;
 }
-
 
 /* Header **********************************************************/
 
-.plebia .plebia_updates {
-    width: 100%;
+.plebia .plebia_header img.plebia_logo {
     float: left;
-    padding: 5px 20px 10px 20px;
-    background-color: #f1f1f1;
-    border: 1px solid #dedede;
-    font-size: 9pt;
-    line-height: 150%;
+    margin: 30px 30px 30px 90px;
 }
 
-.plebia .plebia_updates ul {
-    padding-left: 5px;
-    margin-left: 5px;
-}
-
-/* New post ********************************************************/
-
-.plebia .plebia_new_post {
-    width: 90%;
-    left-margin: 5%;
-    padding: 5px 5px 30px 5px;
-    background-color: #f1f1f1;
-    border: 1px solid #dedede;
-    text-align: center;
-    font-style: italic;
-}
-
-.plebia .plebia_new_post input.plebia_name {
-    width: 50%;
+.plebia .plebia_header input.plebia_name {
+    width: 500px;
     height: 20px;
     font-size: 13pt;
-    margin-left: 50px;
 }
 
-.plebia .plebia_new_post img.plebia_search {
+.plebia .plebia_header img.plebia_search {
     width: 50px;
     height: 50px;
     display: inline;
     margin-bottom: -20px;
 }
 
-/* Templates *******************************************************/
+/* Live search */
+#jquery-live-search .plebia_result img.plebia_banner_small {
+    height: 55px;
+    width: 300px;
+    padding: 2px;
+    float: left;
+}
 
-.plebia .plebia_post_templates {
-    display: none;
+#jquery-live-search .plebia_result .plebia_name {
+    margin: 20px;
 }
 
 /* Post ************************************************************/
@@ -145,63 +146,366 @@ a {
     font-size: 10pt;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_post_title img.plebia_download_icon {
+/* Series */
+
+.plebia .plebia_stream .plebia_post .plebia_series {
+    position: relative;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_series .plebia_poster {
+    width: 170px;
+    height: 250px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_series .plebia_content_right {
+    position: absolute;
+    text-align: right;
+    bottom: 0px;
+    left: 200px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_series .plebia_content_right .plebia_name {
+    font-size: 30pt;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_series .plebia_content_right .plebia_play {
     width: 15px;
     height: 15px;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_next_episode a,
-.plebia .plebia_stream .plebia_post .plebia_next_episode p {
+.plebia .plebia_stream .plebia_post .plebia_series .plebia_content_right .plebia_watch_next {
+    line-height: 50px;
+}
+
+/* Episodes */
+
+.plebia .plebia_stream .plebia_post .plebia_episode_menu a.plebia_trigger{
+    position: absolute;
+    text-decoration: none;
+    top: 0px; 
+    right: 0px;
+    font-size: 16px;
+    letter-spacing: -1px;
+    color: #fff;
+    padding: 10px 15px 10px 40px;
+    font-weight: 700;
+    background: #333333 url(/static/img/plus_small.png) 15% 55% no-repeat;
+    border:1px solid #444444;
+    -moz-border-radius-topleft: 20px;
+    -webkit-border-top-left-radius: 20px;
+    -moz-border-radius-bottomleft: 20px;
+    -webkit-border-bottom-left-radius: 20px;
+    -moz-border-radius-bottomright: 0px;
+    -webkit-border-bottom-right-radius: 0px;
+    display: block;
+    z-index: 10;
+}
+ 
+.plebia .plebia_stream .plebia_post .plebia_episode_menu a.plebia_trigger:hover{
+    position: absolute;
+    text-decoration: none;
+    top: 0px; 
+    right: 0px;
+    font-size: 16px;
+    letter-spacing: -1px;
+    color: #fff;
+    padding: 10px 20px 10px 40px;
+    font-weight: 700;
+    background: #222222 url(/static/img/plus_small.png) 15% 55% no-repeat;
+    border: 1px solid #444444;
+    -moz-border-radius-topleft: 20px;
+    -webkit-border-top-left-radius: 20px;
+    -moz-border-radius-bottomleft: 20px;
+    -webkit-border-bottom-left-radius: 20px;
+    -moz-border-radius-bottomright: 0px;
+    -webkit-border-bottom-right-radius: 0px;
+    display: block;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_episode_menu a.plebia_active.plebia_trigger {
+    background: #222222 url(/static/img/minus_small.png) 15% 55% no-repeat;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_episode_menu .plebia_season_list {
+    position: absolute;
+    top: 0px;
+    right: 0;
+    background: #000000;
+    border:1px solid #111111;
+    -moz-border-radius-topleft: 20px;
+    -webkit-border-top-left-radius: 20px;
+    -moz-border-radius-bottomleft: 20px;
+    -webkit-border-bottom-left-radius: 20px;
+    -moz-border-radius-bottomright: 20px;
+    -webkit-border-bottom-right-radius: 20px;
+    width: 480px;
+    height: auto;
+    padding: 30px;
+    filter: alpha(opacity=90);
+    opacity: .90;
+    color: #F1F1F1;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list a.plebia_episode_link {
+    color: #F1F1F1;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_season_title {
+    font-variant: small-caps;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #DEDEDE;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode {
+    margin: 10px 0px 10px 20px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_number {
+    display: table-cell;
+    vertical-align: middle;
+    width: 23px;
+    height: auto;
+    font-size: 14pt;
+    padding-right: 10px;
+    border-right: 2px dotted #F1F1F1;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status {
+    width: 80px;
+    display: table-cell;
+    position: relative;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_description {
+    display: table-cell;
+    width: 340px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_episode_title {
+    font-weight: bold;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_overview {
+    line-height: 16px;
+    font-style: italic;
+}
+
+/* STATE (small): 'all_ready' */
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status img.plebia_thumb {
+    width: 64px;
+    height: 36px;
+    position: absolute;
+    top: 50%;
+    margin-top: -18px;
+    left: 10px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status img.plebia_play {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    margin-top: -10px;
+    left: 30px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status img.plebia_ok,
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status .plebia_new {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 20%;
+    margin-top: -10px;
+    left: 75%;
+    margin-left: -10px;
+}
+
+/* STATE (small): 'transcoding_not_ready' */
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status img.plebia_download {
+    width: 26px;
+    height: 26px;
+    position: absolute;
+    top: 50%;
+    margin-top: -13px;
+    left: 10px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status img.plebia_wait {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    top: 50%;
+    margin-top: -13px;
+    left: 46px;
+}
+
+/* STATE (small): 'error' */
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status img.plebia_error {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    top: 50%;
+    margin-top: -25px;
+    left: 50%;
+    margin-left: -25px;
+}
+
+/* STATE (small): 'downloading' */
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status .plebia_percent,
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status .plebia_eta,
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status .plebia_progress_bar {
+    width: 60px;
+    margin: 0px 10px 0px 10px;
+    height: 20px;
+    overflow: hidden;
+    text-align: center;
+    font-size: 9pt;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status .plebia_progress_bar {
+    height: 10px;
+}
+
+/* STATE (small): 'new' */
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status .plebia_start {
+    width: 60px;
+    margin: 0px 10px 0px 10px;
+    height: 20px;
+    overflow: hidden;
+    text-align: center;
+    font-size: 11pt;
+    position: absolute;
+    top: 35%;
+    margin-top: -10px;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_status .plebia_progress_bar_new {
+    width: 60px;
+    margin: 0px 10px 0px 10px;
+    height: 10px;
+    position: absolute;
+    top: 70%;
+    margin-top: -5px;
+    filter: alpha(opacity=40);
+    opacity: .40;
+}
+
+/* lightbox *********************************************************/
+
+#fancybox-wrap a {
+    border: none;
+}
+
+#fancybox-content {
+    background-color: black;
+    color: #F1F1F1;
+}
+
+.plebia_episode_lightbox {
+    padding: 20px 50px 20px 50px;
+    width: 900px;
+}
+
+.plebia_episode_lightbox .plebia_series_title {
+    font-size: 30pt;
+    line-height: 200%;
+}
+
+.plebia_episode_lightbox a.plebia_previous,
+.plebia_episode_lightbox a.plebia_next {
+    width: 71px;
+    height: 126px;
+    margin-top: 117px;
+}
+
+.plebia_episode_lightbox a.plebia_previous {
+    float: left;
+}
+
+.plebia_episode_lightbox a.plebia_next {
     float: right;
-    font-weight: normal;
-    margin-top: 10px;
+}
+
+.plebia_episode_lightbox video {
+    position: relative;
+    left: 59px;
+}
+
+.plebia_episode_lightbox .plebia_description {
+    width: 640px;
+    margin: 20px auto 0px auto;
+}
+
+.plebia_episode_lightbox .plebia_description .plebia_title {
+    color: #f1f1f1;
+    margin-bottom: 10px;
+    font-size: 18pt;
+}
+
+.plebia_episode_lightbox .plebia_description .plebia_overview {
+    color: #dedede;
+    text-align: justify;
+    font-style: italic;
+}
+
+/* TODO */
+
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_post_title img.plebia_download_icon {
+    width: 15px;
+    height: 15px;
 }
 
 /* All states */
 
-.plebia .plebia_stream .plebia_post .plebia_info {
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_info {
     margin: 20px 0 20px 0;
     text-align: center;
 }
 
 /* STATE: downloading */
 
-.plebia .plebia_stream .plebia_post_downloading .plebia_download_details {
+.TODO_lightbox .plebia .plebia_stream .plebia_post_downloading .plebia_download_details {
     display: none;
 }
 
 /* STATE: transcoding_not_ready */
 
-.plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_download {
+.TODO_lightbox .plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_download {
     float: left;
     width: 45%;
 }
 
-.plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait {
+.TODO_lightbox .plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait {
     float: right;
     width: 45%;
 }
 
-.plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait img.plebia_wait_icon {
+.TODO_lightbox .plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait img.plebia_wait_icon {
     width: 120px;
     height: 120px;
 }
 
 /* STATE: transcoding_ready */
 
-.plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress,
-.plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress,
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
     font-size: 9pt;
     font-style: italic;
     margin: 5px;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
     display: none;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress img,
-.plebia .plebia_stream .plebia_post .plebia_video_transcoding_done img {
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress img,
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_done img {
     width: 20px;
     height: 20px;
     float: left;
@@ -210,28 +514,18 @@ a {
 
 /* STATE: error */
 
-.plebia .plebia_stream .plebia_post .plebia_torrent_not_found img {
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_torrent_not_found img {
     width: 200px;
     height: 200px;
     float: left;
     margin: 10px 20px 10px 50px;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_torrent_not_found .plebia_torrent_not_found_msg {
+.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_torrent_not_found .plebia_torrent_not_found_msg {
     padding-top: 70px;
     padding-bottom: 70px;
 }
 
-
-/* Footer **********************************************************/
-
-.plebia .plebia_footer {
-    font-size: 9pt;
-    width: 100%;
-    text-align: center;
-    margin: 20px;
-    color: grey;
-}
 
 
 /* UserVoice *******************************************************/
@@ -248,4 +542,8 @@ a {
     display: none !important;
 }
 
+/* Make sure we don't show a transparent background on fullscreen */
+.video-js-box.vjs-fullscreen {
+    background-color: black;
+}
 

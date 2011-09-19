@@ -127,8 +127,8 @@ class PlebiaTest(TestCase):
         self.assertEqual(response.status_code, 302)
 
         # Check model objects through API
-        self.api_check('seriesseasonepisode', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
-        self.api_check('seriesseason', 1, {'number': 1, 'torrent': None})
+        self.api_check('episode', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/season/1/', 'video': None})
+        self.api_check('season', 1, {'number': 1, 'torrent': None})
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'episode'})
         self.api_check('video', 1, None)
 
@@ -159,8 +159,8 @@ class PlebiaTest(TestCase):
         
         # Submit & check state
         response = c.post(url, data, follow=True)
-        self.api_check('seriesseasonepisode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
-        self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('episode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/season/1/', 'video': None})
+        self.api_check('season', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': ''})
         self.api_check('video', 1, None)
 
@@ -173,8 +173,8 @@ class PlebiaTest(TestCase):
         
         # Submit & check state
         response = c.post(url, data, follow=True)
-        self.api_check('seriesseasonepisode', 3, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
-        self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('episode', 3, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/season/1/', 'video': None})
+        self.api_check('season', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': ''})
         self.api_check('video', 1, None)
 
@@ -183,8 +183,8 @@ class PlebiaTest(TestCase):
         self.run_cron_commands()
         
         # Check state
-        self.api_check('seriesseasonepisode', 3, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
-        self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('episode', 3, {'number': 8, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/season/1/', 'video': None})
+        self.api_check('season', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 0.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': ''})
         self.api_check('video', 1, None)
 
@@ -204,8 +204,8 @@ Progress: 2.50% [#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]""
         self.run_cron_commands()
 
         # Check state
-        self.api_check('seriesseasonepisode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': None})
-        self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('episode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/season/1/', 'video': None})
+        self.api_check('season', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 2.50, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': torrent_name, 'download_speed': '361.0 KiB/s', 'upload_speed': '10.0 KiB/s', 'eta': '8m 4s'})
         self.api_check('video', 1, None)
 
@@ -239,8 +239,8 @@ Tracker status: """
         self.run_cron_commands()
 
         # Check state
-        self.api_check('seriesseasonepisode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/seriesseason/1/', 'video': '/api/v1/video/1/'})
-        self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('episode', 1, {'number': 4, 'torrent': '/api/v1/torrent/1/', 'season': '/api/v1/season/1/', 'video': '/api/v1/video/1/'})
+        self.api_check('season', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
         self.api_check('torrent', 1, {'status': 'Completed', 'progress': 100.0, 'type': 'season', 'hash': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'name': torrent_name})
         self.api_check('video', 1, {'status': 'Transcoding', \
                 'original_path': os.path.join(torrent_name, 's02e04', 'test1.avi'), \
@@ -269,7 +269,7 @@ Tracker status: """
 
     def create_fake_season(self, name="Test"):
         series = Series.objects.get_or_create(name=name)[0]
-        season = SeriesSeason.objects.get_or_create(number=2, series=series)[0]
+        season = Season.objects.get_or_create(number=2, series=series)[0]
         return season
 
 
@@ -297,7 +297,7 @@ Tracker status: """
 
         # Fake episode & post
         name = 'Test episode not found in season'
-        episode = SeriesSeasonEpisode(number=10)
+        episode = Episode(number=10)
         episode.season = self.create_fake_season(name=name)
         episode.torrent = self.create_fake_torrent(name=name)
         episode.save()
@@ -346,7 +346,7 @@ Tracker status: """
 
         # Fake episode
         name = 'Test multiple seasons'
-        episode = SeriesSeasonEpisode(number=10)
+        episode = Episode(number=10)
         episode.season = self.create_fake_season(name=name)
         episode.torrent = self.create_fake_torrent(name=name, type="season")
         episode.save()
@@ -367,10 +367,10 @@ Tracker status: """
         self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, 'SeaSon2', 'S02E10.avi') })
 
         # Check that all seasons have been matched
-        self.api_check('seriesseason', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
-        self.api_check('seriesseason', 2, {'number': 1, 'torrent': '/api/v1/torrent/1/'})
-        self.api_check('seriesseason', 3, {'number': 3, 'torrent': '/api/v1/torrent/1/'})
-        self.api_check('seriesseason', 4, {'number': 4, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('season', 1, {'number': 2, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('season', 2, {'number': 1, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('season', 3, {'number': 3, 'torrent': '/api/v1/torrent/1/'})
+        self.api_check('season', 4, {'number': 4, 'torrent': '/api/v1/torrent/1/'})
         
     
     def _test_find_single_episode_in_season_torrent(self, name, number, filename):
@@ -378,7 +378,7 @@ Tracker status: """
         The episode 'number' argument should be 1 on first call within same test method, and increase by 1 each call"""
 
         # Fake episode
-        episode = SeriesSeasonEpisode(number=number)
+        episode = Episode(number=number)
         episode.season = self.create_fake_season(name=name)
         episode.torrent = self.create_fake_torrent(name=name, type="season")
         episode.save()
@@ -422,7 +422,7 @@ Tracker status: """
         # Fake episode
         name = 'Test episode name within season torrent subfolder'
         filename = 'Test - 201 - Title.avi'
-        episode = SeriesSeasonEpisode(number=1)
+        episode = Episode(number=1)
         episode.season = self.create_fake_season(name=name)
         episode.torrent = self.create_fake_torrent(name=name, type="season")
         episode.save()

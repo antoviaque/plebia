@@ -30,45 +30,6 @@ import mechanize
 
 # Helpers - Finding torrents ########################################
 
-def get_torrent_by_episode(episode):
-    season = episode.season
-    series = season.series
-
-    # Check if the full season is not already there
-    if season.torrent is not None:
-        torrent = season.torrent
-    else:
-        # Episode
-        search_string = "(tv|television) %s s%02de%02d" % (series.name, season.number, episode.number)
-        episode_torrent = get_torrent_by_search(search_string)
-        # Season
-        search_string = "(tv|television) %s season %d" % (series.name, season.number)
-        season_torrent = get_torrent_by_search(search_string)
-
-        # See if we should prefer the season or the episode
-        if season_torrent is None and episode_torrent is None:
-            return None
-        elif season_torrent is None \
-                or season_torrent.seeds < 10:
-            torrent = episode_torrent
-            torrent.type = 'episode'
-            torrent.save()
-        elif episode_torrent is None \
-                or episode_torrent.seeds < 10 \
-                or episode_torrent.seeds*10 < season_torrent.seeds:
-            torrent = season_torrent
-            torrent.type = 'season'
-            torrent.save()
-            season.torrent = torrent
-            season.save()
-        else:
-            torrent = episode_torrent
-            torrent.type = 'episode'
-            torrent.save()
-
-    return torrent
-
-
 def get_torrent_by_search(search_string):
     torrent = Torrent()
     html_result = submit_form("http://torrentz.eu/", search_string)

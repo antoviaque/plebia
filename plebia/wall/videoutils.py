@@ -20,7 +20,7 @@
 # Includes ##########################################################
 
 from django.conf import settings
-from plebia.wall.models import Video, SeriesSeason
+from plebia.wall.models import Video, Season
 
 import re
 import subprocess
@@ -103,7 +103,7 @@ def locate_season_in_season_torrent(episode, subpath=''):
                 continue
 
             # Register the torrent for this season if necessary
-            cur_season = SeriesSeason.objects.get_or_create(number=number, series=season.series)[0]
+            cur_season = Season.objects.get_or_create(number=number, series=season.series)[0]
             if cur_season.torrent is None:
                 cur_season.torrent = torrent
 
