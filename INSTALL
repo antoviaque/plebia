@@ -51,6 +51,7 @@ Create downloads directory (as configure above):
 
     $ mkdir -p /var/www/downloads
     $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank
+    $ mkdir plebia/db
 
 Create database:
 
@@ -169,7 +170,7 @@ The coverage report will be at: http://localhost/static/jscoverage/jscoverage.ht
 = 4. Running =
 
     $ deluged
-    $ /etc/init.d/apache2 restart
+    $ sudo /etc/init.d/apache2 restart
 
 And go to http://localhost/
 
