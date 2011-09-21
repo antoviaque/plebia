@@ -33,14 +33,6 @@
         plebia.init();
     };
 
-    $.fn.plebia_post_to_stream = function(series_id) {
-        var root = this;
-        var stream = $('.plebia_stream', root);
-
-        $.plebia.post_to_stream(series_id, stream, root);
-    };
-
-
     /////////////////////////////////////////////////////////////////////////////////////
     // Classes //////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////
@@ -194,21 +186,25 @@
             deferred.resolve();
 
             // Start regular update
-            //$this.update_loop();
+            $this.update_loop();
         });
 
         return deferred.promise();
     };
 
-    $.plebia.Stream.prototype.add_new_posts = function(loaded_post_list) {
+    $.plebia.Stream.prototype.add_new_posts = function(loaded_post_list, position) {
         // Add posts in API but not in DOM 
 
         var $this = this;
         var deferred = $.Deferred();
 
-        // loaded_post_list is optional - if not provided, load all posts
+        // Optional args
         if(!loaded_post_list) {
+            // If not provided, load all posts
             var loaded_post_list = new Array();
+        }
+        if(!position) {
+            var position = 'bottom';
         }
 
         var new_post_list = new Array();
@@ -231,7 +227,7 @@
             $.each(new_post_list, function() {
                 var post_obj = this;
                 count--;
-                $this.add_post(post_obj)
+                $this.add_post(post_obj, position);
                 
                 // When the last post has finished loading, we're done
                 if(count == 0) {
@@ -259,6 +255,17 @@
         post.init(api_post_obj);
     };
 
+    $.plebia.Stream.prototype.create_post = function(series_id) {
+        // Send a new post to the server to create it and update stream to show it
+
+        var $this = this;
+
+        // Create new post on server with series, add to stream
+        $.getJSON('/ajax/newpost/'+series_id+'/', function(response) {
+            $this.update();
+        });
+    },
+
     $.plebia.Stream.prototype.update_loop = function() {
         var $this = this;
 
@@ -269,18 +276,17 @@
         });
     };
 
-    // XXX To check
     $.plebia.Stream.prototype.update = function() {
         var $this = this;
         var deferred = $.Deferred();
 
         var loaded_post_list = new Array();
-        var elems = $('.plebia_post', stream);
+        var elems = $('.plebia_post', $this.dom);
         var count = elems.length;
 
         // Load posts if there is no post yet
         if(count==0) {
-            $this.load_new_posts(loaded_post_list, stream, root).done(function() {
+            $this.add_new_posts(loaded_post_list, 'top').done(function() {
                 deferred.resolve();
             });
         }
@@ -288,21 +294,16 @@
         // Look through posts that are already loaded
         elems.each(function() {
             var post_dom = $(this);
-            var post_id = $this.get_object_id_from_dom('post', post_dom);
+            var post_obj = $(this)[0].post;
             
             // Keep track of loaded posts ids to not reload them later on
-            loaded_post_list.push(post_id);
+            loaded_post_list.push(post_obj.api_get_url());
 
-            // Refresh individual post when marked
-            // XXX extract to another method to only refresh episodes lists currently opened
-            if(post_dom.hasClass('plebia_post_update')) {
-                var dfr1 = $this.update_post(post_dom, stream, root);
-            } else {
-                var dfr1 = null;
-            }
+            // Refresh individual post
+            var dfr1 = post_obj.update();
 
             if(!--count) { // at the last item
-                var dfr2 = $this.load_new_posts(loaded_post_list, stream, root);
+                var dfr2 = $this.add_new_posts(loaded_post_list, 'top');
                 
                 $.when(dfr1, dfr2).then(function() {
                     deferred.resolve();
@@ -310,7 +311,7 @@
             }
         });
 
-       return deferred.promise();
+        return deferred.promise();
     };
 
 
@@ -345,22 +346,32 @@
         series.init(api_post_obj.series);
 
         // Populate post with actual data
-        $this.update(api_post_obj);
+        $this.load(api_post_obj);
     };
 
-    $.plebia.Post.prototype.update = function(api_post_obj) {
+    $.plebia.Post.prototype.load = function(api_post_obj) {
         // Set the HTML values in the base template
         
         var $this = this;
 
         // Store API values without reloading them from API
         $this.api_obj = api_post_obj;
-        $this.api_set_url(api_post_obj.resource_url);
+        $this.api_set_url(api_post_obj.resource_uri);
 
         // Update DOM
         $('.plebia_post_time', $this.dom).html(api_post_obj.date_added);
     };
+    
+    $.plebia.Post.prototype.update = function() {
+        // Reload content if necessary
 
+        // XXX TODO
+        /*if(post_dom.hasClass('plebia_post_update')) {
+            var dfr1 = $this.update_post(post_dom, stream, root);
+        } else {
+            var dfr1 = null;
+        }*/
+    };
 
     // Series ///////////////////////////////////////////////////////////////////////////
 
@@ -393,11 +404,11 @@
 
         // JS for opening/closing the episodes list
         $("a.plebia_trigger", $this.dom).click(function(){
-            $(".plebia_season_list", new_post).toggle("fast");
+            $(".plebia_season_list", $this.dom).toggle("fast");
             $(this).toggleClass("plebia_active");
             
             if($(this).hasClass("plebia_active")) {
-                $this.load_season_list(new_post, stream, root);
+                $this.load_season_list();
             };
 
             return false;
@@ -415,9 +426,10 @@
         $('.plebia_overview', $this.dom).html(api_series_obj.overview);
     };
 
-    $.plebia.Series.prototype.load_season_list = function(post_dom, stream, root) {
+    $.plebia.Series.prototype.load_season_list = function() {
         // Get episodes list from API and display them in episodes list menu
 
+        var $this = this;
         
         $.when($this.get_api_object('series', post_dom)).done(function(post) {
 
@@ -483,17 +495,6 @@
 
         // Page refresh /////////////////////////////////////////////
 
-
-        post_to_stream: function(series_id, stream, root) {
-            var $this = this;
-
-            // Create new post with series, add to stream
-            $.getJSON('/ajax/newpost/'+series_id+'/', function(response) {
-                var post_id = response[0];
-
-                $this.load_post(post_id, stream, root, 'top');
-            });
-        },
 
 
         // Posts ////////////////////////////////////////////////////

@@ -64,6 +64,8 @@ class TheTVDB(object):
             # External references
             self.imdb_id = node.findtext("IMDB_ID")
             self.tvcom_id = node.findtext("SeriesID")
+            if not self.tvcom_id:
+                self.tvcom_id = None
             self.zap2it_id = node.findtext("zap2it_id")
 
             # When this show was last updated

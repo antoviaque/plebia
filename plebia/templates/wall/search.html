@@ -15,7 +15,7 @@
 
         var result_dom = $(this).parent();
         var series_id = $('input.plebia_series_id', result_dom).val();
-        $('.plebia').plebia_post_to_stream(series_id);
+        $('.plebia .plebia_stream')[0].stream.create_post(series_id);
     });
 </script>
 
