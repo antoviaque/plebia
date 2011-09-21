@@ -72,7 +72,7 @@
 
                     <!-- Post ------------------------------------------------------>
                     <div class="plebia_post_template">
-                        <!-- Related API objects -->
+                        <!-- Related API object -->
                         <input type="hidden" class="plebia_api_url" value="" />
                         
                         <img src="/static/img/avatar.jpg" class="plebia_user_avatar" />
@@ -114,99 +114,69 @@
 
                     <!-- Season --------------------------------------------------->
                     <div class="plebia_season_template">
+                        <!-- Related API object -->
+                        <input type="hidden" class="plebia_api_url" value="" />
+
                         <div class="plebia_season_title">Season <span class="plebia_number">1</span></div>
                         <div class="plebia_episode_list"></div>
                     </div>
 
-                    <!-- Episode --------------------------------------------------->
-                    <div class="plebia_episode_template">
-                        <!-- Episode STATE: 'all_ready' +watched -->
+                    <!-- Episode (small) ------------------------------------------>
+                    <div class="plebia_episode_small_template">
+                        <!-- Related API object -->
+                        <input type="hidden" class="plebia_api_url" value="" />
+
                         <a class="plebia_episode_link" href="javascript://">
                             <div class="plebia_episode">
-                                <div class="plebia_number">01</div>
-                                <div class="plebia_status">
-                                    <img class="plebia_thumb" src="javascript://" />
-                                    <img class="plebia_play" src="/static/img/play.png" />
-                                    <img class="plebia_ok" src="/static/img/ok.png" />
-                                </div>
+                                <div class="plebia_number">00</div>
+                                <div class="plebia_state"></div>
                                 <div class="plebia_description">
-                                    <div class="plebia_episode_title">Fire in the hole!</div>
-                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
+                                    <div class="plebia_title">Title</div>
+                                    <div class="plebia_overview">Overview</div>
                                 </div>
                             </div>
                         </a>
+                    </div>
+                        
+                    <!-- Episode (small) - States ---------------------------------->
+                    <div class="plebia_episode_small_states">
+                        <!-- Episode STATE: 'all_ready' +watched -->
+                        <div class="plebia_episode_all_ready">
+                            <img class="plebia_thumb" src="javascript://" />
+                            <img class="plebia_play" src="/static/img/play.png" />
+                            <img class="plebia_ok" src="/static/img/ok.png" />
+                        </div>
 
                         <!-- Episode STATE: 'all_ready' +new -->
-                        <a class="plebia_episode_link" href="javascript://">
-                            <div class="plebia_episode">
-                                <div class="plebia_number">02</div>
-                                <div class="plebia_status">
-                                    <img class="plebia_thumb" src="javascript://" />
-                                    <img class="plebia_play" src="/static/img/play.png" />
-                                    <img class="plebia_new" src="/static/img/new.png" />
-                                </div>
-                                <div class="plebia_description">
-                                    <div class="plebia_episode_title">Fire in the hole!</div>
-                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
-                                </div>
-                            </div>
-                        </a>
+                        <div class="plebia_episode_all_ready_new">
+                            <img class="plebia_thumb" src="javascript://" />
+                            <img class="plebia_play" src="/static/img/play.png" />
+                            <img class="plebia_new" src="/static/img/new.png" />
+                        </div>
+
                         <!-- Episode STATE: 'transcoding_not_ready' -->
-                        <a class="plebia_episode_link" href="javascript://">
-                            <div class="plebia_episode">
-                                <div class="plebia_number">03</div>
-                                <div class="plebia_status">
-                                    <img src="/static/img/download.png" class="plebia_download"/><br />
-                                    <img src="/static/img/wait.png" class="plebia_wait" /><br />
-                                </div>
-                                <div class="plebia_description">
-                                    <div class="plebia_episode_title">Fire in the hole!</div>
-                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
-                                </div>
-                            </div>
-                        </a>
+                        <div class="plebia_episode_transcoding_not_ready">
+                            <img src="/static/img/download.png" class="plebia_download"/><br />
+                            <img src="/static/img/wait.png" class="plebia_wait" /><br />
+                        </div>
+                                    
                         <!-- Episode STATE: 'error' -->
-                        <a class="plebia_episode_link" href="javascript://">
-                            <div class="plebia_episode">
-                                <div class="plebia_number">04</div>
-                                <div class="plebia_status">
-                                    <img src="/static/img/error.png" class="plebia_error"/><br />
-                                </div>
-                                <div class="plebia_description">
-                                    <div class="plebia_episode_title">Fire in the hole!</div>
-                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
-                                </div>
-                            </div>
-                        </a>
+                        <div class="plebia_episode_error">
+                            <img src="/static/img/error.png" class="plebia_error"/><br />
+                        </div>
+
                         <!-- Episode STATE: 'downloading' -->
-                        <a class="plebia_episode_link" href="javascript://">
-                            <div class="plebia_episode">
-                                <div class="plebia_number">05</div>
-                                <div class="plebia_status">
-                                    <div class="plebia_percent">14<span class="plebia_percent_value"></span>%</div>
-                                    <div class="plebia_progress_bar"></div>
-                                    <div class="plebia_eta"><span class="plebia_eta_value">1m 2w 10h 23s</span> left</div>
-                                </div>
-                                <div class="plebia_description">
-                                    <div class="plebia_episode_title">Fire in the hole!</div>
-                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
-                                </div>
-                            </div>
-                        </a>
-                        <!-- Episode STATE: 'new' -->
-                        <a class="plebia_episode_link" href="javascript://">
-                            <div class="plebia_episode">
-                                <div class="plebia_number">06</div>
-                                <div class="plebia_status">
-                                    <div class="plebia_start">Start >></div>
-                                    <div class="plebia_progress_bar_new"></div>
-                                </div>
-                                <div class="plebia_description">
-                                    <div class="plebia_episode_title">Fire in the hole!</div>
-                                    <div class="plebia_overview">This error is most often caused by having no connection to the Internet or a misconfigured network.</div>
-                                </div>
-                            </div>
-                        </a>
+                        <div class="plebia_episode_downloading">
+                            <div class="plebia_percent">14<span class="plebia_percent_value"></span>%</div>
+                            <div class="plebia_progress_bar"></div>
+                            <div class="plebia_eta"><span class="plebia_eta_value">1m 2w 10h 23s</span> left</div>
+                        </div>
+
+                        <!-- Episode STATE: 'not_started' -->
+                        <div class="plebia_episode_not_started">
+                            <div class="plebia_start">Start >></div>
+                            <div class="plebia_progress_bar_new"></div>
+                        </div>
                     </div>
 
                     <!-- Watchbox --------------------------------------------------->
@@ -338,7 +308,9 @@
                 (with the help of
                 <a href="http://videojs.com">video.js</a>,
                 <a href="http://deluge-torrent.org/">deluge</a>,
-                <a href="http://www.ffmpeg.org/">ffmpeg</a> and
+                <a href="http://www.ffmpeg.org/">ffmpeg</a>,
+                <a href="http://torrentz.eu/">torrentz</a>,
+                <a href="http://www.thetvdb.com/">thetvdb</a> and
                 <a href="https://www.djangoproject.com/">django</a>)
             </div>
     

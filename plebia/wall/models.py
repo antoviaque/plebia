@@ -214,7 +214,7 @@ class Series(models.Model):
                 tvdb_id = tvdb_episode.id
 
                 # Don't handle specials (season 0)
-                if season_nb:
+                if int(season_nb):
                     season = Season.objects.get_or_create(series=self, number=season_nb)[0]
 
                     episode_nb = tvdb_episode.episode_number

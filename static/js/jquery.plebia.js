@@ -76,15 +76,6 @@
     $.plebia.APIObject.prototype = new $.plebia.BaseObject();
     $.plebia.APIObject.prototype.constructor = $.plebia.APIObject; 
 
-    $.plebia.APIObject.prototype.api_init = function(api_url) {
-        // Sets URL in DOM (for debugging) and load the object attributes from the REST API URL
-        
-        var $this = this;
-
-        // Record URL on DOM
-        $this.api_set_url(api_url);
-    };
-
     $.plebia.APIObject.prototype.api_set_url = function(api_url) {
         // Set the API URL on the DOM input field
 
@@ -105,7 +96,7 @@
         return api_url;
     };
 
-    $.plebia.APIObject.prototype.api_load = function(obj_class, post_dom) {
+    $.plebia.APIObject.prototype.api_load = function() {
         // Refresh API object from the server
 
         var $this = this;
@@ -177,8 +168,8 @@
         var $this = this;
         var deferred = $.Deferred();
 
-        // Attach object to API URL and load attributes
-        $this.api_init($this.api_base_url+'/post/?limit=50');
+        // Attach object to API URL
+        $this.api_set_url($this.api_base_url+'/post/?limit=50');
 
         // Populate stream (all posts)
         $.when($this.add_new_posts()).done(function() {
@@ -399,8 +390,12 @@
         // Class name
         $this.dom.addClass('plebia_series');
 
+        // API Object
+        $this.api_set_url(api_series_obj.resource_uri);
+        $this.api_obj = api_series_obj;
+
         // Populate post with actual data
-        $this.update(api_series_obj);
+        $this.load();
 
         // JS for opening/closing the episodes list
         $("a.plebia_trigger", $this.dom).click(function(){
@@ -409,64 +404,275 @@
             
             if($(this).hasClass("plebia_active")) {
                 $this.load_season_list();
-            };
+            } else {
+                $('.plebia_season_list', $this.dom).html('');
+            }
 
             return false;
         });
     };
 
-    $.plebia.Series.prototype.update = function(api_series_obj) {
+    $.plebia.Series.prototype.load = function(api_series_obj) {
         // Set the HTML values in the base template
 
         var $this = this;
 
-        $('.plebia_poster', $this.dom).attr('src', 
-                '/static/banner.php?file_path='+api_series_obj.poster_url);
-        $('.plebia_name', $this.dom).html(api_series_obj.name);
-        $('.plebia_overview', $this.dom).html(api_series_obj.overview);
+        $('.plebia_poster', $this.dom).attr('src', '/static/banner.php?file_path='+$this.api_obj.poster_url);
+        $('.plebia_name', $this.dom).html($this.api_obj.name);
+        $('.plebia_overview', $this.dom).html($this.api_obj.overview.substring(0,320));
     };
 
     $.plebia.Series.prototype.load_season_list = function() {
         // Get episodes list from API and display them in episodes list menu
 
         var $this = this;
+        var season_list_dom = $('.plebia_season_list', $this.dom);
         
-        $.when($this.get_api_object('series', post_dom)).done(function(post) {
+        // Load all seasons
+        for(i in $this.api_obj.season_list) {
+            var api_season_url = $this.api_obj.season_list[i];
 
+            // Create season DOM
+            var season_dom = $('<div></div>');
+            $('.plebia_season_list', $this.dom).append(season_dom);
+
+            // Init season object, which populates the DOM using API call
+            var season = new $.plebia.Season(season_dom, $this.dom);
+            season.init(api_season_url);
+        }
+    };
+
+
+    // Season ///////////////////////////////////////////////////////////////////////////
+
+    $.plebia.Season = function(dom, series_dom) {
+        dom[0].season = this;
+        this.dom = dom;
+        this.series_dom = series_dom;
+        this.post_dom = series_dom[0].series.post_dom;
+        this.stream_dom = series_dom[0].series.stream_dom;
+        this.plebia_dom = series_dom[0].series.plebia_dom;
+    };
+
+    // APIObject inheritance
+    $.plebia.Season.prototype = new $.plebia.APIObject();
+    $.plebia.Season.prototype.constructor = $.plebia.Season;
+
+    $.plebia.Season.prototype.init = function(api_season_url) {
+        // Populate post DOM with templates and values from API
+
+        var $this = this;
+
+        // Copy base template
+        var content_template = $('.plebia_template .plebia_season_template', $this.plebia_dom).html();
+        $this.dom.html(content_template);
+        
+        // Class name
+        $this.dom.addClass('plebia_season');
+
+        // Record API URL
+        $this.api_set_url(api_season_url);
+
+        // Load DOM content
+        $this.load();
+    };
+
+    $.plebia.Season.prototype.load = function() {
+        // Load episodes in template
+
+        var $this = this;
+
+        // Get season details from API
+        $.when($this.api_load()).done(function() {
+            // Season number
+            $('.plebia_season_title .plebia_number', $this.dom).html($this.api_obj.number);
+
+            // Episodes
+            for(i in $this.api_obj.episode_list) {
+                var api_episode_obj = $this.api_obj.episode_list[i];
+
+                // Create episode DOM
+                var episode_dom = $('<div></div>');
+                $this.dom.append(episode_dom);
+
+                // Init episode object using already retreived API object
+                var episode = new $.plebia.Episode(episode_dom, $this.dom);
+                episode.init(api_episode_obj);
+            }
         });
+    };
+
+
+    // Episode //////////////////////////////////////////////////////////////////////////
+
+    $.plebia.Episode = function(dom, season_dom) {
+        dom[0].episode = this;
+        this.dom = dom;
+        this.season_dom = season_dom;
+        this.series_dom = season_dom[0].season.series_dom;
+        this.post_dom = season_dom[0].season.post_dom;
+        this.stream_dom = season_dom[0].season.stream_dom;
+        this.plebia_dom = season_dom[0].season.plebia_dom;
+    };
+
+    // APIObject inheritance
+    $.plebia.Episode.prototype = new $.plebia.APIObject();
+    $.plebia.Episode.prototype.constructor = $.plebia.Episode;
+
+    // List of states 
+    $.plebia.Episode.prototype.state_list = new Array("new",
+                                                      "not_started",
+                                                      "searching",
+                                                      "downloading",
+                                                      "transcoding_not_ready",
+                                                      "all_ready",
+                                                      "error");
+
+    $.plebia.Episode.prototype.init = function(api_episode_obj) {
+        // Populate post DOM with templates and values from API
+
+        var $this = this;
+
+        // API URL
+        $this.api_set_url(api_episode_obj.resource_uri);
+        $this.api_obj = api_episode_obj;
+
+        // Copy base template & set values
+        var content_template = $('.plebia_template .plebia_episode_small_template', $this.plebia_dom).html();
+        $this.dom.html(content_template);
+        $this.set_base_values();
+        
+        // Class name
+        $this.dom.addClass('plebia_episode');
+
+        // Populate post with actual data
+        $this.update_dom(api_episode_obj);
+    };
+
+    $.plebia.Episode.prototype.set_base_values = function() {
+        // Set values on DOM template which don't depend on current state
+
+        var $this = this;
+
+        $('.plebia_number', $this.dom).html($this.api_obj.number);
+        $('.plebia_title', $this.dom).html($this.api_obj.name.substring(0,45));
+        $('.plebia_overview', $this.dom).html($this.api_obj.overview.substring(0,145)+'...');
+    };
+
+    $.plebia.Episode.prototype.update = function() {
+        // Refresh episode from API
+
+        var $this = this;
+        var deferred= $.Deferred();
+
+        // Update API object
+        $.when($this.api_load()).done(function() {
+            // Update DOM
+            $.when($this.update_dom()).done(function() {
+                deferred.resolve();
+            });
+        });
+    };
+
+    $.plebia.Episode.prototype.update_dom = function() {
+        // Populate episode DOM based on API (uses stored object, doesn't fetch from API)
+
+        var $this = this;
+        var deferred= $.Deferred();
+
+        // Check if we need to change state
+        var dom_state = $this.get_dom_state();
+        var obj_state = $this.get_api_state();
+
+        if(dom_state != obj_state) {
+            $this.set_dom_state(obj_state);
+            $this.load_state_template(obj_state);
+        }
+
+        // There is a different update method for each state
+        //$this['update_'+obj_state](dom_state).done(function() {
+            deferred.resolve();
+        //});
+
+        return deferred.promise();
+    };
+
+    $.plebia.Episode.prototype.get_dom_state = function() {
+        // Determine in which state the episode is on the DOM
+
+        $this = this;
+        for(i in $this.state_list) {
+            var state = $this.state_list[i];
+            if($this.dom.hasClass('plebia_episode_'+state)) {
+                return state;
+            }
+        }
+        return 'no_state';
+    };
+
+    $.plebia.Episode.prototype.set_dom_state = function(new_state) {
+        // Set the right state class on the episode <div> (add current one & remove other states)
+
+        $this = this;
+        for(i in $this.state_list) {
+            var state = $this.state_list[i];
+            if(state != new_state) {
+                $this.dom.removeClass('plebia_episode_'+state);
+            } else {
+                $this.dom.addClass('plebia_episode_'+state);
+            }
+        }
+    };
+
+    $.plebia.Episode.prototype.get_api_state = function() {
+        // Determine in which state the episode is on the API
+
+        $this = this;
+
+        // Video processing
+        if($this.api_obj.video) {
+            var video = $this.api_obj.video;
+
+            if(video.status == 'New') {
+                return 'downloading';
+            } else if(video.status == 'Transcoding') {
+                return 'transcoding_not_ready';
+            } else if(video.status == 'Completed') {
+                return 'all_ready';
+            } else {
+                return 'error';
+            }
+
+        // Torrent processing
+        } else if($this.api_obj.torrent) {
+            var torrent = $this.api_obj.torrent;
+
+            if(torrent.status == 'New') {
+                return 'searching';
+            } else if(torrent.status=='Downloading' || torrent.status=='Completed') {
+                return 'downloading';
+            } else {
+                return 'error';
+            }
+        } else {
+            return 'not_started';
+        }
+    };
+
+    $.plebia.Episode.prototype.load_state_template = function(state) {
+        // Replace the content <div> of an episode by its state template
+
+        $this = this;
+        var state_template = $('.plebia_template .plebia_episode_small_states .plebia_episode_'+state, $this.plebia_dom);
+        $('.plebia_state', $this.dom).html(state_template.html());
     };
 
     
     
     ///////////////////////////////////////////////////////////////////////////////
 
-    /*
-    $.plebia.Updatable = function() {};
-    $.plebia.Updatable.prototype.update = function() {
-        this.dom.html(this.name);
-    }
-
-    $.plebia.Stream = function(stream_dom, root_dom) {
-        stream_dom[0].stream = this;
-        this.dom = stream_dom;
-        this.root_dom = root_dom;
-        this.name = "toto";
-    }
-    $.plebia.Stream.prototype = new $.plebia_test.Updatable();
-    $.plebia.Stream.prototype.update2 = function() {
-        this.dom.html(this.dom.html()+'..'+this.name);
-    }
-    */
-
 
     $.plebia_old = {
-        post_state_list: new Array("new",
-                                   "searching",
-                                   "downloading",
-                                   "transcoding_not_ready",
-                                   "transcoding_ready",
-                                   "all_ready",
-                                   "error"),
 
         // TEMP ////////////////////////////////////////////////////
 
@@ -493,83 +699,8 @@
             });
         },
 
-        // Page refresh /////////////////////////////////////////////
-
-
-
-        // Posts ////////////////////////////////////////////////////
-
 
         // Watchbox /////////////////////////////////////////////////
-
-        load_watchbox: function(post_id, stream, root, position) {
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // Copy base template
-            var new_post = $this.new_base_template(stream, root, position);
-
-            $.Deferred(function(sub_deferred) {
-                sub_deferred
-                // Get related API object ids
-                .pipe(function() { return $this.update_all_post_api_id(post_id, new_post); })
-                // Set base template HTML
-                .pipe(function() { return $this.set_post_container_values(new_post); })
-                // Populate post with actual data
-                .pipe(function() { return $this.update_post(new_post, stream, root); })
-                .pipe(function() { deferred.resolve(); });
-            }).resolve();
-
-            return deferred.promise();
-        },
-
-        update_all_watchbox_api_id: function(post_id, post_dom) {
-            // Update the API objects ids stored in the watchbox <div><input>
-
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // post id is the root id that allows to retreive all others
-            $this.set_object_id_in_dom('post', post_id, post_dom);
-
-            $.Deferred(function(sub_deferred) {
-                sub_deferred
-                .pipe(function() { return $this.update_api_id('post', 'episode', post_dom); })
-                .pipe(function() { return $this.update_api_id('episode', 'season', post_dom); })
-                .pipe(function() { return $this.update_api_id('season', 'series', post_dom); })
-                .pipe(function() { return $this.update_api_id('episode', 'torrent', post_dom); })
-                .pipe(function() { return $this.update_api_id('episode', 'video', post_dom); })
-                .pipe(function() { deferred.resolve(); });
-            }).resolve();
-
-            return deferred.promise();
-        },
-
-        set_watchbox_container_values: function(post_dom) {
-            // Set the HTML values in the base template (part common to all states)
-            $this = this;
-            var deferred= $.Deferred();
-
-            $.when($this.get_api_object('post', post_dom)).done(function(post) {
-                // Date
-                $('.plebia_post_time', post_dom).html(post.date_added);
-
-                // Title & download link
-                dfr1 = $this.get_post_title(post_dom).done(function(title) {
-                    $('.plebia_post_title', post_dom).html(title);
-                });
-                
-                // Next episode callback
-                dfr2 = $this.set_next_episode(post_dom);
-
-                // Wait until both have completed
-                $.when(dfr1, dfr2).then(function() {
-                    deferred.resolve();
-                });
-            });
-            
-            return deferred.promise();
-        },
 
         get_watchbox_title: function(post_dom) {
             // Build the title for this post (including download link if applicable)
@@ -647,102 +778,6 @@
             });
 
             return deferred.promise();
-        },
-
-        update_watchbox: function(post_dom, stream, root) {
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // Check if we need to change state
-            var dom_state = $this.get_post_state_from_dom(post_dom);
-            $this.get_post_state_from_api(post_dom).done(function(obj_state) {
-                if(dom_state != obj_state) {
-                    $this.set_post_state_in_dom(obj_state, post_dom);
-                }
-
-                // There is a different update method for each state
-                $this['update_post_'+obj_state](dom_state, post_dom, root).done(function() {
-                    deferred.resolve();
-                });
-            });
-
-            return deferred.promise();
-        },
-
-        get_watchbox_state_from_dom: function(post_dom) {
-            // Determine in which state the post is on the DOM
-
-            $this = this;
-            for(i in $this.post_state_list) {
-                var state = $this.post_state_list[i];
-                if(post_dom.hasClass('plebia_post_'+state)) {
-                    return state;
-                }
-            }
-            return 'no_state';
-        },
-
-        set_watchbox_state_in_dom: function(obj_state, post_dom) {
-            // Set the right state class on the post <div> (add current one & remove other states)
-
-            $this = this;
-            for(i in $this.post_state_list) {
-                var state = $this.post_state_list[i];
-                if(state != obj_state) {
-                    post_dom.removeClass('plebia_post_'+state);
-                } else {
-                    post_dom.addClass('plebia_post_'+state);
-                }
-            }
-        },
-
-        get_watchbox_state_from_api: function(post_dom) {
-            // Determine in which state the post is on the API
-
-            $this = this;
-            var deferred= $.Deferred();
-
-            $.when($this.get_api_object('episode', post_dom)).done(function(episode) {
-                // Video processing
-                if(episode.video) {
-                    $this.set_object_id_in_dom('video', episode.video, post_dom);
-                    $.when($this.get_api_object('video', post_dom)).done(function(video) {
-                        if(video.status == 'New') {
-                            deferred.resolve('downloading');
-                        } else if(video.status == 'Transcoding') {
-                            deferred.resolve('transcoding_not_ready');
-                        } else if(video.status == 'Completed') {
-                            deferred.resolve('all_ready');
-                        } else {
-                            deferred.resolve('error');
-                        }
-                    });
-                // Torrent processing
-                } else if(episode.torrent) {
-                    $this.set_object_id_in_dom('torrent', episode.torrent, post_dom);
-                    $.when($this.get_api_object('torrent', post_dom)).done(function(torrent) {
-                        if(torrent.status == 'New') {
-                            deferred.resolve('searching');
-                        } else if(torrent.status=='Downloading' || torrent.status=='Completed') {
-                            deferred.resolve('downloading');
-                        } else {
-                            deferred.resolve('error');
-                        }
-                    });
-                } else {
-                    deferred.resolve('error');
-                }
-            });
-
-            return deferred.promise();
-        },
-
-        set_watchbox_content_from_template: function(obj_state, post_dom, root) {
-            // Replace the content <div> of a post by its state template
-
-            $this = this;
-            var state_template = $('.plebia_post_content_states .plebia_post_'+obj_state, root);
-            $('.plebia_post_content', post_dom).html(state_template.html());
         },
 
 
@@ -922,10 +957,6 @@
 
             return deferred.promise();
         },
-
-
-        // API interaction //////////////////////////////////////////
-
 
 
     };
