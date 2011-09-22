@@ -39,6 +39,23 @@
 
     $.plebia = {};
 
+    // Helpers //////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Copies members from an object to another object.
+     * @param {Object} target the object to be copied onto
+     * @param {Object} source the object to copy from
+     * @param {Boolean} deep  whether the copy is deep or shallow
+     */
+    $.plebia.extend = function(target, source, deep) {
+        for (var i in source) {
+            if (deep || Object.hasOwnProperty.call(source, i)) {
+                target[i] = source[i];
+            }
+        }
+        return target;
+    }
+
 
     // BaseObject (parent of all objects) ///////////////////////////////////////////////
 
@@ -80,7 +97,7 @@
         // Set the API URL on the DOM input field
 
         var $this = this;
-        
+
         var input_dom = $this.dom.children('input.plebia_api_url');
         input_dom.val(api_url);
     };
@@ -132,16 +149,21 @@
 
     // init()
     $.plebia.Plebia.prototype.init = function() {
+        var $this = this;
+
         // Display the stream
-        var stream_dom = $('.plebia_stream', this.dom);
-        var stream = new $.plebia.Stream(stream_dom, this.dom);
+        var stream_dom = $('.plebia_stream', $this.dom);
+        var stream = new $.plebia.Stream(stream_dom, $this.dom);
         stream.init();
 
         // Dress buttons
-        $('input:submit', this.dom).button();
+        $('input:submit', $this.dom).button();
 
         // Load auto-suggest
-        $('.plebia_header input.plebia_name', this.dom).liveSearch({url: '/ajax/search/'});
+        $('.plebia_header input.plebia_name', $this.dom).liveSearch({url: '/ajax/search/'});
+
+        // Init WatchBox and attach to plebia DOM
+        $this.dom[0].watchbox = new $.plebia.WatchBox($this.dom);
 
         // Add feedback tab
         var uv = document.createElement('script'); uv.type = 'text/javascript'; uv.async = true;
@@ -499,31 +521,33 @@
                 var episode = new $.plebia.Episode(episode_dom, $this.dom);
                 episode.init(api_episode_obj);
             }
+
+            $this.update_loop();
         });
     };
 
     $.plebia.Season.prototype.update_loop = function() {
         var $this = this;
 
-        $this.update().done(function() {
-            $this.setTimeout(function() {
+        $this.setTimeout(function() {
+            $this.update().done(function() {
                 $this.update_loop();
-            }, 2000);
-        });
+            });
+        }, 2000);
     };
 
     $.plebia.Season.prototype.update = function() {
         var $this = this;
         var deferred = $.Deferred();
 
-        var elems = $('.plebia_episode_downloading, .plebia_episode_transcoding_not_ready', $this.dom);
+        var elems = $('.plebia_state_searching, .plebia_state_downloading, .plebia_state_transcoding_not_ready', $this.dom);
         var count = elems.length;
 
         // Refresh season if any episode needs update
         if(count>0) {
-            for(i in elems) {
-                var episode_dom = elems[i];
-                var episode_obj = episode_dom.episode;
+            $.each(elems, function() {
+                var episode_dom = $(this);
+                var episode_obj = episode_dom[0].episode;
                 
                 // Refresh individual episode
                 var dfr = episode_obj.update();
@@ -533,12 +557,89 @@
                         deferred.resolve();
                     });
                 }
-            }
+            });
         } else {
             deferred.resolve();
         }
 
         return deferred.promise();
+    };
+
+
+    // StatefulDOM //////////////////////////////////////////////////////////////////////
+
+    $.plebia.StatefulDOM = function() {};
+
+    // BaseObject inheritance
+    $.plebia.StatefulDOM.prototype = new $.plebia.BaseObject();
+    $.plebia.StatefulDOM.prototype.constructor = $.plebia.StatefulDOM; 
+
+    // List of states 
+    $.plebia.StatefulDOM.prototype.state_list = new Array("new",
+                                                          "not_started",
+                                                          "searching",
+                                                          "downloading",
+                                                          "transcoding_not_ready",
+                                                          "all_ready",
+                                                          "error");
+
+    $.plebia.StatefulDOM.prototype.update_dom = function() {
+        // Populate DOM based on an object
+
+        var $this = this;
+
+        // Check if we need to change state
+        var dom_state = $this.get_dom_state();
+        var obj_state = $this.get_obj_state();
+
+        if(dom_state != obj_state) {
+            $this.set_dom_state(obj_state);
+            $this.load_state_template(obj_state);
+        }
+
+        // Some states have custom update methods
+        if('update_state_'+obj_state in $this) {
+            $this['update_state_'+obj_state](dom_state);
+        }
+    };
+
+    $.plebia.StatefulDOM.prototype.get_dom_state = function() {
+        // Determine in which state the episode is on the DOM
+
+        $this = this;
+        for(i in $this.state_list) {
+            var state = $this.state_list[i];
+            if($this.dom.hasClass('plebia_state_'+state)) {
+                return state;
+            }
+        }
+        return 'no_state';
+    };
+
+    $.plebia.StatefulDOM.prototype.set_dom_state = function(new_state) {
+        // Set the right state class on the episode <div> (add current one & remove other states)
+
+        $this = this;
+        for(i in $this.state_list) {
+            var state = $this.state_list[i];
+            if(state != new_state) {
+                $this.dom.removeClass('plebia_state_'+state);
+            } else {
+                $this.dom.addClass('plebia_state_'+state);
+            }
+        }
+    };
+
+    $.plebia.StatefulDOM.prototype.get_obj_state = function() {
+        // Determine in which state it is on the API
+
+        // To subclass
+    };
+
+    $.plebia.StatefulDOM.prototype.load_state_template = function(state) {
+        // Replace the content <div> by its state template
+        
+        // To subclass
     };
 
 
@@ -558,27 +659,23 @@
     $.plebia.Episode.prototype = new $.plebia.APIObject();
     $.plebia.Episode.prototype.constructor = $.plebia.Episode;
 
-    // List of states 
-    $.plebia.Episode.prototype.state_list = new Array("new",
-                                                      "not_started",
-                                                      "searching",
-                                                      "downloading",
-                                                      "transcoding_not_ready",
-                                                      "all_ready",
-                                                      "error");
+    // StatefulDOM inheritance
+    $.plebia.extend($.plebia.Episode.prototype, $.plebia.StatefulDOM.prototype);
 
     $.plebia.Episode.prototype.init = function(api_episode_obj) {
         // Populate post DOM with templates and values from API
 
         var $this = this;
 
+        // Copy base template
+        var content_template = $('.plebia_template .plebia_episode_small_template', $this.plebia_dom).html();
+        $this.dom.html(content_template);
+
         // API URL
         $this.api_set_url(api_episode_obj.resource_uri);
         $this.api_obj = api_episode_obj;
 
-        // Copy base template & set values
-        var content_template = $('.plebia_template .plebia_episode_small_template', $this.plebia_dom).html();
-        $this.dom.html(content_template);
+        // Set values in base template (everything not state related)
         $this.set_base_values();
         
         // Class name
@@ -596,6 +693,13 @@
         $('.plebia_number', $this.dom).html($this.api_obj.number);
         $('.plebia_title', $this.dom).html($this.api_obj.name.substring(0,45));
         $('.plebia_overview', $this.dom).html($this.api_obj.overview.substring(0,145)+'...');
+
+        // Bind method to click on episode
+        $('a.plebia_episode_link', $this.dom).click(function() {
+            var episode_dom = $(this).parents('.plebia_episode');
+            var episode_obj = episode_dom[0].episode;
+            episode_obj.on_click();
+        });
     };
 
     $.plebia.Episode.prototype.update = function() {
@@ -613,62 +717,7 @@
         });
     };
 
-    $.plebia.Episode.prototype.update_dom = function() {
-        // Populate episode DOM based on API (uses stored object, doesn't fetch from API)
-
-        var $this = this;
-        var deferred= $.Deferred();
-
-        // Check if we need to change state
-        var dom_state = $this.get_dom_state();
-        var obj_state = $this.get_api_state();
-
-        if(dom_state != obj_state) {
-            $this.set_dom_state(obj_state);
-            $this.load_state_template(obj_state);
-        }
-
-        // Some states have custom update methods
-        if('update_'+obj_state in $this) {
-            $.when($this['update_'+obj_state](dom_state)).done(function() {
-                deferred.resolve();
-            });
-        } else {
-            deferred.resolve();
-        }
-
-
-        return deferred.promise();
-    };
-
-    $.plebia.Episode.prototype.get_dom_state = function() {
-        // Determine in which state the episode is on the DOM
-
-        $this = this;
-        for(i in $this.state_list) {
-            var state = $this.state_list[i];
-            if($this.dom.hasClass('plebia_episode_'+state)) {
-                return state;
-            }
-        }
-        return 'no_state';
-    };
-
-    $.plebia.Episode.prototype.set_dom_state = function(new_state) {
-        // Set the right state class on the episode <div> (add current one & remove other states)
-
-        $this = this;
-        for(i in $this.state_list) {
-            var state = $this.state_list[i];
-            if(state != new_state) {
-                $this.dom.removeClass('plebia_episode_'+state);
-            } else {
-                $this.dom.addClass('plebia_episode_'+state);
-            }
-        }
-    };
-
-    $.plebia.Episode.prototype.get_api_state = function() {
+    $.plebia.Episode.prototype.get_obj_state = function() {
         // Determine in which state the episode is on the API
 
         $this = this;
@@ -710,24 +759,41 @@
         var state_template = $('.plebia_template .plebia_episode_small_states .plebia_episode_'+state, $this.plebia_dom);
         $('.plebia_state', $this.dom).html(state_template.html());
     };
+
+    $.plebia.Episode.prototype.on_click = function() {
+        // When current episode is clicked in season listing
+
+        $this = this;
+
+        if($this.get_obj_state() == 'not_started') {
+            // Start download on server
+            $.getJSON('/ajax/start/episode/'+$this.api_obj.id+'/', function(response) {
+                $this.update();
+            });
+        } else {
+            // Launch watchbox
+            var watchbox = $this.plebia_dom[0].watchbox;
+            watchbox.show($this.dom);
+        }
+    };
     
     // States updates ///////////
 
-    $.plebia.Episode.prototype.update_not_started = function(old_state) {
+    $.plebia.Episode.prototype.update_state_not_started = function(old_state) {
         if(old_state != 'not_started') {
             // Progress bar init
             $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
         }
     };
     
-    $.plebia.Episode.prototype.update_all_ready = function(old_state) {
+    $.plebia.Episode.prototype.update_state_all_ready = function(old_state) {
         if(old_state != 'not_started') {
             // Thumb
             $('.plebia_thumb', $this.dom).attr('src', '/downloads/' + $this.api_obj.video.image_path);
         }
     };
     
-    $.plebia.Episode.prototype.update_downloading = function(old_state) {
+    $.plebia.Episode.prototype.update_state_downloading = function(old_state) {
         if(old_state != 'downloading') {
             // Progress bar init
             $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
@@ -735,306 +801,278 @@
 
         // Progress % and progress bar
         var progress = Math.round($this.api_obj.torrent.progress*100)/100;
-        $('.plebia_percent', $this.dom).html(progress);
+        $('.plebia_percent .plebia_percent_value', $this.dom).html(progress);
         $('.plebia_progress_bar', $this.dom).progressbar('option', 'value', Math.round(progress));
+        $('.plebia_eta .plebia_eta_value', $this.dom).html($this.api_obj.torrent.eta);
     };
 
-    
-    ///////////////////////////////////////////////////////////////////////////////
 
+    // Watchbox /////////////////////////////////////////////////////////////////////////
 
-    $.plebia_old = {
+    $.plebia.WatchBox = function(dom, plebia_dom) {
+        // Attach Watchbox object to template, but let dom attribute unset
+        // fancybox clones the content when launched, and we want to alter to copy, not the template
+        dom[0].watchbox = this;
+        this.dom = null;
 
-        // TEMP ////////////////////////////////////////////////////
+        this.plebia_dom = plebia_dom;
+        this.episode_dom = null;
+    };
 
-        click_on_episode_list: function(){
-            var element = $(".plebia .plebia_stream .plebia_post .plebia_episode_list");
+    // BaseObject inheritance
+    $.plebia.WatchBox.prototype = new $.plebia.BaseObject();
+    $.plebia.WatchBox.prototype.constructor = $.plebia.WatchBox; 
 
+    // StatefulDOM inheritance
+    $.plebia.extend($.plebia.WatchBox.prototype, $.plebia.StatefulDOM.prototype);
 
+    $.plebia.WatchBox.prototype.show = function(episode_dom) {
+        // Display the watchbox for a given episode
 
-            // Progress bar
-            $('.plebia_progress_bar', element).progressbar({value: 14});
-            $('.plebia_progress_bar_new', element).progressbar({value: 0});
+        var $this = this;
 
-            // Lightbox
-            $(".plebia_episode_link").click(function() {
-                $.fancybox({
-                        'padding'		: 0,
-                        'autoDimensions': false,
-                        'width'		    : 1000,
-                        'height'		: 650,
-                        'href'			: '#plebia_episode_lightbox',
-                    });
+        $this.episode_dom = episode_dom;
+        
+        // Lightbox
+        $.fancybox({
+            'padding'		: 0,
+            'autoDimensions': false,
+            'width'		    : 1000,
+            'height'		: 650,
+            'href'			: '#plebia_watchbox',
+            'onComplete'    : function() {
+                // Now we can work on the DOM
+                $this.show_ready();
+            }
+        });
+    };
 
-                return false;
-            });
-        },
+    $.plebia.WatchBox.prototype.show_ready = function() {
+        // Called once the lightbox is ready - Update the box content to display episode details
 
+        var $this = this;
 
-        // Watchbox /////////////////////////////////////////////////
+        // Link object to cloned HTML
+        var watchbox_dom = $('#fancybox-content .plebia_watchbox');
+        watchbox_dom[0].watchbox = $this;
+        $this.dom = watchbox_dom;
+        
+        // Get objects containing details about the episode to display        
+        var episode = $this.episode_dom[0].episode;
+        var season = episode.season_dom[0].season;
+        var series = season.series_dom[0].series;
 
-        get_watchbox_title: function(post_dom) {
-            // Build the title for this post (including download link if applicable)
-            $this = this;
-            var deferred= $.Deferred();
+        // Set values in DOM
+        $('.plebia_series_title', $this.dom).html(series.api_obj.name);
+        $('.plebia_description .plebia_title .plebia_name', $this.dom).html(episode.api_obj.name);
+        $('.plebia_description .plebia_title .plebia_season_nb', $this.dom).html(season.api_obj.number);
+        $('.plebia_description .plebia_title .plebia_episode_nb', $this.dom).html(episode.api_obj.number);
+        $('.plebia_description .plebia_overview', $this.dom).html(episode.api_obj.overview);
 
+        // Load state template
+        $this.update_dom();
+    };
+
+    $.plebia.WatchBox.prototype.get_obj_state = function() {
+        // Determine in which state it is on the API
+
+        // Get it from the episode object
+        return $this.episode_dom[0].episode.get_obj_state();
+    };
+
+    $.plebia.WatchBox.prototype.load_state_template = function(state) {
+        // Replace the content <div> by its state template
+
+        $this = this;
+        var state_template = $('.plebia_template .plebia_watchbox_states .plebia_watchbox_'+state, $this.plebia_dom);
+        $('.plebia_state', $this.dom).html(state_template.html());
+    };
+
+    $.plebia.WatchBox.prototype.get_download_url = function() {
+        // Build the URL to the original video of a given post, if possible
+        $this = this;
+        var episode = $this.episode_dom[0].episode;
+        var video = episode.api_obj.video;
+
+        if(video.status == 'Transcoding' || video.status == 'Completed') {
+            var url = '/downloads/' + video.original_path;
+            return url;
+        } else {
+            return null;
+        }
+    };
+
+    // XXX TODO
+    $.plebia.WatchBox.prototype.set_next = function() {
+        // Add the callback to add the next episode when the link is clicked
+        $this = this;
+        var deferred= $.Deferred();
+        var next_episode_dom = $('.plebia_next_episode', post_dom);
+
+        $.when($this.get_api_object('series', post_dom)).done(function(series) {
             $.when($this.get_api_object('episode', post_dom)).done(function(episode) {
-                $.when($this.get_api_object('season', post_dom)).done(function(season) {
-                    $.when($this.get_api_object('series', post_dom)).done(function(series) {
-                        var title = series.name+' - Season '+season.number+', Episode '+episode.number;
-                        $this.get_download_url(post_dom).done(function(url) {
-                            title += '&nbsp;&nbsp;<img src="/static/img/download.png" class="plebia_download_icon" />';
-                            var link = '<a href="'+url+'">'+title+'</a>';
-                            deferred.resolve(link);
-                        }).fail(function() {
-                            deferred.resolve(title);
+                $.when($this.get_api_object_by_id(episode.next_episode)).done(function(next_episode) {
+                    $.when($this.get_api_object_by_id(next_episode.season)).done(function(next_episode_season) {
+
+                        // Set values of next episode
+                        $('.plebia_name', next_episode_dom).val(series.name);
+                        $('.plebia_season_nb', next_episode_dom).val(next_episode_season.number);
+                        $('.plebia_episode_nb', next_episode_dom).val(next_episode.number);
+
+                        // Form submit
+                        $('a', next_episode_dom).click(function(){
+                            $(this).parent().submit();
+                            return false;
                         });
-                    });
-                });
-            });
-            
-            return deferred.promise();
-        },
-
-        get_download_url: function(post_dom) {
-            // Build the URL to the original video of a given post, if possible
-            $this = this;
-            var deferred= $.Deferred();
-
-            $.when($this.get_api_object('video', post_dom)).done(function(video) {
-                if(video.status == 'Transcoding' || video.status == 'Completed') {
-                    var url = '/downloads/' + video.original_path;
-                    deferred.resolve(url);
-                } else {
-                    deferred.reject();
-                }
-            }).fail(function() {
-                deferred.reject();
-            });
-
-            return deferred.promise();
-        },
-
-        // XXX Watchbox
-        set_next_episode: function(post_dom) {
-            // Add the callback to add the next episode when the link is clicked
-            $this = this;
-            var deferred= $.Deferred();
-            var next_episode_dom = $('.plebia_next_episode', post_dom);
-
-            $.when($this.get_api_object('series', post_dom)).done(function(series) {
-                $.when($this.get_api_object('episode', post_dom)).done(function(episode) {
-                    $.when($this.get_api_object_by_id(episode.next_episode)).done(function(next_episode) {
-                        $.when($this.get_api_object_by_id(next_episode.season)).done(function(next_episode_season) {
-
-                            // Set values of next episode
-                            $('.plebia_name', next_episode_dom).val(series.name);
-                            $('.plebia_season_nb', next_episode_dom).val(next_episode_season.number);
-                            $('.plebia_episode_nb', next_episode_dom).val(next_episode.number);
-
-                            // Form submit
-                            $('a', next_episode_dom).click(function(){
-                                $(this).parent().submit();
-                                return false;
-                            });
-
-                            deferred.resolve();
-                        });
-                    // Last episode
-                    }).fail(function() {
-                        $('a', next_episode_dom).remove();
-                        $('form', next_episode_dom).prepend('<p>(Last episode)</p>')
-                    });
-                });
-            });
-
-            return deferred.promise();
-        },
-
-
-        // States ///////////////////////////////////////////////////
-
-        // STATE: searching //////////////////////
-        update_state_searching: function(old_state, post_dom, root) {
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // Check if we are entering this state now
-            if(old_state != 'searching') {
-                $this.set_post_content_from_template('searching', post_dom, root);
-            }
-
-            deferred.resolve();
-
-            return deferred.promise();
-        },
-
-        // STATE: downloading ////////////////////
-        update_state_downloading: function(old_state, post_dom, root) {
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // Check if we are entering this state now
-            if(old_state != 'downloading') {
-                $this.set_post_content_from_template('downloading', post_dom, root);
-
-                // Click on "More" to show download details
-                $('.plebia_more', post_dom).toggle(
-                    function() {
-                        $('.plebia_download_details', post_dom).show('drop', { direction: "up" }, 200);
-                        $('.plebia_more', post_dom).html('Less details...');
-                    },
-                    function() {
-                        $('.plebia_download_details', post_dom).hide('drop', { direction: "up" }, 200);
-                        $('.plebia_more', post_dom).html('More details...');
-                    }                    
-                );
-
-                // Progress bar init
-                $('.plebia_progress_bar', post_dom).progressbar({value: 0});
-            }
-
-            $.when($this.get_api_object('torrent', post_dom)).done(function(torrent) {
-                // Info message
-                if(torrent.progress < 1.0) {
-                    $('.plebia_info_msg', post_dom).html('Video found! Starting download...');
-                } else if(torrent.progress < 99.0) {
-                    $('.plebia_info_msg', post_dom).html('Downloading...');
-                } else {
-                    $('.plebia_info_msg', post_dom).html('Finishing download...');
-                }
-
-                // Progress % and progress bar
-                var progress = Math.round(torrent.progress*100)/100;
-                $('.plebia_info_progress .plebia_percent', post_dom).html(progress);
-                $('.plebia_info_progress .plebia_eta', post_dom).html(torrent.eta);
-                $('.plebia_progress_bar', post_dom).progressbar('option', 'value', Math.round(progress));
-                // Do not show progress initially
-                if(torrent.progress > 1.0) {
-                    $('.plebia_progress_bar', post_dom).css('display', 'block');
-                    $('.plebia_info_progress', post_dom).css('display', 'inline');
-                } else {
-                    $('.plebia_progress_bar', post_dom).css('display', 'none');
-                    $('.plebia_info_progress', post_dom).css('display', 'none');
-                }
-
-                // Download details
-                var dl_details = $('.plebia_download_details', post_dom);
-                $('.plebia_torrent_name .plebia_value', dl_details).html(torrent.name);
-                $('.plebia_torrent_type .plebia_value', dl_details).html(torrent.type);
-                $('.plebia_torrent_seeds .plebia_value', dl_details).html(torrent.seeds);
-                $('.plebia_torrent_peers .plebia_value', dl_details).html(torrent.peers);
-                $('.plebia_torrent_download_speed .plebia_value', dl_details).html(torrent.download_speed);
-                $('.plebia_torrent_upload_speed .plebia_value', dl_details).html(torrent.upload_speed);
-
-                deferred.resolve();
-            });
-
-            return deferred.promise();
-        },
-
-        // STATE: transcoding_not_ready //////////
-        update_state_transcoding_not_ready: function(old_state, post_dom, root) {
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // Check if we are entering this state now
-            if(old_state != 'transcoding_not_ready') {
-                $this.set_post_content_from_template('transcoding_not_ready', post_dom, root);
-
-                // Download link on title
-                $this.get_post_title(post_dom).done(function(title) {
-                    $('.plebia_post_title', post_dom).html(title);
-
-                    $this.get_download_url(post_dom).then(function(url) {
-                        $('.plebia_download .video_link', post_dom).attr('href', url);
 
                         deferred.resolve();
                     });
+                // Last episode
+                }).fail(function() {
+                    $('a', next_episode_dom).remove();
+                    $('form', next_episode_dom).prepend('<p>(Last episode)</p>')
                 });
-            }
-
-            return deferred.promise();
-        },
-
-        // STATE: all_ready //////////////////////
-        update_state_all_ready: function(old_state, post_dom, root) {
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // Check if we are entering this state now
-            if(old_state != 'all_ready') {
-                $this.set_post_content_from_template('all_ready', post_dom, root);
-
-                // Don't update this post anymore
-                post_dom.removeClass('plebia_post_update');
-
-                // Video init
-                var dfr1 = $this.get_api_object('video', post_dom);
-                $.when(dfr1).done(function(video) {
-                    $this.init_video(video, post_dom, false);
-                });
-
-                // Download link on title
-                var dfr2 = $this.get_post_title(post_dom).done(function(title) {
-                    $('.plebia_post_title', post_dom).html(title);
-                });
-
-                $.when(dfr1, dfr2).done(function() {
-                    deferred.resolve();
-                });
-            }
-
-            return deferred.promise();
-        },
-
-        init_video: function(video_obj, post_dom, streaming) {
-            var video_dom = $('video', post_dom);
-
-            // URLs
-            if(streaming) {
-                var video_src = '/static/stream.php?file_path=' + video_obj.webm_path;
-            } else {
-                var video_src = '/downloads/' + video_obj.webm_path;
-            }
-            $('video', post_dom).attr('poster', '/downloads/' + video_obj.image_path);
-            $('source', post_dom).attr('src', video_src);
-            $('.vjs-no-video a', post_dom).attr('href', '/downloads/' + video_obj.webm_path);
-
-            // video.js
-            video_dom.VideoJS({
-                controlsBelow: false, // Display control bar below video instead of in front of
-                controlsHiding: true, // Hide controls when mouse is not over the video
-                defaultVolume: 0.85, // Will be overridden by user's last volume if available
-                flashVersion: 9, // Required flash version for fallback
-                linksHiding: true // Hide download links when video is supported
             });
-        },
+        });
 
-        // STATE: error //////////////////////////
-        update_state_error: function(old_state, post_dom, root) {
-            var $this = this;
-            var deferred= $.Deferred();
-
-            // Check if we are entering this state now
-            if(old_state != 'error') {
-                $this.set_post_content_from_template('error', post_dom, root);
-                
-                // Don't update this post anymore
-                post_dom.removeClass('plebia_post_update');
-            }
-
-            deferred.resolve();
-
-            return deferred.promise();
-        },
-
-
+        return deferred.promise();
     };
 
-    $(window).bind("beforeunload", function() {
-        $.plebia.error = $.plebia.noop;
-    });
+    // States ///////////////////////////////////////////////////
+
+    // STATE: searching //////////////////////
+    $.plebia.WatchBox.prototype.update_state_searching = function(old_state) {
+        var $this = this;
+
+        // Check if we are entering this state now
+        if(old_state != 'searching') {
+            $this.load_state_template('searching');
+        }
+    };
+
+    // STATE: downloading ////////////////////
+    $.plebia.WatchBox.prototype.update_state_downloading = function(old_state) {
+        var $this = this;
+        var episode = $this.episode_dom[0].episode;
+        var torrent = episode.api_obj.torrent;
+
+        // Check if we are entering this state now
+        if(old_state != 'downloading') {
+            $this.load_state_template('downloading');
+
+            // Click on "More" to show download details
+            $('.plebia_more', $this.dom).toggle(
+                function() {
+                    $('.plebia_download_details', $this.dom).show('drop', { direction: "up" }, 200);
+                    $('.plebia_more', $this.dom).html('Less details...');
+                },
+                function() {
+                    $('.plebia_download_details', $this.dom).hide('drop', { direction: "up" }, 200);
+                    $('.plebia_more', $this.dom).html('More details...');
+                }                    
+            );
+
+            // Progress bar init
+            $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
+        }
+
+        // Info message
+        if(torrent.progress < 1.0) {
+            $('.plebia_info_msg', $this.dom).html('Video found! Starting download...');
+        } else if(torrent.progress < 99.0) {
+            $('.plebia_info_msg', $this.dom).html('Downloading...');
+        } else {
+            $('.plebia_info_msg', $this.dom).html('Finishing download...');
+        }
+
+        // Progress % and progress bar
+        var progress = Math.round(torrent.progress*100)/100;
+        $('.plebia_info_progress .plebia_percent', $this.dom).html(progress);
+        $('.plebia_info_progress .plebia_eta', $this.dom).html(torrent.eta);
+        $('.plebia_progress_bar', $this.dom).progressbar('option', 'value', Math.round(progress));
+        // Do not show progress initially
+        if(torrent.progress > 1.0) {
+            $('.plebia_progress_bar', $this.dom).css('display', 'block');
+            $('.plebia_info_progress', $this.dom).css('display', 'inline');
+        } else {
+            $('.plebia_progress_bar', $this.dom).css('display', 'none');
+            $('.plebia_info_progress', $this.dom).css('display', 'none');
+        }
+
+        // Download details
+        var dl_details = $('.plebia_download_details', $this.dom);
+        $('.plebia_torrent_name .plebia_value', dl_details).html(torrent.name);
+        $('.plebia_torrent_type .plebia_value', dl_details).html(torrent.type);
+        $('.plebia_torrent_seeds .plebia_value', dl_details).html(torrent.seeds);
+        $('.plebia_torrent_peers .plebia_value', dl_details).html(torrent.peers);
+        $('.plebia_torrent_download_speed .plebia_value', dl_details).html(torrent.download_speed);
+        $('.plebia_torrent_upload_speed .plebia_value', dl_details).html(torrent.upload_speed);
+    };
+
+    // STATE: transcoding_not_ready //////////
+    $.plebia.WatchBox.prototype.update_state_transcoding_not_ready = function(old_state) {
+        var $this = this;
+
+        // Check if we are entering this state now
+        if(old_state != 'transcoding_not_ready') {
+            $this.load_state_template('transcoding_not_ready');
+
+            // Download link
+            var url = $this.get_download_url();
+            $('.plebia_download .video_link', $this.dom).attr('href', url);
+        }
+    };
+
+    // STATE: all_ready //////////////////////
+    $.plebia.WatchBox.prototype.update_state_all_ready = function(old_state) {
+        var $this = this;
+
+        // Check if we are entering this state now
+        if(old_state != 'all_ready') {
+            $this.load_state_template('all_ready');
+
+            // Video init
+            $this.init_video(false);
+        }
+    };
+
+    $.plebia.WatchBox.prototype.init_video = function(streaming) {
+        var $this = this;
+
+        var episode = $this.episode_dom[0].episode;
+        var video_obj = episode.api_obj.video;
+        var video_dom = $('video', $this.dom);
+
+        // URLs
+        if(streaming) {
+            var video_src = '/static/stream.php?file_path=' + video_obj.webm_path;
+        } else {
+            var video_src = '/downloads/' + video_obj.webm_path;
+        }
+        $('video', $this.dom).attr('poster', '/downloads/' + video_obj.image_path);
+        $('source', $this.dom).attr('src', video_src);
+        $('.vjs-no-video a', $this.dom).attr('href', '/downloads/' + video_obj.webm_path);
+
+        // video.js
+        video_dom.VideoJS({
+            controlsBelow: false, // Display control bar below video instead of in front of
+            controlsHiding: true, // Hide controls when mouse is not over the video
+            defaultVolume: 0.85, // Will be overridden by user's last volume if available
+            flashVersion: 9, // Required flash version for fallback
+            linksHiding: true // Hide download links when video is supported
+        });
+    };
+
+    // STATE: error //////////////////////////
+    $.plebia.WatchBox.prototype.update_state_error = function(old_state) {
+        var $this = this;
+
+        // Check if we are entering this state now
+        if(old_state != 'error') {
+            $this.load_state_template('error');
+        }
+    };
+
 
 })(jQuery);
 

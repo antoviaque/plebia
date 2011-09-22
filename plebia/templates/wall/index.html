@@ -167,9 +167,9 @@
 
                         <!-- Episode STATE: 'downloading' -->
                         <div class="plebia_episode_downloading">
-                            <div class="plebia_percent">14<span class="plebia_percent_value"></span>%</div>
+                            <div class="plebia_percent"><span class="plebia_percent_value"></span>%</div>
                             <div class="plebia_progress_bar"></div>
-                            <div class="plebia_eta"><span class="plebia_eta_value">1m 2w 10h 23s</span> left</div>
+                            <div class="plebia_eta"><span class="plebia_eta_value"></span></div>
                         </div>
 
                         <!-- Episode STATE: 'not_started' -->
@@ -180,35 +180,28 @@
                     </div>
 
                     <!-- Watchbox --------------------------------------------------->
-                    <div id="plebia_episode_lightbox" class="plebia_watchbox">
-                        <input type="hidden" class="plebia_post_api_id" value="" />
-                        <input type="hidden" class="plebia_episode_api_id" value="" />
-                        <input type="hidden" class="plebia_season_api_id" value="" />
-                        <input type="hidden" class="plebia_series_api_id" value="" />
-                        <input type="hidden" class="plebia_torrent_api_id" value="" />
-                        <input type="hidden" class="plebia_video_api_id" value="" />
-                                    
+                    <div id="plebia_watchbox" class="plebia_watchbox">
                         <!-- Series name -->
-                        <div class="plebia_series_title">Pioneer One</div>
+                        <div class="plebia_series_title"></div>
 
                         <!-- Video & prev/next -->
                         <a class="plebia_previous" href="javascript://"><img class="plebia_previous" src="/static/img/previous.png" /></a>
-                        <div class="plebia_watchbox_content"></div>
+                        <div class="plebia_state"></div>
                         <a class="plebia_next" href="javascript://"><img class="plebia_next" src="/static/img/next.png" /></a>
 
                         <!-- Title & overview -->
                         <div class="plebia_description">
                             <div class="plebia_title">
-                                <span class="plebia_name">Fire in the hole!</span> - 
-                                Season <span class="plebia_episode_nb">3</span>
-                                Episode <span class="plebia_episode_nb">12</span>
+                                <span class="plebia_name"></span> - 
+                                Season <span class="plebia_season_nb"></span>
+                                Episode <span class="plebia_episode_nb"></span>
                             </div> 
-                            <div class="plebia_overview">Because the DNS lookup failed, the network service that translates a website's name to its Internet address. This error is most often caused by having no connection to the Internet or a misconfigured network. It can also be caused by an unresponsive DNS server or a firewall preventing Chromium from accessing the network.</div>
+                            <div class="plebia_overview"></div>
                         </div>
                     </div>
 
                     <!-- Watchbox states ------------------------------------------->
-                    <div class="plebia_watchbox_content_states">
+                    <div class="plebia_watchbox_states">
                         <!-- STATE: searching -->
                         <div class="plebia_watchbox_searching">
                             <div class="plebia_info">

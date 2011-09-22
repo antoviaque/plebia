@@ -386,7 +386,7 @@ a {
     margin-top: -10px;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode_not_started .plebia_state .plebia_progress_bar {
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode.plebia_state_not_started .plebia_state .plebia_progress_bar {
     width: 60px;
     margin: 0px 10px 0px 10px;
     height: 10px;
@@ -408,48 +408,45 @@ a {
     color: #F1F1F1;
 }
 
-.plebia_episode_lightbox {
+.plebia_watchbox {
     padding: 20px 50px 20px 50px;
     width: 900px;
 }
 
-.plebia_episode_lightbox .plebia_series_title {
+.plebia_watchbox .plebia_series_title {
     font-size: 30pt;
     line-height: 200%;
 }
 
-.plebia_episode_lightbox a.plebia_previous,
-.plebia_episode_lightbox a.plebia_next {
+.plebia_watchbox a.plebia_previous,
+.plebia_watchbox a.plebia_next {
     width: 71px;
     height: 126px;
     margin-top: 117px;
 }
 
-.plebia_episode_lightbox a.plebia_previous {
+.plebia_watchbox a.plebia_previous {
     float: left;
 }
 
-.plebia_episode_lightbox a.plebia_next {
+.plebia_watchbox a.plebia_next {
     float: right;
 }
 
-.plebia_episode_lightbox video {
-    position: relative;
-    left: 59px;
-}
-
-.plebia_episode_lightbox .plebia_description {
+.plebia_watchbox .plebia_description {
     width: 640px;
-    margin: 20px auto 0px auto;
+    position: absolute;
+    bottom: 70px;
+    left: 180px;
 }
 
-.plebia_episode_lightbox .plebia_description .plebia_title {
+.plebia_watchbox .plebia_description .plebia_title {
     color: #f1f1f1;
     margin-bottom: 10px;
     font-size: 18pt;
 }
 
-.plebia_episode_lightbox .plebia_description .plebia_overview {
+.plebia_watchbox .plebia_description .plebia_overview {
     color: #dedede;
     text-align: justify;
     font-style: italic;
@@ -464,65 +461,51 @@ a {
 
 /* All states */
 
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_info {
+.plebia_watchbox .plebia_state {
+    position: absolute;
+    left: 180px;
+    height: 350px;
+    width: 640px;
+}
+
+.plebia_watchbox .plebia_state .plebia_info {
     margin: 20px 0 20px 0;
     text-align: center;
 }
 
 /* STATE: downloading */
 
-.TODO_lightbox .plebia .plebia_stream .plebia_post_downloading .plebia_download_details {
+.plebia_watchbox.plebia_state_downloading .plebia_state .plebia_download_details {
     display: none;
 }
 
 /* STATE: transcoding_not_ready */
 
-.TODO_lightbox .plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_download {
+.plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_download {
     float: left;
     width: 45%;
 }
 
-.TODO_lightbox .plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait {
+.plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_wait {
     float: right;
     width: 45%;
 }
 
-.TODO_lightbox .plebia .plebia_stream .plebia_post_transcoding_not_ready .plebia_wait img.plebia_wait_icon {
+.plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_wait img.plebia_wait_icon {
     width: 120px;
     height: 120px;
 }
 
-/* STATE: transcoding_ready */
-
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress,
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
-    font-size: 9pt;
-    font-style: italic;
-    margin: 5px;
-}
-
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_done {
-    display: none;
-}
-
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_in_progress img,
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_video_transcoding_done img {
-    width: 20px;
-    height: 20px;
-    float: left;
-    margin-right: 5px;
-}
-
 /* STATE: error */
 
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_torrent_not_found img {
+.plebia_watchbox.plebia_state_error .plebia_state .plebia_torrent_not_found img {
     width: 200px;
     height: 200px;
     float: left;
     margin: 10px 20px 10px 50px;
 }
 
-.TODO_lightbox .plebia .plebia_stream .plebia_post .plebia_torrent_not_found .plebia_torrent_not_found_msg {
+.plebia_watchbox.plebia_state_error .plebia_state .plebia_torrent_not_found .plebia_torrent_not_found_msg {
     padding-top: 70px;
     padding-bottom: 70px;
 }
