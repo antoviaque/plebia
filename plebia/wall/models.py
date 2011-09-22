@@ -355,7 +355,11 @@ class PredictiveDownloadManager:
 
     def on_episode_created(self, episode):
         '''Called every time an episode object is created'''
-        pass
+       
+        print "%d-%d" % (episode.number, episode.season.number)
+        if episode.number == 1 and episode.season.number == 1:
+            print 'start DL =================='
+            episode.start_download()
 
     def on_episode_updated(self, episode):
         '''Called every time an episode object is updated (all saves except creation)'''

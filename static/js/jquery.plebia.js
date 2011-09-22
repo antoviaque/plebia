@@ -82,6 +82,7 @@
         var $this = this;
         
         var input_dom = $this.dom.children('input.plebia_api_url');
+        alert(input_dom.parent().html());
         input_dom.val(api_url);
     };
 
@@ -169,7 +170,7 @@
         var deferred = $.Deferred();
 
         // Attach object to API URL
-        $this.api_set_url($this.api_base_url+'/post/?limit=50');
+        $this.api_set_url($this.api_base_url+'post/?limit=50');
 
         // Populate stream (all posts)
         $.when($this.add_new_posts()).done(function() {
@@ -502,6 +503,45 @@
         });
     };
 
+    $.plebia.Season.prototype.update_loop = function() {
+        var $this = this;
+
+        $this.update().done(function() {
+            $this.setTimeout(function() {
+                $this.update_loop();
+            }, 2000);
+        });
+    };
+
+    $.plebia.Season.prototype.update = function() {
+        var $this = this;
+        var deferred = $.Deferred();
+
+        var elems = $('.plebia_episode_downloading, .plebia_episode_transcoding_not_ready', $this.dom);
+        var count = elems.length;
+
+        // Refresh season if any episode needs update
+        if(count>0) {
+            for(i in elems) {
+                var episode_dom = elems[i];
+                var episode_obj = episode_dom.episode;
+                
+                // Refresh individual episode
+                var dfr = episode_obj.update();
+                
+                if(!--count) { // at the last item
+                    $.when(dfr).done(function() {
+                        deferred.resolve();
+                    });
+                }
+            }
+        } else {
+            deferred.resolve();
+        }
+
+        return deferred.promise();
+    };
+
 
     // Episode //////////////////////////////////////////////////////////////////////////
 
@@ -589,10 +629,15 @@
             $this.load_state_template(obj_state);
         }
 
-        // There is a different update method for each state
-        //$this['update_'+obj_state](dom_state).done(function() {
+        // Some states have custom update methods
+        if('update_'+obj_state in $this) {
+            $.when($this['update_'+obj_state](dom_state)).done(function() {
+                deferred.resolve();
+            });
+        } else {
             deferred.resolve();
-        //});
+        }
+
 
         return deferred.promise();
     };
@@ -666,8 +711,35 @@
         var state_template = $('.plebia_template .plebia_episode_small_states .plebia_episode_'+state, $this.plebia_dom);
         $('.plebia_state', $this.dom).html(state_template.html());
     };
-
     
+    // States updates ///////////
+
+    $.plebia.Episode.prototype.update_not_started = function(old_state) {
+        if(old_state != 'not_started') {
+            // Progress bar init
+            $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
+        }
+    };
+    
+    $.plebia.Episode.prototype.update_all_ready = function(old_state) {
+        if(old_state != 'not_started') {
+            // Thumb
+            $('.plebia_thumb', $this.dom).attr('src', '/downloads/' + $this.api_obj.video.image_path);
+        }
+    };
+    
+    $.plebia.Episode.prototype.update_downloading = function(old_state) {
+        if(old_state != 'downloading') {
+            // Progress bar init
+            $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
+        }
+
+        // Progress % and progress bar
+        var progress = Math.round($this.api_obj.torrent.progress*100)/100;
+        $('.plebia_percent', $this.dom).html(progress);
+        $('.plebia_progress_bar', $this.dom).progressbar('option', 'value', Math.round(progress));
+    };
+
     
     ///////////////////////////////////////////////////////////////////////////////
 

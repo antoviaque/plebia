@@ -50,7 +50,7 @@ Also edit paths in the following files (FIXME - hardcoded & PHP):
 Create downloads directory (as configure above):
 
     $ mkdir -p /var/www/downloads
-    $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank
+    $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank /var/www/downloads/series/banners/posters
     $ mkdir plebia/db
 
 Create database:
