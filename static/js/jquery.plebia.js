@@ -82,7 +82,6 @@
         var $this = this;
         
         var input_dom = $this.dom.children('input.plebia_api_url');
-        alert(input_dom.parent().html());
         input_dom.val(api_url);
     };
 
