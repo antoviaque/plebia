@@ -322,7 +322,7 @@ class Episode(models.Model):
             if season_torrent is None and episode_torrent is None:
                 return None
             elif season_torrent is None \
-                    or season_torrent.seeds < 10:
+                    or (season_torrent.seeds < 10 and episode_torrent is not None):
                 torrent = episode_torrent
                 torrent.type = 'episode'
                 torrent.save()
