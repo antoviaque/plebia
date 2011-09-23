@@ -389,14 +389,18 @@
     };
     
     $.plebia.Post.prototype.update = function() {
-        // Reload content if necessary
+        // Refresh content
 
-        // XXX TODO
-        /*if(post_dom.hasClass('plebia_post_update')) {
-            var dfr1 = $this.update_post(post_dom, stream, root);
-        } else {
-            var dfr1 = null;
-        }*/
+        var $this = this;
+        var deferred = $.Deferred();
+
+        // Refresh contained series
+        var series = $('.plebia_series', $this.dom)[0].series;
+        $.when(series.update()).done(function() {
+            deferred.resolve();
+        });
+        
+        return deferred.promise();
     };
 
     // Series ///////////////////////////////////////////////////////////////////////////
@@ -434,13 +438,13 @@
 
         // JS for opening/closing the episodes list
         $("a.plebia_trigger", $this.dom).click(function(){
-            $(".plebia_season_list", $this.dom).toggle("fast");
+            $(".plebia_menu_content", $this.dom).toggle("fast");
             $(this).toggleClass("plebia_active");
             
             if($(this).hasClass("plebia_active")) {
                 $this.load_season_list();
             } else {
-                $('.plebia_season_list', $this.dom).html('');
+                $('.plebia_season_list', $this.dom).empty();
             }
 
             return false;
@@ -457,33 +461,99 @@
         $('.plebia_overview', $this.dom).html($this.api_obj.overview.substring(0,320));
     };
 
+    $.plebia.Series.prototype.update = function() {
+        // Refresh content
+
+        var $this = this;
+        var deferred = $.Deferred();
+
+        // Refresh active season if tab is expanded
+        var trigger_dom = $("a.plebia_trigger", $this.dom);
+        var active_season_dom = $('.plebia_season.plebia_active', $this.dom);
+        if(trigger_dom.hasClass("plebia_active") && active_season_dom.length > 0) {
+            $.when(active_season_dom[0].season.update()).done(function() {
+                deferred.resolve();
+            });
+        } else {
+            deferred.resolve();
+        }
+        
+        return deferred.promise();
+    };
+
     $.plebia.Series.prototype.load_season_list = function() {
-        // Get episodes list from API and display them in episodes list menu
+        // Get seasons list from API and add any new one to the DOM
 
         var $this = this;
         var deferred = $.Deferred();
         var deferred_list = new Array();
         var season_list_dom = $('.plebia_season_list', $this.dom);
         
-        // Load all seasons
+        // Ajax loading notifier
+        $('.plebia .plebia_preloader').show();
+
+        // Seasons content
+        var season_list = new Array();
         for(i in $this.api_obj.season_list) {
             var api_season_url = $this.api_obj.season_list[i];
 
-            // Create season DOM
-            var season_dom = $('<div></div>');
+            // Create season DOM (hidden to show only one at a time)
+            var season_dom = $('<div></div>').hide();
             $('.plebia_season_list', $this.dom).append(season_dom);
 
             // Init season object, which populates the DOM using API call
             var season = new $.plebia.Season(season_dom, $this.dom);
+            season_list.push(season);
             deferred_list.push(season.init(api_season_url));
         }
 
         // Wait until all seasons are loaded
         $.when.apply(window, deferred_list).done(function() {
+            // Season selector
+            $('.plebia_season_selector', $this.dom).empty();
+            for(i in season_list) {
+                var season = season_list[i].api_obj;
+
+                // Separator
+                if(i == 0) {
+                    $('.plebia_season_selector', $this.dom).append('Season ');
+                } else {
+                    $('.plebia_season_selector', $this.dom).append(' - ');
+                }
+
+                // Link
+                var season_link = $('<a href="javascript://">'+season.number+'</a>');
+                season_link.addClass('plebia_season_'+season.number);
+                season_link.click(function() {
+                    var series_dom = $(this).parents('.plebia_series');
+                    series_dom[0].series.select_season($(this).html());
+                }); 
+                $('.plebia_season_selector', $this.dom).append(season_link);
+            }
+
+            $this.select_season(1);
+
+            // Ajax loading notifier
+            $('.plebia .plebia_preloader').hide();
+
             deferred.resolve();
         });
 
         return deferred.promise();
+    };
+
+    $.plebia.Series.prototype.select_season = function(season_number) {
+        // Change the active season
+
+        var $this = this;
+
+        // Show active season in selector
+        $('.plebia_season_selector a', $this.dom).removeClass('plebia_active');
+        $('.plebia_season_selector a.plebia_season_'+season_number, $this.dom).addClass('plebia_active');
+
+        // Show only the selected season
+        $('.plebia_season_list .plebia_season', $this.dom).hide().removeClass('plebia_active');
+        $('.plebia_season_list .plebia_season_'+season_number, $this.dom).show().addClass('plebia_active');
     };
 
 
@@ -536,6 +606,7 @@
         $.when($this.api_load()).done(function() {
             // Season number
             $('.plebia_season_title .plebia_number', $this.dom).html($this.api_obj.number);
+            $this.dom.addClass('plebia_season_'+$this.api_obj.number);
 
             // Episodes
             for(i in $this.api_obj.episode_list) {
@@ -543,7 +614,7 @@
 
                 // Create episode DOM
                 var episode_dom = $('<div></div>');
-                $this.dom.append(episode_dom);
+                $('.plebia_episode_list', $this.dom).append(episode_dom);
 
                 // Init episode object using already retreived API object
                 var episode = new $.plebia.Episode(episode_dom, $this.dom);
@@ -551,20 +622,9 @@
             }
 
             deferred.resolve();
-            $this.update_loop();
         });
 
         return deferred.promise();
-    };
-
-    $.plebia.Season.prototype.update_loop = function() {
-        var $this = this;
-
-        $this.setTimeout(function() {
-            $this.update().done(function() {
-                $this.update_loop();
-            });
-        }, 2000);
     };
 
     $.plebia.Season.prototype.update = function() {
@@ -576,17 +636,18 @@
 
         // Refresh season if any episode needs update
         if(count>0) {
-            $.each(elems, function() {
-                var episode_dom = $(this);
-                var episode_obj = episode_dom[0].episode;
-                
-                // Refresh individual episode
-                var dfr = episode_obj.update();
-                
-                if(!--count) { // at the last item
-                    $.when(dfr).done(function() {
+            $.when($this.api_load()).done(function() {
+                for(i in $this.api_obj.episode_list) {
+                    var episode_dom = $('.plebia_episode:nth('+i+')', $this.dom);
+                    var episode = episode_dom[0].episode;
+                    var episode_api_obj = $this.api_obj.episode_list[i];
+                    
+                    // Refresh individual episode
+                    var dfr = episode.update(episode_api_obj);
+                    
+                    if(!--count) { // at the last item
                         deferred.resolve();
-                    });
+                    }
                 }
             });
         } else {
@@ -733,21 +794,16 @@
         });
     };
 
-    $.plebia.Episode.prototype.update = function() {
-        // Refresh episode from API
+    $.plebia.Episode.prototype.update = function(api_obj) {
+        // Refresh episode using provided API object
 
         var $this = this;
-        var deferred= $.Deferred();
 
         // Update API object
-        $.when($this.api_load()).done(function() {
-            // Update DOM
-            $.when($this.update_dom()).done(function() {
-                deferred.resolve();
-            });
-        });
-        
-        return deferred.promise();
+        $this.api_obj = api_obj;
+
+        // Update DOM
+        $this.update_dom();
     };
 
     $.plebia.Episode.prototype.get_obj_state = function() {

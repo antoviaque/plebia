@@ -41,6 +41,13 @@
 
 <body> 
     <div class="plebia">
+        <!-- Preloader -->
+        <div class="plebia_preloader">
+            <div class="plebia_bar plebia_block1"></div>
+            <div class="plebia_bar plebia_block2"></div>
+            <div class="plebia_bar plebia_block3"></div>
+        </div>
+
         <!-- Header & Searchbox ---------------------------------------------------------->
         <div class="plebia_header">
             <div class="plebia_center">
@@ -96,10 +103,10 @@
                         <!-- Title & watch next -->
                         <div class="plebia_content_right">
                             <div class="plebia_name"></div>
-                            <a class="plebia_watch_next" href="javascript://">
+                            <!--<a class="plebia_watch_next" href="javascript://">
                                 <img class="plebia_play" src="/static/img/play.png" />
                                 Watch next: Season <span class="plebia_season_nb">2</span> Episode <span class="plebia_episode_nb">3</span>
-                            </a>
+                            </a>-->
 
                             <!-- Overview -->
                             <div class="plebia_overview"></div>
@@ -108,7 +115,10 @@
                         <!-- Episodes tab -->
                         <div class="plebia_episode_menu">
                             <a class="plebia_trigger" href="javascript://">Episodes</a>
-                            <div class="plebia_season_list plebia_no_display"></div>
+                            <div class="plebia_menu_content plebia_no_display">
+                                <div class="plebia_season_selector"></div>
+                                <div class="plebia_season_list"></div>
+                            </div>
                         </div> <!-- End episodes tab -->
                     </div>
 
@@ -117,7 +127,7 @@
                         <!-- Related API object -->
                         <input type="hidden" class="plebia_api_url" value="" />
 
-                        <div class="plebia_season_title">Season <span class="plebia_number"></span></div>
+                        <div class="plebia_episode_list"></div>
                     </div>
 
                     <!-- Episode (small) ------------------------------------------>

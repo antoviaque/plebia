@@ -167,6 +167,7 @@ a {
 .plebia .plebia_stream .plebia_post .plebia_series .plebia_content_right .plebia_name {
     font-size: 30pt;
     width: 534px;
+    margin-bottom: 30px;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_series .plebia_content_right .plebia_play {
@@ -228,7 +229,7 @@ a {
     z-index: 30;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_episode_menu .plebia_season_list {
+.plebia .plebia_stream .plebia_post .plebia_episode_menu .plebia_menu_content {
     position: absolute;
     top: 0px;
     right: 0;
@@ -247,15 +248,19 @@ a {
     z-index: 20;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_season_list a.plebia_episode_link {
-    color: #F1F1F1;
+.plebia .plebia_stream .plebia_post .plebia_season_selector {
+    font-variant: small-caps;
+    font-size: 20pt;
+    color: #DEDEDE;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_season_title {
-    font-variant: small-caps;
-    font-size: 14pt;
+.plebia .plebia_stream .plebia_post .plebia_season_selector a.plebia_active {
     font-weight: bold;
     color: #DEDEDE;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_list a.plebia_episode_link {
+    color: #F1F1F1;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode {
@@ -510,7 +515,79 @@ a {
     padding-bottom: 70px;
 }
 
+/* Ajax Preloader */
+/* From http://cssload.net/ */
 
+.plebia .plebia_preloader {
+    width: 150px;
+    height: 100px;
+    position: fixed;
+    left: 50%;
+    margin-left: -75px;
+    top: 50%;
+    margin-top: -55px;
+    z-index: 100;
+    display: none;
+}
+
+.plebia .plebia_bar {
+    background-color: #89d786;
+    border: 1px solid #3eb13a;
+    float: left;
+    height: 71px;
+    margin-left: 10px;
+    width: 19px;
+    -webkit-animation-name: plebia_bounce;
+    -webkit-animation-duration: 0.9s;
+    -webkit-animation-iteration-count: infinite;
+    -webkit-animation-direction: linear;
+    -webkit-transform: scale(0.63);
+    -moz-animation-name: plebia_bounce;
+    -moz-animation-duration: 0.9s;
+    -moz-animation-iteration-count: infinite;
+    -moz-animation-direction: linear;
+    -moz-transform: scale(0.63);
+    opacity: 0.1;
+}
+
+.plebia .plebia_preloader .plebia_block1 {
+    -webkit-animation-delay: 0.27s;
+    -moz-animation-delay: 0.27s;
+}
+
+.plebia .plebia_preloader .plebia_block2 {
+    -webkit-animation-delay: 0.56s;
+    -moz-animation-delay: 0.56s;
+}
+
+.plebia .plebia_preloader .plebia_block3 {
+    -webkit-animation-delay: 0.75s;
+    -moz-animation-delay: 0.75s;
+}
+
+@-webkit-keyframes plebia_bounce {
+    0% {
+        -webkit-transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        -webkit-transform:scale(0.7);
+        opacity:0.1;
+    }
+}
+
+@-moz-keyframes plebia_bounce {
+    0% {
+        -moz-transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        -moz-transform: scale(0.7);
+        opacity: 0.1
+    }
+}
 
 /* UserVoice *******************************************************/
 
