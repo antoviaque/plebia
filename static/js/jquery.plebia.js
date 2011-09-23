@@ -150,11 +150,14 @@
     // init()
     $.plebia.Plebia.prototype.init = function() {
         var $this = this;
+        var deferred = $.Deferred();
 
         // Display the stream
         var stream_dom = $('.plebia_stream', $this.dom);
         var stream = new $.plebia.Stream(stream_dom, $this.dom);
-        stream.init();
+        $.when(stream.init()).done(function() {
+            deferred.resolve();
+        });
 
         // Dress buttons
         $('input:submit', $this.dom).button();
@@ -169,6 +172,8 @@
         var uv = document.createElement('script'); uv.type = 'text/javascript'; uv.async = true;
         uv.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'widget.uservoice.com/6PhXO6580egdGy3eefwsAg.js';
         var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(uv, s);
+        
+        return deferred.promise();
     };
 
 
@@ -221,6 +226,7 @@
         }
 
         var new_post_list = new Array();
+        var deferred_list = new Array();
 
         // Get object from API
         $.when($this.api_load()).done(function() {
@@ -240,6 +246,8 @@
             $.each(new_post_list, function() {
                 var post_obj = this;
                 count--;
+
+                // Add post to stream
                 $this.add_post(post_obj, position);
                 
                 // When the last post has finished loading, we're done
@@ -272,11 +280,16 @@
         // Send a new post to the server to create it and update stream to show it
 
         var $this = this;
+        var deferred = $.Deferred();
 
         // Create new post on server with series, add to stream
         $.getJSON('/ajax/newpost/'+series_id+'/', function(response) {
-            $this.update();
+            $.when($this.update()).done(function() {
+                deferred.resolve();
+            });
         });
+        
+        return deferred.promise();
     },
 
     $.plebia.Stream.prototype.update_loop = function() {
@@ -448,6 +461,8 @@
         // Get episodes list from API and display them in episodes list menu
 
         var $this = this;
+        var deferred = $.Deferred();
+        var deferred_list = new Array();
         var season_list_dom = $('.plebia_season_list', $this.dom);
         
         // Load all seasons
@@ -460,8 +475,15 @@
 
             // Init season object, which populates the DOM using API call
             var season = new $.plebia.Season(season_dom, $this.dom);
-            season.init(api_season_url);
+            deferred_list.push(season.init(api_season_url));
         }
+
+        // Wait until all seasons are loaded
+        $.when.apply(window, deferred_list).done(function() {
+            deferred.resolve();
+        });
+
+        return deferred.promise();
     };
 
 
@@ -484,6 +506,7 @@
         // Populate post DOM with templates and values from API
 
         var $this = this;
+        var deferred = $.Deferred();
 
         // Copy base template
         var content_template = $('.plebia_template .plebia_season_template', $this.plebia_dom).html();
@@ -496,13 +519,18 @@
         $this.api_set_url(api_season_url);
 
         // Load DOM content
-        $this.load();
+        $.when($this.load()).done(function() {
+            deferred.resolve();
+        });
+
+        return deferred.promise();
     };
 
     $.plebia.Season.prototype.load = function() {
         // Load episodes in template
 
         var $this = this;
+        var deferred = $.Deferred();
 
         // Get season details from API
         $.when($this.api_load()).done(function() {
@@ -522,8 +550,11 @@
                 episode.init(api_episode_obj);
             }
 
+            deferred.resolve();
             $this.update_loop();
         });
+
+        return deferred.promise();
     };
 
     $.plebia.Season.prototype.update_loop = function() {
@@ -715,6 +746,8 @@
                 deferred.resolve();
             });
         });
+        
+        return deferred.promise();
     };
 
     $.plebia.Episode.prototype.get_obj_state = function() {
@@ -764,17 +797,24 @@
         // When current episode is clicked in season listing
 
         $this = this;
+        var deferred= $.Deferred();
 
         if($this.get_obj_state() == 'not_started') {
             // Start download on server
             $.getJSON('/ajax/start/episode/'+$this.api_obj.id+'/', function(response) {
-                $this.update();
+                $.when($this.update()).done(function() {
+                    deferred.resolve();
+                });
             });
         } else {
             // Launch watchbox
             var watchbox = $this.plebia_dom[0].watchbox;
-            watchbox.show($this.dom);
+            $.when(watchbox.show($this.dom)).done(function() {
+                deferred.resolve();
+            });
         }
+        
+        return deferred.promise();
     };
     
     // States updates ///////////
@@ -830,6 +870,7 @@
         // Display the watchbox for a given episode
 
         var $this = this;
+        var deferred= $.Deferred();
 
         $this.episode_dom = episode_dom;
         
@@ -843,8 +884,12 @@
             'onComplete'    : function() {
                 // Now we can work on the DOM
                 $this.show_ready();
+
+                deferred.resolve();
             }
         });
+        
+        return deferred.promise();
     };
 
     $.plebia.WatchBox.prototype.show_ready = function() {
