@@ -46,7 +46,8 @@ def get_torrent_by_search(search_string):
         return None
     
     # Get the list of torrents results
-    root = soupparser.fromstring(html_result)
+    sane_text = sanitize_text(html_result)
+    root = soupparser.fromstring(sane_text)
     sel = CSSSelector(".results dl")
     element = sel(root)
     if element is None:
@@ -73,5 +74,18 @@ def submit_form(url, text):
 
     return html_result
 
+def sanitize_text(text):
+    '''Remove non-string characters from text'''
 
+    sane_text = u''
+
+    # HTML NULL entity
+    text = text.replace('&#0', '')
+
+    for c in text:
+        # Make sure it's not a control character
+        if ord(c) >= 32 and ord(c) <= 126:
+            sane_text += c
+
+    return sane_text
 

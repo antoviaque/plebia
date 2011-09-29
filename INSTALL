@@ -66,8 +66,8 @@ Populate database:
 
 Add cron (pgrep ensures there is always only one instance of the script running):
 
-    * * * * * pgrep -f torrent_update > /dev/null || /var/www/plebia/plebia/manage.py torrent_update &>> /var/www/plebia/log/torrent-update.log
-    * * * * * pgrep -f video_update > /dev/null || /var/www/plebia/plebia/manage.py video_update &>> /var/www/plebia/log/video-update.log
+    * * * * * pgrep cron_torrent.sh > /dev/null || /var/www/plebia/bin/cron_torrent.sh &>> /var/www/plebia/log/torrent-update.log
+    * * * * * pgrep cron_video.sh > /dev/null || /var/www/plebia/bin/cron_video.sh &>> /var/www/plebia/log/video-update.log
 
 = 2a. Development environment =
 
