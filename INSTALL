@@ -32,6 +32,10 @@ Then in configurations file (with deluged process not running):
     ---
     >   "max_active_downloading": 10, 
 
+    <   "max_active_limit": 8,
+    ---
+    <   "max_active_limit": 15,
+
 
 = 2. Configuration =
 
@@ -53,7 +57,9 @@ Create downloads directory (as configure above):
     $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank /var/www/downloads/series/banners/posters
     $ mkdir plebia/db
 
-Create database:
+Create Mysql database with login/password configured in settings_local.py
+
+Populate database:
 
     $ plebia/manage.py syncdb
     $ plebia/manage.py migrate

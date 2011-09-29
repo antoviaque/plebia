@@ -46,7 +46,9 @@ class Command(BaseCommand):
             torrent_update()
 
             next += DELAY
-            time.sleep(next - time.time())
+            sleep_time = next - time.time()
+            if sleep_time > 0:
+                time.sleep(next - time.time())
 
 
 def torrent_update():
@@ -61,11 +63,17 @@ def torrent_update():
 
     for new_episode in new_episode_list:
         new_episode.start_download()
-        time.sleep(1) # Do not spam the torrent search engine
+
+        if new_episode.torrent and new_episode.torrent.status == 'New':
+            start_download(new_episode.torrent)
+            new_episode.torrent.status = 'Downloading'
+            new_episode.torrent.save()
+
+        # Do not spam the torrent search engine
+        time.sleep(1) 
 
     # Get Torrent() objects which must be updated
     torrent_list = Torrent.objects.filter(\
-            Q(status='New') | \
             Q(status='Downloading'))\
             .order_by('-date_added')
 
@@ -73,13 +81,8 @@ def torrent_update():
         # Match the current torrent with information returned by deluge
         deluge_torrent_info = get_deluge_torrent_by_hash(deluge_torrent_list, torrent.hash)
 
-        # Start new torrent
-        if torrent.status == 'New':
-            start_download(torrent)
-            torrent.status = 'Downloading'
-
         # Update progress of downloading torrent
-        elif torrent.status == 'Downloading' and deluge_torrent_info:
+        if torrent.status == 'Downloading' and deluge_torrent_info:
             update_download_progress(torrent, deluge_torrent_info)
 
             # Start video processing of completed torrent
