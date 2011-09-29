@@ -21,7 +21,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Q
-from plebia.wall.models import Torrent
+from plebia.wall.models import Torrent, Episode
 from django.conf import settings
 
 import re
@@ -53,6 +53,15 @@ def torrent_update():
     # Get current torrents status from deluge
     deluge_output = get_deluge_output()
     deluge_torrent_list = parse_deluge_output(deluge_output)
+
+    # Get new episodes for which we must find a torrent file
+    new_episode_list = Episode.objects.filter(\
+            Q(torrent=None))\
+            .order_by('date_added')
+
+    for new_episode in new_episode_list:
+        new_episode.start_download()
+        time.sleep(1) # Do not spam the torrent search engine
 
     # Get Torrent() objects which must be updated
     torrent_list = Torrent.objects.filter(\

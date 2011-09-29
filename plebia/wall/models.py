@@ -44,13 +44,13 @@ TORRENT_STATUSES = (
 
 class Torrent(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
-    hash = models.CharField('torrent hash/magnet', max_length=200)
+    hash = models.CharField('torrent hash/magnet', max_length=200, blank=True)
     name = models.CharField('name', max_length=200, blank=True)
-    type = models.CharField('type', max_length=20, choices=TORRENT_TYPES)
+    type = models.CharField('type', max_length=20, choices=TORRENT_TYPES, blank=True)
     status = models.CharField('download status', max_length=20, choices=TORRENT_STATUSES, default='New')
     progress = models.FloatField('download progress', default=0)
-    seeds = models.IntegerField('seeds')
-    peers = models.IntegerField('peers')
+    seeds = models.IntegerField('seeds', null=True)
+    peers = models.IntegerField('peers', null=True)
     download_speed = models.CharField('download speed', max_length=20, blank=True)
     upload_speed = models.CharField('upload speed', max_length=20, blank=True)
     eta = models.CharField('remaining download time', max_length=20, blank=True)
@@ -297,7 +297,7 @@ class Episode(models.Model):
 
         from plebia.wall import videoutils
 
-        if self.torrent.status == 'Completed' and self.video is None:
+        if self.torrent and self.torrent.status == 'Completed' and self.video is None:
             self.video = videoutils.locate_video(self)
             self.save()
 
@@ -320,7 +320,9 @@ class Episode(models.Model):
 
             # See if we should prefer the season or the episode
             if season_torrent is None and episode_torrent is None:
-                return None
+                torrent = Torrent()
+                torrent.status = 'Error'
+                torrent.save()
             elif season_torrent is None \
                     or (season_torrent.seeds < 10 and episode_torrent is not None):
                 torrent = episode_torrent
@@ -355,8 +357,7 @@ class PredictiveDownloadManager:
 
     def on_episode_created(self, episode):
         '''Called every time an episode object is created'''
-       
-        episode.start_download()
+        pass
 
     def on_episode_updated(self, episode):
         '''Called every time an episode object is updated (all saves except creation)'''

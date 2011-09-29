@@ -60,7 +60,7 @@ def video_update():
             .order_by('-date_added')
     
     for video in video_list:
-        if video.status == 'New':
+        if video.status == 'New' and check_free_transcoding_slot():
             start_transcoding(video)
 
         elif video.status == 'Transcoding':
@@ -93,5 +93,19 @@ def update_transcoding_status(video):
     if retcode: # ffmpeg process not found, transcoding over
         video.status = 'Completed'
         video.save()
+
+def check_free_transcoding_slot():
+    '''Check we can start a new transcoding now'''
+
+    cmd = [settings.BIN_DIR+"count_transcoding.sh"]
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    (result, errors) = p.communicate()
+
+    nb_transcoding_processes = int(result)
+
+    if nb_transcoding_processes < 4:
+        return True
+    else:
+        return False
 
 
