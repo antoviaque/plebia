@@ -64,10 +64,10 @@ Populate database:
     $ plebia/manage.py syncdb
     $ plebia/manage.py migrate
 
-Add cron:
+Add cron (pgrep ensures there is always only one instance of the script running):
 
-    * * * * * /var/www/plebia/plebia/manage.py torrent_update &>> /var/www/plebia/log/torrent-update.log
-    * * * * * /var/www/plebia/plebia/manage.py video_update &>> /var/www/plebia/log/video-update.log
+    * * * * * pgrep -f torrent_update > /dev/null || /var/www/plebia/plebia/manage.py torrent_update &>> /var/www/plebia/log/torrent-update.log
+    * * * * * pgrep -f video_update > /dev/null || /var/www/plebia/plebia/manage.py video_update &>> /var/www/plebia/log/video-update.log
 
 = 2a. Development environment =
 

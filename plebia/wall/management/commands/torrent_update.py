@@ -70,7 +70,7 @@ def torrent_update():
             new_episode.torrent.save()
 
         # Do not spam the torrent search engine
-        time.sleep(1) 
+        time.sleep(2) 
 
     # Get Torrent() objects which must be updated
     torrent_list = Torrent.objects.filter(\

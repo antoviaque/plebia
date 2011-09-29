@@ -28,11 +28,18 @@ import re
 import mechanize
 
 
+# mechanize #########################################################
+
+cookies = mechanize.CookieJar()
+opener = mechanize.build_opener(mechanize.HTTPCookieProcessor(cookies))
+opener.addheaders = [("User-agent", "Mozilla/5.0 (compatible; Plebia/0.1)")]
+mechanize.install_opener(opener)
+
 # Helpers - Finding torrents ########################################
 
 def get_torrent_by_search(search_string):
     torrent = Torrent()
-    html_result = submit_form("http://torrentz.eu/", search_string)
+    html_result = submit_form("http://torrentz.com/", search_string)
 
     # First check if any torrent was found at all
     if(re.search("Could not match your exact query", html_result)):
