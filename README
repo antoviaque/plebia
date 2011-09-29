@@ -4,6 +4,5 @@ See INSTALL file for installation instructions.
 
 = Migrations =
 
-$ ./manage.py schemamigration wall --auto
-$ ./manage.py migrate wall
+$ ./plebia/manage.py schemamigration wall --auto ; ./plebia/manage.py migrate wall
 

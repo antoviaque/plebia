@@ -46,7 +46,7 @@ def ajax_search(request, search_string):
 
     # Build a list of matching series (larger set than the one returned by TVDB, 
     # which only contains entire word matches
-    series_list = Series.objects.filter(name__contains=search_string).order_by('-first_aired')[:20]
+    series_list = Series.objects.filter(name__icontains=search_string).order_by('-first_aired')[:20]
     
     return render_to_response('wall/search.html', {
         'series_list': series_list,
