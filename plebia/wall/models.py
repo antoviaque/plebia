@@ -282,7 +282,12 @@ class Episode(models.Model):
         
         from plebia.wall import videoutils
 
-        if self.torrent is None:
+        try:
+            torrent = self.torrent
+        except Torrent.DoesNotExist:
+            torrent = None
+
+        if torrent is None:
             self.torrent = self.get_or_create_torrent()
             self.create_video_if_completed()
             self.save()
@@ -307,10 +312,13 @@ class Episode(models.Model):
         season = self.season
         series = season.series
 
-        # Check if the full season is not already there
-        if season.torrent is not None:
+        try:
             torrent = season.torrent
-        else:
+        except Torrent.DoesNotExist:
+            torrent = None
+
+        # Check if the full season is not already there
+        if torrent is None:
             # Episode
             search_string = "(tv|television) %s s%02de%02d" % (series.name, season.number, self.number)
             episode_torrent = torrentutils.get_torrent_by_search(search_string)
