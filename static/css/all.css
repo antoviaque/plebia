@@ -402,6 +402,15 @@ a {
     opacity: .40;
 }
 
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode.plebia_state_not_aired .plebia_state .plebia_air_date {
+    width: 66px;
+    margin: 0px 10px 0px 8px;
+    height: 10px;
+    position: absolute;
+    top: 70%;
+    margin-top: -5px;
+}
+
 /* lightbox *********************************************************/
 
 #fancybox-wrap a {

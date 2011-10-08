@@ -668,6 +668,7 @@
 
     // List of states 
     $.plebia.StatefulDOM.prototype.state_list = new Array("new",
+                                                          "not_aired",
                                                           "not_started",
                                                           "searching",
                                                           "downloading",
@@ -809,7 +810,13 @@
     $.plebia.Episode.prototype.get_obj_state = function() {
         // Determine in which state the episode is on the API
 
-        $this = this;
+        var $this = this;
+        var current_time = new Date();
+        
+        // Episodes which haven't aired yet
+        if(Date.parse($this.api_obj.first_aired) > current_time) {
+            return 'not_aired';
+        }
 
         // Video processing
         if($this.api_obj.video) {
@@ -879,6 +886,12 @@
         if(old_state != 'not_started') {
             // Progress bar init
             $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
+        }
+    };
+    
+    $.plebia.Episode.prototype.update_state_not_aired = function(old_state) {
+        if(old_state != 'not_aired') {
+            $('.plebia_air_date', $this.dom).html($this.api_obj.first_aired.substring(0,10));
         }
     };
     

@@ -23,6 +23,7 @@ from tastypie import fields
 from tastypie.resources import ModelResource
 from wall.models import *
 
+from datetime import datetime
 
 # API resources #####################################################
 
