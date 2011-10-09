@@ -125,20 +125,22 @@ class SeriesManager(models.Manager):
         for series_tvdb_id in series_list:
             try:
                 series = Series.objects.get(tvdb_id=series_tvdb_id)
+                # Check if this has been downloaded in the past
+                if series.is_active():
+                    print 'Updating series "%s"' % series.name
+                    series.update_from_tvdb()
             except Series.DoesNotExist:
                 pass
-
-            series.update_from_tvdb()
 
         # Update individual episodes modifications (not new episodes)
         for episode_tvdb_id in episode_list:
             try:
                 episode = Episode.objects.get(tvdb_id=episode_tvdb_id)
+                episode_tvdb = tvdb.get_episode(episode_tvdb_id)
+                print 'Updating episode "%s s%de%d"' % (episode.season.series.name, episode.season.number, episode.number)
+                episode.update_details(episode_tvdb)
             except Episode.DoesNotExist:
                 pass
-
-            episode_tvdb = tvdb.get_episode(episode_tvdb_id)
-            episode.update_details(episode_tvdb)
 
         # Update timestamp
         update.time = timestamp
@@ -180,14 +182,32 @@ class Series(models.Model):
         self.update_episodes(tvdb_episode_list)
         self.save()
 
+    def is_active(self):
+        '''Check if series details (episodes, seasons...) need to be updated'''
+
+        if self.nb_seasons > 0:
+            return True
+        else:
+            return False
+
+    def nb_seasons(self):
+        '''Number of seasons currently attached'''
+
+        nb_seasons = self.season.count()
+        print nb_seasons
+
+        return nb_seasons
+
     def update_summary_details(self, tvdb_series):
         '''Update a part of the attributes based on tvdb object 
         (summary obtained through TheTVDB.get_matching_shows())'''
 
-        self.name = tvdb_series.name
+        from plebia.wall.torrentutils import sanitize_text
+
+        self.name = sanitize_text(tvdb_series.name)
         self.tvdb_id = tvdb_series.id
-        self.language = tvdb_series.language
-        self.overview = tvdb_series.overview
+        self.language = sanitize_text(tvdb_series.language)
+        self.overview = sanitize_text(tvdb_series.overview)[:1000]
         self.first_aired = tvdb_series.first_aired
         self.imdb_id = tvdb_series.imdb_id
         self.banner_url = tvdb_series.banner_url
@@ -246,7 +266,7 @@ class Episode(models.Model):
     torrent = models.ForeignKey(Torrent, null=True)
     video = models.ForeignKey(Video, null=True)
     tvdb_id = models.IntegerField('tvdb id')
-    overview = models.CharField('overview', max_length=2000, blank=True)
+    overview = models.CharField('overview', max_length=1000, blank=True)
     director = models.CharField('director', max_length=255, blank=True)
     guest_stars = models.CharField('guest stars', max_length=255, blank=True)
     language = models.CharField('language', max_length=50)
@@ -264,14 +284,16 @@ class Episode(models.Model):
     def update_details(self, tvdb_episode):
         '''Update attributes based on a tvdb object'''
 
+        from plebia.wall.torrentutils import sanitize_text
+
         self.tvdb_id = tvdb_episode.id
-        self.name = tvdb_episode.name
-        self.overview = tvdb_episode.overview
-        self.director = tvdb_episode.director
-        self.guest_stars = tvdb_episode.guest_stars
+        self.name = sanitize_text(tvdb_episode.name)
+        self.overview = sanitize_text(tvdb_episode.overview)[:1000]
+        self.director = sanitize_text(tvdb_episode.director)
+        self.guest_stars = sanitize_text(tvdb_episode.guest_stars)
         self.language = tvdb_episode.language
         self.rating = tvdb_episode.rating
-        self.writer = tvdb_episode.writer
+        self.writer = sanitize_text(tvdb_episode.writer)
         self.first_aired = tvdb_episode.first_aired
         self.image_url = tvdb_episode.image
         self.imdb_id = tvdb_episode.imdb_id

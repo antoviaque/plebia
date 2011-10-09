@@ -208,17 +208,15 @@ class TheTVDB(object):
 
     def get_episode(self, episode_id):
         """Get the episode object matching this episode_id."""
-        url = "%s/episodes/%s/" % (self.base_key_url, episode_id)
+        url = "%s/episodes/%s/en.xml" % (self.base_key_url, episode_id)
         data = urllib.urlopen(url)
         
-        episode = None
-        try:
-            tree = ET.parse(data)
-            episode_node = tree.find("Episode")
+        tree = ET.parse(data)
+        episode_node = tree.find("Episode")
 
-            episode = TheTVDB.Episode(episode_node, self.mirror_url)
-        except SyntaxError:
-            pass
+        episode = TheTVDB.Episode(episode_node, self.mirror_url)
+        #except SyntaxError:
+        #    pass
         
         return episode
     
@@ -262,10 +260,10 @@ class TheTVDB(object):
         tree = ET.parse(data)
 
         series_node_list = tree.getiterator("Series")
-        series_list = [x.text() for x in series_node_list]
+        series_list = [x.text for x in series_node_list]
 
         episode_node_list = tree.getiterator("Episode")
-        episode_list = [x.text() for x in episode_node_list]
+        episode_list = [x.text for x in episode_node_list]
 
         timestamp = tree.findtext("Time")
 

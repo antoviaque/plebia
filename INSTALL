@@ -68,6 +68,8 @@ Add cron (pgrep ensures there is always only one instance of the script running)
 
     * * * * * pgrep cron_torrent.sh > /dev/null || /var/www/plebia/bin/cron_torrent.sh &>> /var/www/plebia/log/torrent-update.log
     * * * * * pgrep cron_video.sh > /dev/null || /var/www/plebia/bin/cron_video.sh &>> /var/www/plebia/log/video-update.log
+    0 * * * * pgrep cron_series.sh > /dev/null || /var/www/plebia/bin/cron_series.sh &>> /var/www/plebia/log/series-update.log
+
 
 = 2a. Development environment =
 

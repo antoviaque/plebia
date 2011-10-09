@@ -42,7 +42,7 @@ def get_torrent_by_search(search_string):
     html_result = submit_form("http://torrentz.com/", search_string)
 
     # First check if any torrent was found at all
-    if(re.search("Could not match your exact query", html_result)):
+    if(html_result is None or re.search("Could not match your exact query", html_result)):
         return None
     
     # Get the list of torrents results
@@ -64,17 +64,22 @@ def get_torrent_by_search(search_string):
 
 
 def submit_form(url, text):
-    br = mechanize.Browser()
-    br.open(url)
+    import httplib
 
-    # Debug - show every request in log
-    curr_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-    print '%s: %s => %s' % (curr_time, url, text)
+    try:
+        br = mechanize.Browser()
+        br.open(url)
 
-    br.select_form(nr=0)
-    br["f"] = text
-    response = br.submit()
-    html_result = response.get_data()
+        # Debug - show every request in log
+        curr_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        print '%s: %s => %s' % (curr_time, url, text)
+
+        br.select_form(nr=0)
+        br["f"] = text
+        response = br.submit()
+        html_result = response.get_data()
+    except httplib.BadStatusLine:
+        html_result = None
 
     return html_result
 
