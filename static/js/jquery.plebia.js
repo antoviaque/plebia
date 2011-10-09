@@ -922,11 +922,17 @@
     $.plebia.WatchBox = function(dom, plebia_dom) {
         // Attach Watchbox object to template, but let dom attribute unset
         // fancybox clones the content when launched, and we want to alter to copy, not the template
-        dom[0].watchbox = this;
-        this.dom = null;
+        var $this = this;
+        dom[0].watchbox = $this;
+        $this.dom = null;
 
-        this.plebia_dom = plebia_dom;
-        this.episode_dom = null;
+        $this.plebia_dom = plebia_dom;
+        $this.episode_dom = null;
+
+        // Create a copy of the template
+        // (fancybox moves it to the watchbox the first time)
+        var watchbox_template = $('.plebia_template .plebia_watchbox', $this.plebia_dom);
+        watchbox_template.clone().attr('id', 'plebia_watchbox').appendTo(watchbox_template.parent())
     };
 
     // BaseObject inheritance
@@ -971,6 +977,12 @@
         var watchbox_dom = $('#fancybox-content .plebia_watchbox');
         watchbox_dom[0].watchbox = $this;
         $this.dom = watchbox_dom;
+
+        // Make sure the contents of the watchbox are the template 
+        // (lightbox only intialize it once, upon first appearance)
+        var watchbox_template = $('.plebia_template .plebia_watchbox', $this.plebia_dom);
+        $this.dom.html(watchbox_template.html());
+        $this.set_dom_state('new');
         
         // Get objects containing details about the episode to display        
         var episode = $this.episode_dom[0].episode;
