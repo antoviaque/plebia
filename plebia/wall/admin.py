@@ -127,3 +127,11 @@ class VideoAdmin(admin.ModelAdmin):
 admin.site.register(Video, VideoAdmin)
 
 
+# TVDBCache ##
+
+class TVDBCacheAdmin(admin.ModelAdmin):
+    pass
+
+admin.site.register(TVDBCache, TVDBCacheAdmin)
+
+

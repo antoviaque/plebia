@@ -389,7 +389,7 @@ class Post(models.Model):
 # TVDBCache ################################
 
 class TVDBCache(models.Model):
-    type = models.IntegerField('update type')
+    type = models.CharField('update type', max_length=20)
     time = models.IntegerField('update time')
     
     def __unicode__(self):

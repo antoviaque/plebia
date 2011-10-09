@@ -26,7 +26,7 @@ from lxml.cssselect import CSSSelector
 
 import re
 import mechanize
-
+from time import gmtime, strftime
 
 # mechanize #########################################################
 
@@ -66,6 +66,10 @@ def get_torrent_by_search(search_string):
 def submit_form(url, text):
     br = mechanize.Browser()
     br.open(url)
+
+    # Debug - show every request in log
+    curr_time = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    print '%s: %s => %s' % (curr_time, url, text)
 
     br.select_form(nr=0)
     br["f"] = text

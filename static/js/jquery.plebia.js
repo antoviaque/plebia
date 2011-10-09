@@ -811,10 +811,11 @@
         // Determine in which state the episode is on the API
 
         var $this = this;
-        var current_time = new Date();
+        var yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
         
         // Episodes which haven't aired yet
-        if(Date.parse($this.api_obj.first_aired) > current_time) {
+        if(Date.parse($this.api_obj.first_aired) > yesterday) {
             return 'not_aired';
         }
 

@@ -27,6 +27,7 @@ from django.conf import settings
 import re
 import subprocess
 import time
+import datetime
 
 
 # Globals ###########################################################
@@ -56,9 +57,11 @@ def torrent_update():
     deluge_output = get_deluge_output()
     deluge_torrent_list = parse_deluge_output(deluge_output)
 
+    yesterday = datetime.date.today() - datetime.timedelta(days=1)
     # Get new episodes for which we must find a torrent file
     new_episode_list = Episode.objects.filter(\
             Q(torrent=None))\
+            .filter(first_aired__lte=yesterday)\
             .order_by('date_added')
 
     for new_episode in new_episode_list:

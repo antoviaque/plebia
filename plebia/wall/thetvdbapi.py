@@ -249,9 +249,11 @@ class TheTVDB(object):
         '''Get the current server time, used to generate update diffs'''
         url = "%s/Updates.php?type=none" % self.base_url
         data = urllib.urlopen(url)
-        server_time = int(data)
+        tree = ET.parse(data)
+        timestamp = int(tree.findtext("Time"))
+        print timestamp
 
-        return server_time
+        return timestamp
 
     def get_updates_by_timestamp(self, timestamp):
         '''Returns (timestamp, series_list, episode_list) of updated series/episodes since <timestamp>'''
