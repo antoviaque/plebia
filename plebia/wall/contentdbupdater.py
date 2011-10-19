@@ -19,17 +19,19 @@
 
 # Includes ##########################################################
 
-from django.core.management.base import BaseCommand, CommandError
-
-from plebia.wall.models import Series, Season, Episode
+from plebia.wall.models import Series
 
 
-# Main ##############################################################
+# Models ############################################################
 
-class Command(BaseCommand):
-    help = 'Updates series/seasons/episodes from listing'
+class ContentDBUpdateManager:
+    ''''''
 
-    def handle(self, *args, **options):
+    def __init__(self):
+        pass
+    
+    def do(self):
+        '''Perform the maintenance'''
+        
         Series.objects.apply_tvdb_updates()
-
 

@@ -42,7 +42,6 @@ urlpatterns = patterns('wall.views',
     (r'^$', 'index'),
     (r'^ajax/search/(?P<search_string>.+)$', 'ajax_search'),
     (r'^ajax/newpost/(?P<series_id>\d+)/$', 'ajax_new_post'),
-    (r'^ajax/start/episode/(?P<episode_id>\d+)/$', 'ajax_start_download'),
     (r'^api/', include(v1_api.urls)),
 )
 

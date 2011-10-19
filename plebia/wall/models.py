@@ -58,6 +58,43 @@ class Torrent(models.Model):
     def __unicode__(self):
         return ("%s %s %s" % (self.name, self.hash, self.type))
 
+    def start_download(self):
+        from plebia.wall.torrentdownloader import TorrentDownloader
+
+        if self.status == 'New':
+            torrent_downloader = TorrentDownloader()
+            torrent_downloader.add_hash(self.hash)
+            self.status = 'Downloading'
+            self.save()
+
+    def update_from_torrent(torrent):
+        '''Update status by copying attribute from another torrent'''
+
+        if torrent.name:
+            self.name = torrent.name
+
+        self.progress = torrent.progress
+        self.status = torrent.status
+        self.download_speed = torrent.download_speed
+        self.upload_speed = torrent.upload_speed
+        self.eta = torrent.eta
+        
+        self.save()
+
+    def get_episode_video(self, episode):
+        '''Locate a specific episode in a completed torrent'''
+
+        from plebia.wall.packagemanager import MultiSeasonPackage, EpisodePackage
+
+        if self.type == 'season':
+            package = MultiSeasonPackage(self)
+        else:
+            package = EpisodePackage(self)
+
+        video = package.find_video(episode)
+        
+        return video
+
 
 # Video ###############################
 
@@ -68,6 +105,16 @@ VIDEO_STATUSES = (
     ('Error', 'Error'),
 )
 
+class VideoManager(models.Manager):
+
+    def get_not_found_video(self):
+        '''Returns a "Not found" Video object'''
+
+        video = Video()
+        video.status = 'Not found'
+        video.save()
+        return video
+
 class Video(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     status = models.CharField('processing status', max_length=20, choices=VIDEO_STATUSES, default='New')
@@ -77,8 +124,45 @@ class Video(models.Model):
     ogv_path = models.CharField('file path (OGV)', max_length=200, blank=True)
     image_path = models.CharField('file path (image)', max_length=200, blank=True)
 
+    objects = VideoManager()
+
     def __unicode__(self):
         return ("%s %s" % (self.original_path, self.status))
+
+    def start_transcoding(self):
+        from plebia.wall.videotranscoder import VideoTranscoder
+        video_transcoder = VideoTranscoder()
+
+        if self.status == 'New' and video_transcoder.has_free_slot():
+            # Set paths
+            prefix = self.original_path[:-4]
+            self.webm_path = prefix + '.webm'
+            self.mp4_path = prefix + '.mp4'
+            self.ogv_path = prefix + '.ogv'
+            self.image_path = prefix + '.jpg'
+
+            # Thumb
+            video_transcoder.generate_thumbnail(self.full_path(self.original_path), self.full_path(self.image_path))
+            # WebM
+            video_transcoder.transcode_webm(self.full_path(self.original_path), self.full_path(self.webm_path))
+
+            self.status = 'Transcoding'
+            self.save()
+
+    def update_transcoding_status(self):
+        '''Check if video transcoding is over'''
+
+        from plebia.wall.videotranscoder import VideoTranscoder
+        video_transcoder = VideoTranscoder()
+        
+        if video.status == 'Transcoding' and not video_transcoder.is_running(video.original_path):
+            video.status = 'Completed'
+            video.save()
+
+    def full_path(self, relative_path):
+        '''Give full system path of an internal stored path'''
+
+        return os.path.join(settings.DOWNLOAD_DIR, relative_path)
 
 
 # Series ##############################
@@ -299,102 +383,59 @@ class Episode(models.Model):
         self.imdb_id = tvdb_episode.imdb_id
         self.tvdb_last_updated = tvdb_episode.last_updated
 
-    def start_download(self):
-        '''Start actually retreiving the torrent & video'''
-        
-        from plebia.wall import videoutils
-
-        try:
-            torrent = self.torrent
-        except Torrent.DoesNotExist:
-            torrent = None
-
-        if torrent is None:
-            self.torrent = self.get_or_create_torrent()
-            self.create_video_if_completed()
-            self.save()
-
-    def on_torrent_saved(self):
-        '''Called every time the torrent object for this episode is saved'''
-
-        self.create_video_if_completed()        
-
-    def create_video_if_completed(self):
-        '''Create video object when the torrent download is completed'''
-
-        from plebia.wall import videoutils
-
-        if self.torrent and self.torrent.status == 'Completed' and self.video is None:
-            self.video = videoutils.locate_video(self)
-            self.save()
-
     def get_or_create_torrent(self):
-        from plebia.wall import torrentutils
+        '''Get the torrent for this episode (whether from the episode itself, its season or search). 
+        Updates self.torrent accordingly.'''
 
-        season = self.season
-        series = season.series
-
+        # Check if we already have a torrent attached to this episode
         try:
-            torrent = season.torrent
+            if self.torrent is not None:
+                return self.torrent
         except Torrent.DoesNotExist:
-            torrent = None
+            pass
 
-        # Check if the full season is not already there
-        if torrent is None:
-            # Episode
-            search_string = "(tv|television) %s s%02de%02d" % (series.name, season.number, self.number)
-            episode_torrent = torrentutils.get_torrent_by_search(search_string)
-            # Season
-            search_string = "(tv|television) %s season %d" % (series.name, season.number)
-            season_torrent = torrentutils.get_torrent_by_search(search_string)
+        # Check if there is a torrent for the full season
+        try:
+            if self.season.torrent is not None:
+                self.torrent = self.season.torrent
+                self.save()
 
-            # See if we should prefer the season or the episode
-            if season_torrent is None and episode_torrent is None:
-                torrent = Torrent()
-                torrent.status = 'Error'
-                torrent.save()
-            elif season_torrent is None \
-                    or (season_torrent.seeds < 10 and episode_torrent is not None):
-                torrent = episode_torrent
-                torrent.type = 'episode'
-                torrent.save()
-            elif episode_torrent is None \
-                    or episode_torrent.seeds < 10 \
-                    or episode_torrent.seeds*10 < season_torrent.seeds:
-                torrent = season_torrent
-                torrent.type = 'season'
-                torrent.save()
-                season.torrent = torrent
-                season.save()
-            else:
-                torrent = episode_torrent
-                torrent.type = 'episode'
-                torrent.save()
+                return self.torrent
+        except Torrent.DoesNotExist:
+            pass
 
-        return torrent
+        # No torrent yet, need to search for one
+        from plebia.wall.torrentsearcher import TorrentSearcher
+        torrent_searcher = TorrentSearcher()
+        self.torrent = torrent_searcher.search_torrent(self)
+        self.save()
+
+        # If it's a season torrent, register it on the season too
+        if self.torrent.type == 'season':
+            self.season.torrent = self.torrent
+
+        return self.torrent
+
+    def get_or_create_video(self):
+        '''Get the video for this episode, if there is a completed torrent'''
+
+        # Check if the video has already been located for this torrent/episode
+        if self.video is not None:
+            return self.video
+
+        # Otherwise try to get it from the torrent file
+        if self.torrent is not None and self.torrent.status == 'Completed':
+            self.video = self.torrent.get_episode_video(episode)
+            self.save()
+            return self.video
+
+        # No way to get the video for now
+        return None
 
     def next_episode(self):
         pass
 
     def previous_episode(self):
-        pass
-
-
-# PredictiveDownloadManager ###########
-
-class PredictiveDownloadManager:
-    '''Manages auto-start of episodes download'''
-
-    def on_episode_created(self, episode):
-        '''Called every time an episode object is created'''
-        pass
-
-    def on_episode_updated(self, episode):
-        '''Called every time an episode object is updated (all saves except creation)'''
-        pass
-    
-    def on_post_created(self, episode):
-        '''Called every time a post object is created'''
         pass
 
 
@@ -425,45 +466,6 @@ class PostForm(forms.Form):
     name = forms.CharField(max_length=200)
 
 
-# Signals ###########################################################
-
-def torrent_post_save(sender, **kwargs):
-    torrent = kwargs['instance']
-    created = kwargs['created']
-
-    # Notify all episodes linked to this torrent
-    episode_list = torrent.episode_set.all()
-    for episode in episode_list:
-        episode.on_torrent_saved()
-
-def episode_post_save(sender, **kwargs):
-    episode = kwargs['instance']
-    created = kwargs['created']
-
-    # Notify predictive download manager
-    manager = PredictiveDownloadManager()
-    if created:
-        manager.on_episode_created(episode)
-    else:
-        manager.on_episode_updated(episode)
-
-def post_post_save(sender, **kwargs):
-    post = kwargs['instance']
-    created = kwargs['created']
-
-    # Notify predictive download manager
-    manager = PredictiveDownloadManager()
-    if created:
-        manager.on_post_created(post)
-
-
-# Register signal handlers
-post_save.connect(torrent_post_save, sender=Torrent, dispatch_uid="torrent_post_save")
-post_save.connect(episode_post_save, sender=Episode, dispatch_uid="episode_post_save")
-post_save.connect(post_post_save, sender=Post, dispatch_uid="post_post_save")
-
-
-                        
 
 
 

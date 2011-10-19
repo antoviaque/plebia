@@ -66,11 +66,3 @@ def ajax_new_post(request, series_id):
     return HttpResponse(simplejson.dumps(['/api/v1/post/%d/' % post.id,]))
 
 
-def ajax_start_download(request, episode_id):
-    '''Triggers an episode download on user request'''
-
-    episode = Episode.objects.get(id=episode_id)
-    episode.start_download()
-
-    return HttpResponse(simplejson.dumps(['ok',]))
-

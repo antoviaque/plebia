@@ -2,5 +2,5 @@
 
 MANAGE_CMD="`dirname $0`/../plebia/manage.py"
 
-$MANAGE_CMD video_update
+$MANAGE_CMD cron video_transcoding
 
