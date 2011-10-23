@@ -127,6 +127,7 @@ INSTALLED_APPS = (
     'tastypie',
     'django_coverage',
     'wall',
+    'djangoplugins',
 )
 
 from settings_local import *

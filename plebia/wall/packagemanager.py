@@ -52,13 +52,14 @@ class PackageManager:
 
 class Package:
 
-    def __init__(self, torrent, sub_path=''):
+    def __init__(self, torrent, path=''):
         '''Init a package from subfolder/file (sub_path) from the root of a torrent'''
 
         self.torrent = torrent
         
         # The torrent base file path is determined by its name
-        self.path = os.path.join(self.get_torrent_path(), sub_path)
+        self.full_path = os.path.join(self.get_torrent_path(), path)
+        self.path = path
 
     def get_torrent_path(self):
         '''Full system path of the torrent files root'''
@@ -68,27 +69,26 @@ class Package:
 
 class MultiSeasonPackage(Package):
 
-    def find_video(episode):
+    def find_video(self, episode):
         '''Locates the video file of an episode within the package'''
 
         # Package potentially contains multiple seasons
         season_package = self.find_season_package(episode.season)
 
         if season_package == None:
-            video = Video.objects.get_not_found_video()
-        else:
-            video = season_package.find_video(episode)
+            # Could also actually be a single season package
+            season_package = SeasonPackage(self.torrent, self.path)
+        
+        video = season_package.find_video(episode)
 
         return video
 
-    def find_season_package(season, sub_path=''):
+    def find_season_package(self, season, sub_path=''):
         '''Locates the package of a specific season within the current package'''
 
-        curr_path = os.path.join(self.path, sub_path)
-
         # Try to match the directories against a season name/number
-        for filename in os.listdir(curr_path):
-            if os.path.isdir(os.path.join(curr_path, filename)):
+        for filename in os.listdir(os.path.join(self.full_path, sub_path)):
+            if os.path.isdir(os.path.join(self.full_path, sub_path, filename)):
                 # If the dir name matches a season name, get its number
                 m1 = re.search(r"season[ -_\.]*([0-9])+", filename, re.IGNORECASE)
                 m2 = re.search(r"s[ -_\.]*([0-9])+$", filename, re.IGNORECASE)
@@ -97,7 +97,7 @@ class MultiSeasonPackage(Package):
                 elif m2 is not None:
                     number = int(m2.group(1))
                 else:
-                    season_package = self.find_season_package(episode, sub_path=os.path.join(sub_path, filename))
+                    season_package = self.find_season_package(season, sub_path=os.path.join(sub_path, filename))
                     if season_package is not None:
                         return season_package
                     else:
@@ -105,8 +105,7 @@ class MultiSeasonPackage(Package):
 
                 # If it's the season we are looking for, build the season package to return
                 if season.number == number:
-                    season_sub_path = os.path.join(sub_path, filename)
-                    season_package = SeasonPackage(self.torrent, season_sub_path)
+                    season_package = SeasonPackage(self.torrent, os.path.join(self.path, sub_path, filename))
                     return season_package
 
         return None
@@ -114,7 +113,7 @@ class MultiSeasonPackage(Package):
 
 class SeasonPackage(Package):
 
-    def find_video(episode):
+    def find_video(self, episode):
         '''Locates the video file of an episode within the package'''
 
         # Package contains multiple episodes
@@ -127,30 +126,27 @@ class SeasonPackage(Package):
 
         return video
 
-    def find_episode_package(episode, sub_path=''):
+    def find_episode_package(self, episode, sub_path=''):
         '''Locates the package of a specific episode within the current package'''
 
         season = episode.season
-        curr_path = os.path.join(self.path, sub_path)
 
-        for filename in os.listdir(curr_path):
-            filename_fullpath = os.path.join(curr_path, filename)
-            
+        for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             # Try to match the file/dirs against the episode number
             if re.search(r"s%02de%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
+            or re.search(r"%02dx%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
             or re.search(r"s%de%d" % (season.number, episode.number), filename, re.IGNORECASE) \
             or re.search(r"%d%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
             or re.search(r"season[ -_\.0]*%d[ -_\.]*episode[ -_\.0]*%d" % (season.number, episode.number), filename, re.IGNORECASE):
                 # Check that this is a video or a folder
-                (file_type, file_encoding) = mimetypes.guess_type(filename_fullpath)
+                (file_type, file_encoding) = mimetypes.guess_type(os.path.join(self.full_path, sub_path, filename))
                 if (file_type is not None and file_type.startswith('video')) \
-                        or os.path.isdir(filename_fullpath):
-                    episode_sub_path = os.path.join(sub_path, filename)
-                    episode_package = EpisodePackage(self.torrent, episode_sub_path)
+                        or os.path.isdir(os.path.join(self.full_path, sub_path, filename)):
+                    episode_package = EpisodePackage(self.torrent, os.path.join(self.path, sub_path, filename))
                     return episode_package
 
             # Look for episodes recursively in folders
-            if os.path.isdir(filename_fullpath):
+            if os.path.isdir(os.path.join(self.full_path, sub_path, filename)):
                 episode_package = self.find_episode_package(episode, os.path.join(sub_path, filename))
                 if episode_package is not None:
                     return episode_package
@@ -160,16 +156,16 @@ class SeasonPackage(Package):
 
 class EpisodePackage(Package):
 
-    def find_video(episode):
+    def find_video(self, episode):
         '''Locates the video object of an episode within the package'''
 
         video = Video()
 
         # If the torrent is a single file, that's the one we want
-        if os.path.isfile(self.path):
-            video.original_path = torrent_path
+        if os.path.isfile(self.full_path):
+            video.original_path = os.path.join(self.torrent.name, self.path)
         # If the torrent is a directory, look inside
-        elif os.path.isdir(self.path):
+        elif os.path.isdir(self.full_path):
             # First, extract files from archives in this directory to be able to find those files too
             self.extract_archives()
 
@@ -182,54 +178,53 @@ class EpisodePackage(Package):
             max_filename = None 
             max_size = 0
             for video_filename in video_filename_list:
-                video_size = os.stat(os.path.join(self.path, video_filename))
+                video_size = os.stat(os.path.join(self.full_path, video_filename))
                 if video_size > max_size:
                     max_filename = video_filename
                     max_size = video_size
 
-            video.original_path = max_filename
+            # Check if there was any video at all
+            if max_filename is not None:
+                video.original_path = os.path.join(self.path, max_filename)
+            else:
+                video = Video.objects.get_not_found_video()
+        else:
+            video = Video.objects.get_not_found_video()
 
         # Save
         video.save()
         return video
 
-    def extract_archives(sub_path=''):
+    def extract_archives(self, sub_path=''):
         '''Extract all archives in current package, including subdirectories'''
 
-        curr_path = os.path.join(self.path, sub_path)
-
-        for filename in os.listdir(curr_path):
-            filename_full_path = os.path.join(curr_path, filename)
-
+        for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             # Look recursively
-            if os.path.isdir(filename_full_path):
+            if os.path.isdir(os.path.join(self.full_path, sub_path, filename)):
                 self.extract_archives(os.path.join(sub_path, filename))
 
             # Change to the file directory (otherwise unrar extracts elsewhere)
-            os.chdir(curr_path)
+            os.chdir(os.path.join(self.full_path, sub_path))
 
             # Uncompress any archives (rar)
             if filename.lower().endswith('.rar'):
                 # Run unrar
-                cmd = (settings.UNRAR_PATH, 'x', '-y', filename_full_path)
+                cmd = (settings.UNRAR_PATH, 'x', '-y', os.path.join(self.full_path, sub_path, filename))
                 (result, errors) = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()
 
-    def get_video_list(sub_path=''):
+    def get_video_list(self, sub_path=''):
         '''Returns list of subpaths to all videos in the current package, including subdirectories'''
 
-        curr_path = os.path.join(self.path, sub_path)
         video_filename_list = list()
 
-        for filename in os.listdir(curr_path):
-            filename_full_path = os.path.join(curr_path, filename)
-
+        for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             # Go recursively into subdirectories
-            if os.path.isdir(filename_full_path):
+            if os.path.isdir(os.path.join(self.full_path, sub_path, filename)):
                 sub_list = self.get_video_list(os.path.join(sub_path, filename))
                 video_filename_list.extend(sub_list)
 
             # Keep a list of videos
-            (file_type, file_encoding) = mimetypes.guess_type(filename_full_path)
+            (file_type, file_encoding) = mimetypes.guess_type(os.path.join(self.full_path, sub_path, filename))
             if file_type is not None and file_type.startswith('video'):
                 video_filename_list.append(os.path.join(sub_path, filename))
 

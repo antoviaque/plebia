@@ -72,7 +72,7 @@ class TorrentDownloadManager:
 
         for db_torrent in db_torrent_list:
             # Match the current torrent with information returned by deluge
-            dl_torrent = torrent_downloader.get_torrent_by_hash(torrent.hash)
+            dl_torrent = torrent_downloader.get_torrent_by_hash(db_torrent.hash)
 
             # Update progress of downloading torrent
             if dl_torrent:
@@ -162,7 +162,7 @@ Tracker status:(?P<tracker_status>.+)\n?(?P<progress>.*)""", result, re.MULTILIN
         self.torrent_list = torrent_list
 
 
-    def get_deluge_torrent_by_hash(self, torrent_hash):
+    def get_torrent_by_hash(self, torrent_hash):
         for torrent in self.torrent_list:
             if torrent.hash == torrent_hash:
                 return torrent

@@ -54,6 +54,7 @@ class Torrent(models.Model):
     download_speed = models.CharField('download speed', max_length=20, blank=True)
     upload_speed = models.CharField('upload speed', max_length=20, blank=True)
     eta = models.CharField('remaining download time', max_length=20, blank=True)
+    details_url = models.CharField('url of detailled info', max_length=100, blank=True)
 
     def __unicode__(self):
         return ("%s %s %s" % (self.name, self.hash, self.type))
@@ -67,7 +68,7 @@ class Torrent(models.Model):
             self.status = 'Downloading'
             self.save()
 
-    def update_from_torrent(torrent):
+    def update_from_torrent(self, torrent):
         '''Update status by copying attribute from another torrent'''
 
         if torrent.name:
@@ -405,8 +406,8 @@ class Episode(models.Model):
             pass
 
         # No torrent yet, need to search for one
-        from plebia.wall.torrentsearcher import TorrentSearcher
-        torrent_searcher = TorrentSearcher()
+        from wall.plugins import TorrentSearcher, get_active_plugin
+        torrent_searcher = get_active_plugin(TorrentSearcher)
         self.torrent = torrent_searcher.search_torrent(self)
         self.save()
 
@@ -425,7 +426,7 @@ class Episode(models.Model):
 
         # Otherwise try to get it from the torrent file
         if self.torrent is not None and self.torrent.status == 'Completed':
-            self.video = self.torrent.get_episode_video(episode)
+            self.video = self.torrent.get_episode_video(self)
             self.save()
             return self.video
 

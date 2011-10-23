@@ -16,6 +16,8 @@ Install packages (Debian/Ubuntu):
     $ sudo pip install BeautifulSoup==3.2.0
     $ sudo pip install django-coverage==1.2
     $ sudo pip install mock==0.7.2
+    $ sudo pip install django-plugins==0.2.1
+    $ sudo pip install requests==0.6.6
     $ sudo easy_install South
 
 Install development version of ffmpeg, with libvpx: http://ubuntuforums.org/showthread.php?t=786095 (works for Ubuntu and Debian - for Debian repositories to add: http://debian-multimedia.org/ )
@@ -63,6 +65,7 @@ Populate database:
 
     $ plebia/manage.py syncdb
     $ plebia/manage.py migrate
+    $ plebia/manage.py syncplugins
 
 Add cron (pgrep ensures there is always only one instance of the script running):
 
@@ -71,6 +74,10 @@ Add cron (pgrep ensures there is always only one instance of the script running)
     * * * * * pgrep cron_package_management.sh > /dev/null || /var/www/plebia/bin/cron_package_management.sh &>> /var/www/plebia/log/package-management.log
     * * * * * pgrep cron_video_transcoding.sh > /dev/null || /var/www/plebia/bin/cron_video_transcoding.sh &>> /var/www/plebia/log/video-transcoding.log
     0 * * * * pgrep cron_contentdb_update.sh > /dev/null || /var/www/plebia/bin/cron_contentdb_update.sh &>> /var/www/plebia/log/contentdb-update.log
+
+Select the plugin you would like to use for torrent search:
+
+    http://localhost/admin/djangoplugins/plugin/ (login/pass being the one set during syncdb, above)
 
 
 = 2a. Development environment =
