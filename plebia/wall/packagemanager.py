@@ -58,7 +58,11 @@ class Package:
         self.torrent = torrent
         
         # The torrent base file path is determined by its name
-        self.full_path = os.path.join(self.get_torrent_path(), path)
+        if path:
+            self.full_path = os.path.join(self.get_torrent_path(), path)
+        else:
+            self.full_path = self.get_torrent_path()
+
         self.path = path
 
     def get_torrent_path(self):
@@ -163,7 +167,10 @@ class EpisodePackage(Package):
 
         # If the torrent is a single file, that's the one we want
         if os.path.isfile(self.full_path):
-            video.original_path = os.path.join(self.torrent.name, self.path)
+            if self.path:
+                video.original_path = os.path.join(self.torrent.name, self.path)
+            else:
+                video.original_path = self.torrent.name
         # If the torrent is a directory, look inside
         elif os.path.isdir(self.full_path):
             # First, extract files from archives in this directory to be able to find those files too
@@ -185,7 +192,7 @@ class EpisodePackage(Package):
 
             # Check if there was any video at all
             if max_filename is not None:
-                video.original_path = os.path.join(self.path, max_filename)
+                video.original_path = os.path.join(self.torrent.name, self.path, max_filename)
             else:
                 video = Video.objects.get_not_found_video()
         else:

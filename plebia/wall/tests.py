@@ -138,6 +138,11 @@ class PlebiaTest(TestCase):
         os.mkdir(torrent_dir)
         return torrent_dir
 
+    def clear_test_directory(self):
+        '''Make sure the test directory is empty (rm/mkdir)'''
+        shutil.rmtree(settings.TEST_DOWNLOAD_DIR, ignore_errors=True)
+        os.mkdir(settings.TEST_DOWNLOAD_DIR)
+
     def test_find_video_in_multiple_seasons_torrent(self):
         # Fake episode
         name = 'Test multiple seasons'
@@ -197,7 +202,6 @@ class PlebiaTest(TestCase):
         # Check that the season/episode/video was found
         self.api_check('video', number, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, filename) })
 
-
     def create_fake_video(self, name, video_filename):
         torrent_dir = os.path.join(settings.TEST_DOWNLOAD_DIR, name)
         shutil.copy2(settings.TEST_VIDEO_PATH, os.path.join(torrent_dir, video_filename))
@@ -205,9 +209,9 @@ class PlebiaTest(TestCase):
     def test_find_episodes_in_season_torrent(self):
         """Match episodes against their number inside a season torrent"""
 
+        self.clear_test_directory()
         name = 'Test find episode in season'
         torrent_dir = os.path.join(settings.TEST_DOWNLOAD_DIR, name)
-        shutil.rmtree(torrent_dir, ignore_errors=True)
         os.mkdir(torrent_dir)
 
         self._test_find_single_episode_in_season_torrent(name, 1, 's02e01.avi')
@@ -219,6 +223,49 @@ class PlebiaTest(TestCase):
         self._test_find_single_episode_in_season_torrent(name, 6, 'Season 2 - Episode 6.avi')
         self._test_find_single_episode_in_season_torrent(name, 7, 'season 02 episode 07.avi')
         self._test_find_single_episode_in_season_torrent(name, 8, '02x08.avi')
+
+    def test_find_single_episode_in_episode_torrent_dir(self):
+        """Episode torrent with video contained in a directory"""
+
+        self.clear_test_directory()
+
+        # Fake episode
+        name = 'Test - 201 - Title'
+        filename = '%s.avi' % name
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.torrent = self.create_fake_torrent(name=name, type="torrent", status='Completed')
+        episode.save()
+
+        # Copy test file to episode name to test
+        shutil.copy2(settings.TEST_VIDEO_PATH, os.path.join(settings.TEST_DOWNLOAD_DIR, name, filename))
+
+        episode.get_or_create_video()
+
+        # Check that the season/episode/video was found
+        self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(name, filename) })
+
+    def test_find_single_episode_in_episode_torrent(self):
+        """Episode torrent as a single file video"""
+
+        self.clear_test_directory()
+
+        # Fake episode
+        name = 'Test episode single video file'
+        filename = '%s - 201 - Title.avi' % name
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.torrent = self.create_fake_torrent(name=filename, type="torrent", status='Completed')
+        episode.save()
+
+        # Copy test file to episode name to test
+        shutil.rmtree(os.path.join(settings.TEST_DOWNLOAD_DIR, filename), ignore_errors=True)
+        shutil.copyfile(settings.TEST_VIDEO_PATH, os.path.join(settings.TEST_DOWNLOAD_DIR, filename))
+
+        episode.get_or_create_video()
+
+        # Check that the season/episode/video was found
+        self.api_check('video', 1, { 'status': 'New', 'original_path': filename })
 
 
 
