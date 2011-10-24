@@ -230,7 +230,7 @@ class IsoHuntSearcher(TorrentSearcher):
                     if m is None:
                         break
 
-                if m and result['Seeds'] >= 1 and result['category'] == 'TV':
+                if m and result['Seeds'] != '' and result['Seeds'] >= 1 and result['leechers'] != '' and result['category'] == 'TV':
                     print "Found '%s'" % result['title']
                     torrent.hash = result['hash']
                     torrent.seeds = result['Seeds']
