@@ -141,7 +141,7 @@ class SeasonPackage(Package):
             or re.search(r"%02dx%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
             or re.search(r"s%de%d" % (season.number, episode.number), filename, re.IGNORECASE) \
             or re.search(r"%d%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
-            or re.search(r"[\[ _\.]%d\.%02d[\] _\.]" % (season.number, episode.number), filename, re.IGNORECASE) \
+            or re.search(r"[\[ _\.]%d[\.x]%02d[\] _\.]" % (season.number, episode.number), filename, re.IGNORECASE) \
             or re.search(r"season[ -_\.0]*%d[ -_\.]*episode[ -_\.0]*%d" % (season.number, episode.number), filename, re.IGNORECASE):
                 # Check that this is a video or a folder
                 (file_type, file_encoding) = mimetypes.guess_type(os.path.join(self.full_path, sub_path, filename))
