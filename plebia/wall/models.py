@@ -24,7 +24,7 @@ from django.db import models
 from django import forms
 from django.conf import settings
 
-import re
+import re, os
 
 # Models ############################################################
 
@@ -156,9 +156,9 @@ class Video(models.Model):
         from plebia.wall.videotranscoder import VideoTranscoder
         video_transcoder = VideoTranscoder()
         
-        if video.status == 'Transcoding' and not video_transcoder.is_running(video.original_path):
-            video.status = 'Completed'
-            video.save()
+        if self.status == 'Transcoding' and not video_transcoder.is_running(self.original_path):
+            self.status = 'Completed'
+            self.save()
 
     def full_path(self, relative_path):
         '''Give full system path of an internal stored path'''
