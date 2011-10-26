@@ -135,6 +135,9 @@ class SeasonPackage(Package):
 
         season = episode.season
 
+        # Some extensions are missing from mime.types files
+        mimetypes.add_type('video/mp4', '.m4v')
+
         for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             # Try to match the file/dirs against the episode number
             if re.search(r"s%02de%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
