@@ -223,6 +223,7 @@ class PlebiaTest(TestCase):
         self._test_find_single_episode_in_season_torrent(name, 6, 'Season 2 - Episode 6.avi')
         self._test_find_single_episode_in_season_torrent(name, 7, 'season 02 episode 07.avi')
         self._test_find_single_episode_in_season_torrent(name, 8, '02x08.avi')
+        self._test_find_single_episode_in_season_torrent(name, 9, '[2.09].avi')
 
     def test_find_single_episode_in_episode_torrent_dir(self):
         """Episode torrent with video contained in a directory"""
