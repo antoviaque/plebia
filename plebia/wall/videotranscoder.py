@@ -80,8 +80,8 @@ class VideoTranscoder:
 
         # If ffmpeg process is not found, transcoding over
         retcode = subprocess.call([settings.BIN_DIR+"check_transcoding.sh", video_path])
-        
-        return retcode
+
+        return not retcode
 
     def has_free_slot(self):
         '''Can we start a new transcoding'''
