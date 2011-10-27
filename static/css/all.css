@@ -391,7 +391,7 @@ a {
     margin-top: -10px;
 }
 
-.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode.plebia_state_not_started .plebia_state .plebia_progress_bar {
+.plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode.plebia_state_searching .plebia_state .plebia_progress_bar {
     width: 60px;
     margin: 0px 10px 0px 10px;
     height: 10px;

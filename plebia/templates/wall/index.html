@@ -179,10 +179,15 @@
                             <div class="plebia_eta"><span class="plebia_eta_value"></span></div>
                         </div>
 
-                        <!-- Episode STATE: 'not_started' -->
-                        <div class="plebia_episode_not_started">
+                        <!-- Episode STATE: 'searching' -->
+                        <div class="plebia_episode_searching">
                             <div class="plebia_start">Searching...</div>
                             <div class="plebia_progress_bar"></div>
+                        </div>
+
+                        <!-- Episode STATE: 'queued' -->
+                        <div class="plebia_episode_queued">
+                            <div class="plebia_start">Queued</div>
                         </div>
 
                         <!-- Episode STATE: 'not_aired' -->
@@ -220,6 +225,13 @@
                             <div class="plebia_info">
                                 Searching for video...
                                 &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                            </div>
+                        </div>
+
+                        <!-- STATE: queued -->
+                        <div class="plebia_watchbox_queued">
+                            <div class="plebia_info">
+                                Download of video queued, currently processing other downloads.
                             </div>
                         </div>
 
