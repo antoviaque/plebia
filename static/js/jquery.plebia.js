@@ -631,7 +631,7 @@
         var $this = this;
         var deferred = $.Deferred();
 
-        var elems = $('.plebia_state_searching, .plebia_state_searching, .plebia_state_downloading, .plebia_state_transcoding_not_ready', $this.dom);
+        var elems = $('.plebia_state_searching, .plebia_state_queued, .plebia_state_searching, .plebia_state_downloading, .plebia_state_transcoding_not_ready', $this.dom);
         var count = elems.length;
 
         // Refresh season if any episode needs update
