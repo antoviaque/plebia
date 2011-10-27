@@ -63,12 +63,16 @@ class TorrentDownloadManager:
 
         # Get Torrent() objects which must be updated
         db_torrent_list = Torrent.objects.filter(\
+                Q(status='Queued') | \
                 Q(status='Downloading'))\
                 .order_by('-date_added')
 
         # Refresh downloader status
         torrent_downloader = TorrentDownloader()
         torrent_downloader.update_torrent_list()
+
+        # Cancel downloads which don't find seeds
+        torrent_downloader.update_no_seed_timeout()
 
         for db_torrent in db_torrent_list:
             # Match the current torrent with information returned by deluge
@@ -89,6 +93,14 @@ class TorrentDownloader:
 
         cmd = list(settings.DELUGE_COMMAND)
         cmd.append('add magnet:?xt=urn:btih:%s' % hash)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        (result, errors) = p.communicate()
+
+    def cancel_hash(self, hash):
+        '''Stop download of torrent'''
+
+        cmd = list(settings.DELUGE_COMMAND)
+        cmd.append('rm %s' % hash)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         (result, errors) = p.communicate()
 
@@ -127,14 +139,14 @@ Tracker status:(?P<tracker_status>.+)\n?(?P<progress>.*)""", result, re.MULTILIN
                 if m2:
                     torrent.download_speed = m2.group('download_speed')
                 else:
-                    torrent.download_speed = "0 KiB/s"
+                    torrent.download_speed = "0.0 KiB/s"
 
                 # Upload speed
                 m2 = re.search(r"Up Speed: (?P<upload_speed>\d+\.\d+ .iB.s)", m.group('state'))
                 if m2:
                     torrent.upload_speed = m2.group('upload_speed')
                 else:
-                    torrent.upload_speed = "0 KiB/s"
+                    torrent.upload_speed = "0.0 KiB/s"
 
                 # ETA
                 m2 = re.search(r"ETA: (?P<eta>.*)$", m.group('state'))
@@ -142,6 +154,22 @@ Tracker status:(?P<tracker_status>.+)\n?(?P<progress>.*)""", result, re.MULTILIN
                     torrent.eta = m2.group('eta')
                 else:
                     torrent.eta = ""
+
+                # Seeds & peers
+                m2 = re.search(r"\d+ \((?P<seeds>\d+)\) Peers: \d+ \((?P<peers>\d+)\)", m.group('seeds'))
+                if m2:
+                    torrent.seeds = int(m2.group('seeds'))
+                    torrent.peers = int(m2.group('peers'))
+                else:
+                    torrent.seeds = None
+                    torrent.peers = None
+
+                # Active time
+                m2 = re.search(r"Active: (?P<active_time>.*)$", m.group('seed_time'))
+                if m2:
+                    torrent.active_time = m2.group('active_time')
+                else:
+                    torrent.active_time = ''
 
                 # Progress isn't shown once completed
                 m2 = re.match(r"Progress: (?P<torrent_progress>\d+\.\d+)", m.group('progress'))
@@ -151,16 +179,41 @@ Tracker status:(?P<tracker_status>.+)\n?(?P<progress>.*)""", result, re.MULTILIN
                     torrent.progress = 100.0
 
                 # Status
-                if torrent.progress == 100.0:
-                    torrent.status = 'Completed'
+                m2 = re.search(r"^(?P<state>[^ ]+).*$", m.group('state'))
+                if m2:
+                    # Do not care about queued seeding status, which for us is a completed status
+                    if torrent.progress == 100.0:
+                        if m2.group('state') == 'Downloading':
+                            torrent.status = 'Downloading'
+                        else:
+                            torrent.status = 'Completed'
+                    else:
+                        if m2.group('state') == 'Queued':
+                            torrent.status = 'Queued'
+                        elif m2.group('state') == 'Downloading':
+                            torrent.status = 'Downloading'
+                        else:
+                            torrent.status = 'Error'
                 else:
-                    torrent.status = 'Downloading'
+                    torrent.status = 'Error'
 
                 torrent_list.append(torrent)
 
         # Update
         self.torrent_list = torrent_list
 
+    def update_no_seed_timeout(self):
+        '''Cancel downloads which don't find seeds'''
+        
+        torrent_list = list()
+        for torrent in self.torrent_list:
+            if torrent.status == 'Downloading' and torrent.seeds == 0 and torrent.active_time[:9] != '0 days 00': # active download for more than 1h
+                torrent.status = 'Error'
+                self.cancel_hash(torrent.hash)
+            
+            torrent_list.append(torrent)
+
+        self.torrent_list = torrent_list
 
     def get_torrent_by_hash(self, torrent_hash):
         for torrent in self.torrent_list:

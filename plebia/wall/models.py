@@ -37,6 +37,7 @@ TORRENT_TYPES = (
 
 TORRENT_STATUSES = (
     ('New', 'New'),
+    ('Queued', 'Queued'),
     ('Downloading', 'Downloading'),
     ('Completed', 'Completed'),
     ('Error', 'Error'),
@@ -54,6 +55,7 @@ class Torrent(models.Model):
     download_speed = models.CharField('download speed', max_length=20, blank=True)
     upload_speed = models.CharField('upload speed', max_length=20, blank=True)
     eta = models.CharField('remaining download time', max_length=20, blank=True)
+    active_time = models.CharField('active time', max_length=20, blank=True)
     details_url = models.CharField('url of detailled info', max_length=100, blank=True)
 
     def __unicode__(self):
@@ -65,7 +67,7 @@ class Torrent(models.Model):
         if self.status == 'New':
             torrent_downloader = TorrentDownloader()
             torrent_downloader.add_hash(self.hash)
-            self.status = 'Downloading'
+            self.status = 'Queued'
             self.save()
 
     def update_from_torrent(self, torrent):
@@ -79,7 +81,10 @@ class Torrent(models.Model):
         self.download_speed = torrent.download_speed
         self.upload_speed = torrent.upload_speed
         self.eta = torrent.eta
-        
+        self.active_time = torrent.active_time
+        self.seeds = torrent.seeds
+        self.peers = torrent.peers
+
         self.save()
 
     def get_episode_video(self, episode):

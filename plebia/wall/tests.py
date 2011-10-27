@@ -23,6 +23,7 @@ from django.test import TestCase
 from django.conf import settings
 
 from plebia.wall.models import *
+from plebia.wall.torrentdownloader import TorrentDownloader
 
 from mock import Mock, patch
 import json
@@ -272,6 +273,163 @@ class PlebiaTest(TestCase):
         # Check that the season/episode/video was found
         self.api_check('video', 1, { 'status': 'New', 'original_path': filename })
 
+    @patch.object(TorrentDownloader, 'get_deluge_output')
+    @patch.object(TorrentDownloader, 'cancel_hash')
+    def update_torrent_from_deluge_output(self, deluge_output, torrent, mock_cancel_hash, mock_get_deluge_output, cancel_hash=False):
+        '''Mock TorrentDownloader.get_deluge_output to pass the provided fake deluge_output and update the torrent with it'''
 
+        mock_get_deluge_output.return_value = deluge_output
+
+        torrent_downloader = TorrentDownloader()
+        torrent_downloader.update_torrent_list()
+        torrent_downloader.update_no_seed_timeout()
+
+        updated_torrent = torrent_downloader.get_torrent_by_hash(torrent.hash)
+        torrent.update_from_torrent(updated_torrent)
+
+        # If requested check that the cancel_hash() method was called
+        if cancel_hash:
+            mock_cancel_hash.assert_called_once_with(torrent.hash)
+
+    def test_torrent_download_update_queued(self):
+        '''Updates info about a queued torrent download from torrent downloader'''
+
+        # Init data
+        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
+        torrent.save()
+
+        deluge_output = """
+Name: """ + torrent_hash + """
+ID: """ + torrent_hash + """
+State: Queued
+Seeds: 0 (0) Peers: 0 (0) Availability: 0.00
+Size: 0.0 KiB/0.0 KiB Ratio: -1.000
+Seed time: 0 days 00:00:00 Active: 0 days 00:00:01
+Tracker status: 
+Progress: 0.00% [~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
+
+        self.update_torrent_from_deluge_output(deluge_output, torrent)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'Queued', 'progress': 0.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 00:00:01', 'seeds': 0, 'peers': 0})
+
+
+    def test_torrent_download_update_started_no_progress(self):
+        '''Updates info about a torrent download from torrent downloader, when just started but not reached any seeds/peers yet'''
+
+        # Init data
+        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
+        torrent.save()
+
+        deluge_output = """
+Name: """ + torrent_hash + """
+ID: """ + torrent_hash + """
+State: Downloading Down Speed: 0.0 KiB/s Up Speed: 0.0 KiB/s
+Seeds: 0 (0) Peers: 0 (0) Availability: 0.00
+Size: 0.0 KiB/0.0 KiB Ratio: -1.000
+Seed time: 0 days 00:00:00 Active: 0 days 0:21:10
+Tracker status: 
+Progress: 0.00% [~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
+
+        self.update_torrent_from_deluge_output(deluge_output, torrent)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 0.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 0:21:10', 'seeds': 0, 'peers': 0})
+
+    def test_torrent_download_update_no_seed_timeout(self):
+        '''Updates info about a torrent download from torrent downloader, when the download has been started for some time and has no seed'''
+
+        # Init data
+        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
+        torrent.save()
+
+        deluge_output = """
+Name: """ + torrent_hash + """
+ID: """ + torrent_hash + """
+State: Downloading Down Speed: 0.0 KiB/s Up Speed: 0.0 KiB/s
+Seeds: 0 (0) Peers: 1 (2) Availability: 0.00
+Size: 50.0 KiB/100.0 KiB Ratio: -1.000
+Seed time: 0 days 00:00:00 Active: 0 days 10:21:10
+Tracker status: 
+Progress: 50.00% [##############################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
+
+        self.update_torrent_from_deluge_output(deluge_output, torrent, cancel_hash=True)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'Error', 'progress': 50.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 10:21:10', 'seeds': 0, 'peers': 2})
+
+    def test_torrent_download_update_started_progress(self):
+        '''Updates info about a torrent download from torrent downloader, when it has made some progress'''
+
+        # Init data
+        torrent_name = 'Test_Season_2'
+        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
+        torrent.save()
+
+        deluge_output = """
+Name: """ + torrent_name + """
+ID: """ + torrent_hash + """
+State: Downloading Down Speed: 361.0 KiB/s Up Speed: 10.0 KiB/s ETA: 8m 4s
+Seeds: 25 (28) Peers: 4 (388) Availability: 29.01
+Size: 4.4 MiB/175.0 MiB Ratio: 0.000
+Seed time: 0 days 00:00:00 Active: 0 days 00:01:33
+Tracker status: 
+Progress: 2.50% [#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
+
+        self.update_torrent_from_deluge_output(deluge_output, torrent)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 2.50, 'type': 'season', 'hash': torrent_hash, 'name': torrent_name, 'download_speed': '361.0 KiB/s', 'upload_speed': '10.0 KiB/s', 'eta': '8m 4s', 'active_time': '0 days 00:01:33', 'seeds': 28, 'peers': 388})
+
+    def test_torrent_download_update_finishing(self):
+        '''Updates info about a torrent download from torrent downloader, when it is in the last percent (marked as 100%)'''
+
+        # Init data
+        torrent_name = 'Test_Season_2'
+        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
+        torrent.save()
+
+        deluge_output = """
+Name: """ + torrent_name + """
+ID: """ + torrent_hash + """
+State: Downloading Down Speed: 361.0 KiB/s Up Speed: 10.0 KiB/s ETA: 8m 4s
+Seeds: 25 (28) Peers: 4 (388) Availability: 29.01
+Size: 174.4 MiB/175.0 MiB Ratio: 0.000
+Seed time: 0 days 00:00:00 Active: 0 days 00:01:33
+Tracker status: 
+Progress: 100.00% [############################################################]"""
+
+        self.update_torrent_from_deluge_output(deluge_output, torrent)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 100.0, 'type': 'season', 'hash': torrent_hash, 'name': torrent_name, 'download_speed': '361.0 KiB/s', 'upload_speed': '10.0 KiB/s', 'eta': '8m 4s', 'active_time': '0 days 00:01:33', 'seeds': 28, 'peers': 388})
+
+    def test_torrent_download_update_completed(self):
+        '''Updates info about a torrent download from torrent downloader, when it completes'''
+
+        # Init data
+        torrent_name = 'Test_Season_2'
+        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
+        torrent.save()
+
+        deluge_output = """
+Name: """ + torrent_name + """
+ID: """ + torrent_hash + """
+State: Seeding Up Speed: 0.9 KiB/s
+Seeds: 0 (1920) Peers: 3 (2066) Availability: 0.00
+Size: 176.0 MiB/176.0 MiB Ratio: 5.196
+Seed time: 0 days 16:02:37 Active: 0 days 16:06:40
+Tracker status: """
+
+        self.update_torrent_from_deluge_output(deluge_output, torrent)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'Completed', 'progress': 100.0, 'type': 'season', 'hash': torrent_hash, 'name': torrent_name, 'download_speed': '0.0 KiB/s', 'upload_speed': '0.9 KiB/s', 'eta': '', 'active_time': '0 days 16:06:40', 'seeds': 1920, 'peers': 2066})
 
 

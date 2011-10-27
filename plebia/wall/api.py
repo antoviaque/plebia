@@ -35,7 +35,7 @@ class VideoResource(ModelResource):
 class TorrentResource(ModelResource):
     class Meta:
         queryset = Torrent.objects.all().order_by('-date_added')
-        fields = ['date_added','hash','id','name','peers','progress','seeds','status','type','download_speed','upload_speed','eta']
+        fields = ['date_added','hash','id','name','peers','progress','seeds','status','type','download_speed','upload_speed','eta','active_time','details_url']
 
 class SeriesResource(ModelResource):
     season_list = fields.ToManyField('wall.api.SeasonResource', 'season_set')
