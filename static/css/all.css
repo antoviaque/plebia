@@ -615,23 +615,16 @@ a {
 .video-js-box.vjs-fullscreen {
     /* Make sure we don't show a transparent background on fullscreen */
     background-color: black;
-
-    /* Put the fullscreen on top of fancybox close button */
-    z-index: 2000 !important;
-}
-
-.video-js-box.vjs-fullscreen .vjs-flash-fallback {
-    /* Always expand to fullscreen, don't let fancybox constrain it */
-    width: 100% !important;
-    height: 100% !important;
 }
 
 .video-js-box.vjs-fullscreen video.video-js, .video-js-box.vjs-fullscreen .vjs-flash-fallback {
     /* Always expand to fullscreen, don't let fancybox constrain it */
     width: 100% !important;
     height: 100% !important;
-    
-    /* Put the fullscreen on top of fancybox close button */
-    z-index: 2000 !important;
+}
+
+/* FIXME: Remove fancybox close button which appears on top in fullscreen */
+#fancybox-close {
+    display: none !important;
 }
 
