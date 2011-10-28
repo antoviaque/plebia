@@ -124,11 +124,11 @@ class VideoManager(models.Manager):
 class Video(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     status = models.CharField('processing status', max_length=20, choices=VIDEO_STATUSES, default='New')
-    original_path = models.CharField('file path (original)', max_length=200)
-    webm_path = models.CharField('file path (WebM)', max_length=200, blank=True)
-    mp4_path = models.CharField('file path (MP4)', max_length=200, blank=True)
-    ogv_path = models.CharField('file path (OGV)', max_length=200, blank=True)
-    image_path = models.CharField('file path (image)', max_length=200, blank=True)
+    original_path = models.CharField('file path (original)', max_length=500)
+    webm_path = models.CharField('file path (WebM)', max_length=500, blank=True)
+    mp4_path = models.CharField('file path (MP4)', max_length=500, blank=True)
+    ogv_path = models.CharField('file path (OGV)', max_length=500, blank=True)
+    image_path = models.CharField('file path (image)', max_length=500, blank=True)
 
     objects = VideoManager()
 
