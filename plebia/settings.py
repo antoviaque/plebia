@@ -21,6 +21,8 @@ LOCK_PATH = ppath('plebia/')
 BIN_DIR = ppath('bin/')
 STATIC_DIR = ppath('static/')
 
+MAX_TRANSCODING_PROCESSES=4
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 

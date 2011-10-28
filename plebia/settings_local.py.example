@@ -10,6 +10,9 @@ LOCK_PATH = '/var/www/plebia'
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
+# Set this to the number of cores/processors your server has
+MAX_TRANSCODING_PROCESSES=4
+
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),
 )

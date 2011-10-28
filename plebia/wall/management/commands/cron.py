@@ -45,13 +45,15 @@ class Command(BaseCommand):
         )
 
     def __init__(self):
+        super(self.__class__,self).__init__()
+
         self.dl_manager = DownloadManager()
         self.start = time.time()
 
     def handle(self, *args, **options):
 
         if len(args) != 1 or args[0] not in self.dl_manager.get_actions_list():
-            raise CommandError('You must specify one valid command (%s)' % repr(dl_manager.get_actions_list()))
+            raise CommandError('You must specify one valid command (%s)' % repr(self.dl_manager.get_actions_list()))
 
         command = args[0]
         repeat = options.get('repeat', True)

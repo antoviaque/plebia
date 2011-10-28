@@ -86,7 +86,7 @@ class VideoTranscoder:
     def has_free_slot(self):
         '''Can we start a new transcoding'''
 
-        if self.nb_transcoding_processes() < 4:
+        if self.nb_transcoding_processes() < settings.MAX_TRANSCODING_PROCESSES:
             return True
         else:
             return False
