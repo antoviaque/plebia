@@ -6,6 +6,7 @@ UNRAR_PATH = '/usr/bin/unrar'
 
 # Paths
 DOWNLOAD_DIR = '/var/www/downloads/'
+LOCK_PATH = '/var/www/plebia'
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 

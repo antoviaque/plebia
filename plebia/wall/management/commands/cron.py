@@ -19,16 +19,20 @@
 
 # Includes ##########################################################
 
-import time
+import time, os
 from optparse import make_option
+from mercurial import lock, error
 
 from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 
 from plebia.wall.downloadmanager import DownloadManager
+
 
 # Globals ###########################################################
 
 DELAY = 5
+MAX_RUN_TIME=50 # seconds
 
 
 # Main ##############################################################
@@ -40,28 +44,39 @@ class Command(BaseCommand):
             help='Do not repeat every few seconds for one minute, execute just once'),
         )
 
-    def handle(self, *args, **options):
-        dl_manager = DownloadManager()
+    def __init__(self):
+        self.dl_manager = DownloadManager()
+        self.start = time.time()
 
-        if len(args) != 1 or args[0] not in dl_manager.get_actions_list():
+    def handle(self, *args, **options):
+
+        if len(args) != 1 or args[0] not in self.dl_manager.get_actions_list():
             raise CommandError('You must specify one valid command (%s)' % repr(dl_manager.get_actions_list()))
 
         command = args[0]
         repeat = options.get('repeat', True)
 
+        # Only allow one cron process per command to run at a single time
+        lock_path = os.path.join(settings.LOCK_PATH, '.%s.pid' % command)
+        try:
+            l = lock.lock(lock_path, timeout=MAX_RUN_TIME) # wait at most 50s
+            self.do(command, repeat)
+        except error.LockHeld:
+            print "Active process for command '%s', aborting." % command
+        else:
+            l.release()
+
+    def do(self, command, repeat):
+        '''Run the specified action (once or repeat=True for a time-limited loop)'''
+
         if not repeat:
-            dl_manager.do(command)
+            self.dl_manager.do(command)
         else:
             # Runs the specified action, every DELAY seconds for 1 minute
-            start = time.time()
-            next = start
-            while next <= start+50-DELAY:
-                dl_manager.do(command)
-
-                next += DELAY
-                sleep_time = next - time.time()
-                if sleep_time > 0:
-                    time.sleep(next - time.time())
+            stop_time = self.start + MAX_RUN_TIME - DELAY
+            while time.time() <= stop_time:
+                self.dl_manager.do(command)
+                time.sleep(DELAY)
             
 
 

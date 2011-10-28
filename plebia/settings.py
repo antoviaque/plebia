@@ -17,6 +17,7 @@ DOWNLOAD_DIR = '/var/www/downloads/'
 
 TEST_DOWNLOAD_DIR = spath('tests/')
 TEST_VIDEO_PATH = ppath('eben_moglen-freedom_in_the_cloud.avi')
+LOCK_PATH = ppath('plebia/')
 BIN_DIR = ppath('bin/')
 STATIC_DIR = ppath('static/')
 
