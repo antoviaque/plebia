@@ -17,10 +17,35 @@
  * "AGPLv3".  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* Fonts ***********************************************************/
+
+@font-face {
+    font-family: 'Free Serif';
+    src: url('../fonts/freeserif.eot');
+    src: url('../fonts/freeserif.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/freeserif.woff') format('woff'),
+         url('../fonts/freeserif.ttf') format('truetype'),
+         url('../fonts/freeserif.svg#NimbusRomanNo9LRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Chunk Five Regular';
+    src: url('../fonts/chunk-webfont.eot');
+    src: url('../fonts/chunk-webfont.eot?#iefix') format('embedded-opentype'),
+         url('../fonts/chunk-webfont.woff') format('woff'),
+         url('../fonts/chunk-webfont.ttf') format('truetype'),
+         url('../fonts/chunk-webfont.svg#ChunkFiveRegular') format('svg');
+    font-weight: normal;
+    font-style: normal;
+}
+
+
 /* Global **********************************************************/
 
 html, body {
-    font-family: "helevetica";
+    font-family: 'Times New Roman', 'Free Serif';
     font-size: 11pt;
     line-height: 150%;
     color: #2d2d2d;
@@ -29,9 +54,13 @@ html, body {
 }
 
 a {
-    border-bottom: 1px dotted #4ca20b;
     text-decoration: none;
-    color: #4ca20b;
+    color: #dc332a;
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: 'Chunk Five Regular';
+    font-weight: normal;
 }
 
 .clear_both {
@@ -53,9 +82,8 @@ a {
     width: 100%;
     height: 100px;
     padding: 30px 5px 30px 5px;
-    background-color: #f1f1f1;
-    border: 1px solid #dedede;
-    font-style: italic;
+    background-color: #000000;
+    color: #f1f1f1;
 }
 
 .plebia .plebia_header .plebia_center,
@@ -80,31 +108,32 @@ a {
 }
 
 .plebia .plebia_footer {
-    font-size: 9pt;
+    font-size: 10pt;
     width: 1024px;
     text-align: center;
     margin: 20px;
-    color: grey;
 }
 
 /* Header **********************************************************/
 
 .plebia .plebia_header img.plebia_logo {
     float: left;
-    margin: 30px 30px 30px 90px;
+    margin: 20px 44px 30px 90px;
+    width: 150px;
+    height: 42px;
 }
 
 .plebia .plebia_header input.plebia_name {
-    width: 500px;
+    width: 550px;
     height: 20px;
     font-size: 13pt;
 }
 
 .plebia .plebia_header img.plebia_search {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     display: inline;
-    margin-bottom: -20px;
+    margin: 0 0 -15px 10px;
 }
 
 /* Live search */
@@ -116,7 +145,9 @@ a {
 }
 
 #jquery-live-search .plebia_result .plebia_name {
+    font-family: 'Chunk Five Regular';
     margin: 20px;
+    color: #2d2d2d;
 }
 
 /* Post ************************************************************/
@@ -165,6 +196,7 @@ a {
 }
 
 .plebia .plebia_stream .plebia_post .plebia_series .plebia_content_right .plebia_name {
+    font-family: 'Chunk Five Regular';
     font-size: 30pt;
     width: 534px;
     margin-bottom: 30px;
@@ -188,10 +220,10 @@ a {
     right: 0px;
     font-size: 16px;
     letter-spacing: -1px;
-    color: #fff;
+    color: #f1f1f1;
     padding: 10px 15px 10px 40px;
     font-weight: 700;
-    background: #333333 url(/static/img/plus_small.png) 15% 55% no-repeat;
+    background: #222222 url(/static/img/plus_small.png) 15% 55% no-repeat;
     border:1px solid #444444;
     -moz-border-radius-topleft: 20px;
     -webkit-border-top-left-radius: 20px;
@@ -210,10 +242,10 @@ a {
     right: 0px;
     font-size: 16px;
     letter-spacing: -1px;
-    color: #fff;
+    color: #f1f1f1;
     padding: 10px 20px 10px 40px;
     font-weight: 700;
-    background: #222222 url(/static/img/plus_small.png) 15% 55% no-repeat;
+    background: #000000 url(/static/img/plus_small.png) 15% 55% no-repeat;
     border: 1px solid #444444;
     -moz-border-radius-topleft: 20px;
     -webkit-border-top-left-radius: 20px;
@@ -225,7 +257,7 @@ a {
 }
 
 .plebia .plebia_stream .plebia_post .plebia_episode_menu a.plebia_active.plebia_trigger {
-    background: #222222 url(/static/img/minus_small.png) 15% 55% no-repeat;
+    background: #000000 url(/static/img/minus_small.png) 15% 55% no-repeat;
     z-index: 30;
 }
 
@@ -233,8 +265,8 @@ a {
     position: absolute;
     top: 0px;
     right: 0;
-    background: #000000;
-    border:1px solid #111111;
+    background: #F1F1F1;
+    border:1px solid #DEDEDE;
     -moz-border-radius-topleft: 20px;
     -webkit-border-top-left-radius: 20px;
     -moz-border-radius-bottomleft: 20px;
@@ -244,23 +276,26 @@ a {
     width: 480px;
     height: auto;
     padding: 30px;
-    color: #F1F1F1;
     z-index: 20;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_selector {
+    font-family: 'Chunk Five Regular';
     font-variant: small-caps;
     font-size: 20pt;
-    color: #DEDEDE;
+    color: #2D2D2D;
+}
+
+.plebia .plebia_stream .plebia_post .plebia_season_selector a {
+    color: #2D2D2D;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_selector a.plebia_active {
-    font-weight: bold;
-    color: #DEDEDE;
+    color: #dc332a;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_list a.plebia_episode_link {
-    color: #F1F1F1;
+    color: #2D2D2D;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode {
@@ -268,13 +303,14 @@ a {
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_number {
+    font-family: 'Chunk Five Regular';
     display: table-cell;
     vertical-align: middle;
     width: 23px;
     height: auto;
-    font-size: 14pt;
+    font-size: 18pt;
     padding-right: 10px;
-    border-right: 2px dotted #F1F1F1;
+    border-right: 2px dotted #2D2D2D;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_state {
@@ -289,12 +325,12 @@ a {
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_title {
-    font-weight: bold;
+    font-family: 'Chunk Five Regular';
+    font-size: 20px;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_season_list .plebia_episode .plebia_overview {
     line-height: 16px;
-    font-style: italic;
 }
 
 /* STATE (small): 'all_ready' */
