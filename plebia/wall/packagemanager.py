@@ -140,13 +140,17 @@ class SeasonPackage(Package):
         mimetypes.add_type('video/mp4', '.m4v')
 
         for filename in os.listdir(os.path.join(self.full_path, sub_path)):
+            # Build a filename where separators are spaces
+            clean_filename = re.sub(r'[_\W]+', ' ', filename).strip()
+
             # Try to match the file/dirs against the episode number
-            if re.search(r"s%02d *e%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
-            or re.search(r"%02dx%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
-            or re.search(r"s%de%d" % (season.number, episode.number), filename, re.IGNORECASE) \
-            or re.search(r"%d%02d" % (season.number, episode.number), filename, re.IGNORECASE) \
-            or re.search(r"[\[ _\.\(]%d[\.x-]%02d[\] _\.\)]" % (season.number, episode.number), filename, re.IGNORECASE) \
-            or re.search(r"season[ -_\.0]*%d[ -_\.]*episode[ -_\.0]*%d" % (season.number, episode.number), filename, re.IGNORECASE):
+            if re.search(r"s%02d *e%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"%02dx%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"s%de%d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"%d%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"%d[ x]%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"season[ -_\.0]*%d[ -_\.]*episode[ -_\.0]*%d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(episode.name, clean_filename, re.IGNORECASE):
                 # Check that this is a video or a folder
                 (file_type, file_encoding) = mimetypes.guess_type(os.path.join(self.full_path, sub_path, filename))
                 if (file_type is not None and file_type.startswith('video')) \

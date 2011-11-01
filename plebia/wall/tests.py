@@ -185,12 +185,12 @@ class PlebiaTest(TestCase):
         # Check that the season/episode/video was found
         self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, 'sub folder', filename) })
 
-    def _test_find_single_episode_in_season_torrent(self, name, number, filename):
+    def _test_find_single_episode_in_season_torrent(self, name, number, filename, episode_name="The great episode"):
         """Helper method, to test finding a single episode name inside a season torrent
         The episode 'number' argument should be 1 on first call within same test method, and increase by 1 each call"""
 
         # Fake episode
-        episode = Episode(number=number, tvdb_id=number)
+        episode = Episode(number=number, tvdb_id=number, name=episode_name)
         episode.season = self.create_fake_season(name=name)
         episode.torrent = self.create_fake_torrent(name=name, type="season", status='Completed')
         episode.save()
@@ -231,7 +231,8 @@ class PlebiaTest(TestCase):
         self._test_find_single_episode_in_season_torrent(name, 12, u'Test 2-12.avi')
         self._test_find_single_episode_in_season_torrent(name, 13, u'Test s02 e13.avi')
         self._test_find_single_episode_in_season_torrent(name, 14, u'Test (2x14 Test) test.avi')
-        self._test_find_single_episode_in_season_torrent(name, 15, u'Test (2x15 Test) testó.avi')
+        self._test_find_single_episode_in_season_torrent(name, 15, u'Test (2x15 Test) testó.avi') # Unicode
+        self._test_find_single_episode_in_season_torrent(name, 16, u'episode.with-only_title.avi', episode_name='Episode with only title')
 
     def test_find_single_episode_in_episode_torrent_dir(self):
         """Episode torrent with video contained in a directory"""
