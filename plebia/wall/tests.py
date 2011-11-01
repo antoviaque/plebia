@@ -504,7 +504,7 @@ Tracker status: """
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'episode', 'hash': 'good episode hash', 'seeds': 10, 'peers': 1})
 
     def test_torrent_search_isohunt_season_more_seeds(self):
-        '''Select season torrent from search results when the season has muc more seeds'''
+        '''Select season torrent from search results when the season has much more seeds'''
 
         # Fake episode
         name = 'Test series'
@@ -522,4 +522,27 @@ Tracker status: """
 
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good season hash', 'seeds': 150})
+
+    def test_torrent_search_isohunt_other_series_with_longer_name(self):
+        '''Select season torrent from search results when a result is about another series whose name contain the searched series name'''
+
+        # Fake episode
+        name = 'Test series'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        # Series with similar name
+        similar_name = 'test series reloaded'
+        self.create_fake_season(name=similar_name)
+
+        # Fake the results from the search engine
+        episode_result = self.build_isohunt_result(list())
+        season_result  = self.build_isohunt_result([{'name':similar_name+' season 2', 'hash': 'wrong hash', 'seeds':150, 'peers':1000}, \
+                                                    {'name':        name+' season 2', 'hash': 'good hash',  'seeds':5,   'peers':20}])
+        
+        self.run_isohunt_search(episode, episode_result, season_result)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
 

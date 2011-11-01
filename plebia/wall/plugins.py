@@ -21,7 +21,7 @@
 # Includes ##########################################################
 
 from djangoplugins.point import PluginPoint
-from wall.models import Torrent
+from wall.models import Torrent, Series
 import time, re, sys
 
 # Exceptions ########################################################
@@ -103,29 +103,25 @@ class IsoHuntSearcher(TorrentSearcher):
     def search_episode_torrent(self, episode):
         season = episode.season
         series = season.series
-        search_string_list = (series.name, "s%02de%02d" % (season.number, episode.number))
-        episode_torrent = self.search_torrent_by_string(search_string_list)
+        episode_search_string = "s%02de%02d" % (season.number, episode.number)
+        episode_torrent = self.search_torrent_by_string(series.name, episode_search_string)
 
         return episode_torrent
 
     def search_season_torrent(self, season):
         series = season.series
-        search_string_list = (series.name, "season %d" % season.number)
-        season_torrent = self.search_torrent_by_string(search_string_list)
+        episode_search_string = "season %d" % season.number
+        season_torrent = self.search_torrent_by_string(series.name, episode_search_string)
 
         return season_torrent
 
-    def search_torrent_by_string(self, search_string_list):
-        '''Search isoHunt for an entry matching the elements in search_string_list
-        Equivalent to "list element 1" AND "list element 2"'''
+    def search_torrent_by_string(self, name, episode_search_string):
+        '''Search isoHunt for an entry matching name" AND "<episode_search_string>"'''
 
         import urllib, json
         torrent = Torrent()
 
-        search_string = ''
-        for element in search_string_list:
-            search_string += '"%s" ' % element
-
+        search_string = '"%s" "%s"' % (name, episode_search_string)
         print "Request (isoHunt): '%s'" % search_string
         url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
         content = self.get_url(url)
@@ -143,18 +139,31 @@ class IsoHuntSearcher(TorrentSearcher):
             if len(result_list) < 1:
                 return None
 
+            # Series whose name contains the name of the series we are looking for
+            similar_series = Series.objects.filter(name__contains=name).exclude(name=name)
+
             for result in result_list:
                 # Cleanup torrent name
                 result['title'] = re.sub(r'</?b>', '', result['title'])
-                result['title'] = re.sub(r'[\.\(\),]', ' ', result['title'])
+                result['title'] = re.sub(r'[\W_]+', ' ', result['title'])
 
                 # IsoHunt returns all results containing a file matching the results - we want to match the title
-                for element in search_string_list:
-                    m = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
-                    if m is None:
+                for element in [name, episode_search_string]:
+                    title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
+                    if title_match is None:
+                        break
+                
+                # Discard series containing the searched series name
+                similar_match = False
+                for series in similar_series:
+                     similar_match = re.search(series.name, result['title'])
+                     if similar_match:
+                        print 'Discarded series "%s" from "%s"' % (series.name, result['title'])
                         break
 
-                if m and result['Seeds'] != '' and result['Seeds'] >= 1 and result['leechers'] != '' and result['category'] == 'TV':
+                if title_match and not similar_match \
+                        and result['Seeds'] != '' and result['Seeds'] >= 1 \
+                        and result['leechers'] != '' and result['category'] == 'TV':
                     print "Found '%s' (%s seeds) %s" % (result['title'], result['Seeds'], result['hash'])
                     torrent.hash = result['hash']
                     torrent.seeds = result['Seeds']
