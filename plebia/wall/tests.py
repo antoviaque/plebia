@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2011 Xavier Antoviaque <xavier@antoviaque.org>
 #
@@ -211,24 +212,26 @@ class PlebiaTest(TestCase):
         """Match episodes against their number inside a season torrent"""
 
         self.clear_test_directory()
-        name = 'Test find episode in season'
+        name = u'Test find episode in season'
         torrent_dir = os.path.join(settings.TEST_DOWNLOAD_DIR, name)
         os.mkdir(torrent_dir)
 
-        self._test_find_single_episode_in_season_torrent(name, 1, 's02e01.avi')
-        self.create_fake_video(name, 'S02E20.avi') # Create potential false positive
-        self._test_find_single_episode_in_season_torrent(name, 2, 'S02E02.avi')
-        self._test_find_single_episode_in_season_torrent(name, 3, 's2e3.avi')
-        self._test_find_single_episode_in_season_torrent(name, 4, '204.avi')
-        self._test_find_single_episode_in_season_torrent(name, 5, '0205.avi')
-        self._test_find_single_episode_in_season_torrent(name, 6, 'Season 2 - Episode 6.avi')
-        self._test_find_single_episode_in_season_torrent(name, 7, 'season 02 episode 07.avi')
-        self._test_find_single_episode_in_season_torrent(name, 8, '02x08.avi')
-        self._test_find_single_episode_in_season_torrent(name, 9, '[2.09].avi')
-        self._test_find_single_episode_in_season_torrent(name, 10, '[2x10].avi')
-        self._test_find_single_episode_in_season_torrent(name, 11, 's02e11.m4v') # Unknown on some mime.types files
-        self._test_find_single_episode_in_season_torrent(name, 12, 'Test 2-12.avi')
-        self._test_find_single_episode_in_season_torrent(name, 13, 'Test s02 e13.avi')
+        self._test_find_single_episode_in_season_torrent(name, 1, u's02e01.avi')
+        self.create_fake_video(name, u'S02E20.avi') # Create potential false positive
+        self._test_find_single_episode_in_season_torrent(name, 2, u'S02E02.avi')
+        self._test_find_single_episode_in_season_torrent(name, 3, u's2e3.avi')
+        self._test_find_single_episode_in_season_torrent(name, 4, u'204.avi')
+        self._test_find_single_episode_in_season_torrent(name, 5, u'0205.avi')
+        self._test_find_single_episode_in_season_torrent(name, 6, u'Season 2 - Episode 6.avi')
+        self._test_find_single_episode_in_season_torrent(name, 7, u'season 02 episode 07.avi')
+        self._test_find_single_episode_in_season_torrent(name, 8, u'02x08.avi')
+        self._test_find_single_episode_in_season_torrent(name, 9, u'[2.09].avi')
+        self._test_find_single_episode_in_season_torrent(name, 10, u'[2x10].avi')
+        self._test_find_single_episode_in_season_torrent(name, 11, u's02e11.m4v') # Unknown on some mime.types files
+        self._test_find_single_episode_in_season_torrent(name, 12, u'Test 2-12.avi')
+        self._test_find_single_episode_in_season_torrent(name, 13, u'Test s02 e13.avi')
+        self._test_find_single_episode_in_season_torrent(name, 14, u'Test (2x14 Test) test.avi')
+        self._test_find_single_episode_in_season_torrent(name, 15, u'Test (2x15 Test) testó.avi')
 
     def test_find_single_episode_in_episode_torrent_dir(self):
         """Episode torrent with video contained in a directory"""
@@ -329,14 +332,14 @@ ID: """ + torrent_hash + """
 State: Downloading Down Speed: 0.0 KiB/s Up Speed: 0.0 KiB/s
 Seeds: 0 (0) Peers: 0 (0) Availability: 0.00
 Size: 0.0 KiB/0.0 KiB Ratio: -1.000
-Seed time: 0 days 00:00:00 Active: 0 days 0:21:10
+Seed time: 0 days 00:00:00 Active: 0 days 00:21:10
 Tracker status: 
 Progress: 0.00% [~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
 
         self.update_torrent_from_deluge_output(deluge_output, torrent)
 
         # Check state
-        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 0.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 0:21:10', 'seeds': 0, 'peers': 0})
+        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 0.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 00:21:10', 'seeds': 0, 'peers': 0})
 
     def test_torrent_download_update_no_seed_timeout(self):
         '''Updates info about a torrent download from torrent downloader, when the download has been started for some time and has no seed'''

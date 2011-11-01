@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 
@@ -8,18 +9,18 @@ ppath = lambda x: os.path.join(os.path.dirname(
 
 # Django settings for plebia project.
 
-DELUGE_COMMAND = ['/usr/local/bin/deluge-console']
-FFMPEG_PATH = '/usr/local/bin/ffmpeg'
-FFMPEG2THEORA_PATH = '/usr/bin/ffmpeg2theora'
-UNRAR_PATH = '/usr/bin/unrar'
+DELUGE_COMMAND = [u'/usr/local/bin/deluge-console']
+FFMPEG_PATH = u'/usr/local/bin/ffmpeg'
+FFMPEG2THEORA_PATH = u'/usr/bin/ffmpeg2theora'
+UNRAR_PATH = u'/usr/bin/unrar'
 
-DOWNLOAD_DIR = '/var/www/downloads/'
+DOWNLOAD_DIR = u'/var/www/downloads/'
 
-TEST_DOWNLOAD_DIR = spath('tests/')
-TEST_VIDEO_PATH = ppath('eben_moglen-freedom_in_the_cloud.avi')
-LOCK_PATH = ppath('plebia/')
-BIN_DIR = ppath('bin/')
-STATIC_DIR = ppath('static/')
+TEST_DOWNLOAD_DIR = spath(u'tests/')
+TEST_VIDEO_PATH = ppath(u'eben_moglen-freedom_in_the_cloud.avi')
+LOCK_PATH = ppath(u'plebia/')
+BIN_DIR = ppath(u'bin/')
+STATIC_DIR = ppath(u'static/')
 
 MAX_TRANSCODING_PROCESSES=4
 

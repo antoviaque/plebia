@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 thetvdb.com Python API
 (c) 2009 James Smith (http://loopj.com)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #
 # Copyright (C) 2011 Xavier Antoviaque <xavier@antoviaque.org>
 #
@@ -88,6 +89,8 @@ class TorrentSearcher(PluginPoint):
         else:
             torrent = episode_torrent
             torrent.type = 'episode'
+
+        print 'Chose %s' % torrent.hash
 
         torrent.save()
         return torrent
@@ -231,7 +234,7 @@ class IsoHuntSearcher(TorrentSearcher):
                         break
 
                 if m and result['Seeds'] != '' and result['Seeds'] >= 1 and result['leechers'] != '' and result['category'] == 'TV':
-                    print "Found '%s'" % result['title']
+                    print "Found '%s' (%s seeds) %s" % (result['title'], result['Seeds'], result['hash'])
                     torrent.hash = result['hash']
                     torrent.seeds = result['Seeds']
                     torrent.peers = result['leechers']
