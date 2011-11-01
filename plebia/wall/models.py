@@ -420,6 +420,7 @@ class Episode(models.Model):
         # If it's a season torrent, register it on the season too
         if self.torrent.type == 'season':
             self.season.torrent = self.torrent
+            self.season.save()
 
         return self.torrent
 

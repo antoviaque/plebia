@@ -546,3 +546,67 @@ Tracker status: """
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
 
+    @patch.object(IsoHuntSearcher, 'get_url')
+    def test_torrent_search_isohunt_single_season(self, mock_get_url):
+        '''Also try to search for the series without a season number when searching for a season torrent, but only when the series only has one season'''
+
+        import urllib
+
+        # Fake episode
+        name = 'Test series'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        null_result = self.build_isohunt_result(list())
+        season_result = self.build_isohunt_result([{'name': name, 'hash': 'good hash', 'seeds':5, 'peers':20}])
+        values = [season_result, null_result, null_result]
+        def side_effect(url):
+            return values.pop()
+        mock_get_url.side_effect = side_effect
+        
+        searcher = IsoHuntSearcher()
+        searcher.search_torrent(episode)
+        
+        # Check that isoHunt was queried without the season number, too
+        encoded_name = urllib.quote_plus('"%s"' % name)
+        mock_get_url.assert_called_with('http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3' % encoded_name)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
+
+    @patch('wall.plugins.get_active_plugin')
+    def test_torrent_search_when_season_torrent_already_found(self, mock_get_active_plugin):
+        '''When a season torrent already exist, use it for episodes of this season'''
+
+        name = 'Test series'
+
+        # Fake episode 1, which will trigger getting the full season
+        episode1 = Episode(number=1, tvdb_id=1)
+        episode1.season = self.create_fake_season(name=name)
+        episode1.save()
+        # Fake episode 2, which should use the existing season torrent
+        episode2 = Episode(number=2, tvdb_id=2, season=episode1.season)
+        episode2.save()
+
+        # Setup a fake search plugin
+        mock_plugin = Mock()
+        mock_get_active_plugin.return_value = mock_plugin
+
+        # Search - episode 1 torrent
+        torrent = Torrent(hash='good hash', type='season')
+        torrent.save()
+        mock_plugin.search_torrent.return_value = torrent
+        episode1.get_or_create_torrent()
+        # Check state
+        self.assertEqual(episode1.torrent.id, 1)
+        self.assertEqual(episode1.torrent.hash, 'good hash')
+        self.assertEqual(episode1.season.torrent.id, 1)
+
+        # Search - episode 2 torrent
+        mock_get_active_plugin.search_torrent.return_value = None
+        episode2.get_or_create_torrent()
+        # Check state
+        self.assertEqual(episode2.torrent.id, 1)
+
+

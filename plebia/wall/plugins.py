@@ -113,6 +113,10 @@ class IsoHuntSearcher(TorrentSearcher):
         episode_search_string = "season %d" % season.number
         season_torrent = self.search_torrent_by_string(series.name, episode_search_string)
 
+        # When the series has only one season, also try without the season number
+        if season_torrent is None and series.season_set.count() == 1:
+            season_torrent = self.search_torrent_by_string(series.name, None)
+
         return season_torrent
 
     def search_torrent_by_string(self, name, episode_search_string):
@@ -121,7 +125,11 @@ class IsoHuntSearcher(TorrentSearcher):
         import urllib, json
         torrent = Torrent()
 
-        search_string = '"%s" "%s"' % (name, episode_search_string)
+        if episode_search_string is not None:
+            search_string = '"%s" "%s"' % (name, episode_search_string)
+        else:
+            search_string = '"%s"' % name
+
         print "Request (isoHunt): '%s'" % search_string
         url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
         content = self.get_url(url)
@@ -149,9 +157,10 @@ class IsoHuntSearcher(TorrentSearcher):
 
                 # IsoHunt returns all results containing a file matching the results - we want to match the title
                 for element in [name, episode_search_string]:
-                    title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
-                    if title_match is None:
-                        break
+                    if element is not None:
+                        title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
+                        if title_match is None:
+                            break
                 
                 # Discard series containing the searched series name
                 similar_match = False
