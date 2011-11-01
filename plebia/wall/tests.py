@@ -25,6 +25,7 @@ from django.conf import settings
 
 from plebia.wall.models import *
 from plebia.wall.torrentdownloader import TorrentDownloader
+from plebia.wall.plugins import IsoHuntSearcher
 
 from mock import Mock, patch
 import json
@@ -436,4 +437,89 @@ Tracker status: """
         # Check state
         self.api_check('torrent', 1, {'status': 'Completed', 'progress': 100.0, 'type': 'season', 'hash': torrent_hash, 'name': torrent_name, 'download_speed': '0.0 KiB/s', 'upload_speed': '0.9 KiB/s', 'eta': '', 'active_time': '0 days 16:06:40', 'seeds': 1920, 'peers': 2066})
 
+    def build_isohunt_result(self, torrent_dict_array):
+        """Builds and returns a IsoHunt result string. torrent_dict_array=[{'name':'Torrent name', 'hash':'aaaa', 'seeds':10, 'peers':20}, ...]"""
+
+        result = u"""{"title": "","link": "http://isohunt.com","description": "BitTorrent Search","language": "en-us","category": "TV","max_results": 1000,"ttl": 15,"image": {"title": "","url": "http://isohunt.com/img/buttons/isohunt-02.gif","link": "http://isohunt.com/","width": 157,"height": 45}, "lastBuildDate": "Tue, 01 Nov 2011 12:01:51 GMT","pubDate": "Tue, 01 Nov 2011 12:01:51 GMT","total_results":2, "censored":0, "items": {"list": ["""
+
+        for torrent_dict in torrent_dict_array:
+            result += u"""{"title":"%s","link":"http:\/\/isohunt.com\/torrent_details","guid":"213882961","enclosure_url":"http://ca.isohunt.com/download/213882961/","length":379895939,"tracker":"tracker.openbittorrent.com","tracker_url":"http:\/\/tracker.openbittorrent.com:80\/announce","kws":"","exempts":"","category":"TV","original_site":"original.com","original_link":"http:\/\/original.com\/torrent","size":"362.3 MB","files":10,"Seeds":%d,"leechers":%d,"downloads":671,"votes":0,"comments":0,"hash":"%s","pubDate":"Sun, 04 Jul 2010 17:28:51 GMT"},""" % (torrent_dict['name'], torrent_dict['seeds'], torrent_dict['peers'], torrent_dict['hash'])
+
+        result = result[:-1] # Remove trailing ','
+        result += u"]}}" # Close
+
+        return result
+
+    @patch.object(IsoHuntSearcher, 'get_url')
+    def run_isohunt_search(self, episode, episode_result, season_result, mock_get_url):
+        '''Run plugin code for searching torrent, based on mock isoHunt results'''
+        
+        # Return different values for the two calls to the search engine (first: episode, second: season)
+        values = [season_result, episode_result]
+        def side_effect(url):
+            return values.pop()
+        mock_get_url.side_effect = side_effect
+        
+        searcher = IsoHuntSearcher()
+        searcher.search_torrent(episode)
+
+    def test_torrent_search_isohunt_only_season_minimum_seeds(self):
+        '''Select season torrent from search results when only the season has the minimum number of seeds required'''
+
+        # Fake episode
+        name = 'Test series'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        # Fake the results from the search engine
+        episode_result = self.build_isohunt_result([{'name':'Unrelated result', 'hash': 'wrong hash', 'seeds':100, 'peers':1000}, \
+                                                    {'name':name+' s02e01', 'hash': 'good episode hash', 'seeds':1, 'peers':100}])
+        season_result  = self.build_isohunt_result([{'name':'Unrelated result', 'hash': 'wrong hash', 'seeds':100, 'peers':1000}, \
+                                                    {'name':name+' season 2', 'hash': 'good season hash', 'seeds':10, 'peers':2}])
+        
+        self.run_isohunt_search(episode, episode_result, season_result)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good season hash', 'seeds': 10, 'peers': 2})
+
+    def test_torrent_search_isohunt_only_episode_minimum_seeds(self):
+        '''Select episode torrent from search results when only the episode has the minimum number of seeds required'''
+
+        # Fake episode
+        name = 'Test series'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        # Fake the results from the search engine
+        episode_result = self.build_isohunt_result([{'name':'Unrelated result s02e01', 'hash': 'wrong hash', 'seeds':100, 'peers':1000}, \
+                                                    {'name':name+' s02e01', 'hash': 'good episode hash', 'seeds':10, 'peers':1}])
+        season_result  = self.build_isohunt_result([{'name':'Unrelated result', 'hash': 'wrong hash', 'seeds':100, 'peers':1000}, \
+                                                    {'name':name+' season 2', 'hash': 'good season hash', 'seeds':1, 'peers':20}])
+        
+        self.run_isohunt_search(episode, episode_result, season_result)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'episode', 'hash': 'good episode hash', 'seeds': 10, 'peers': 1})
+
+    def test_torrent_search_isohunt_season_more_seeds(self):
+        '''Select season torrent from search results when the season has muc more seeds'''
+
+        # Fake episode
+        name = 'Test series'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        # Fake the results from the search engine
+        episode_result = self.build_isohunt_result([{'name':'Unrelated result s02e01', 'hash': 'wrong hash', 'seeds':100, 'peers':1000}, \
+                                                    {'name':name+' s02e01', 'hash': 'good episode hash', 'seeds':13, 'peers':2000}])
+        season_result  = self.build_isohunt_result([{'name':'Unrelated result', 'hash': 'wrong hash', 'seeds':100, 'peers':1000}, \
+                                                    {'name':name+' season 2', 'hash': 'good season hash', 'seeds':150, 'peers':20}])
+        
+        self.run_isohunt_search(episode, episode_result, season_result)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good season hash', 'seeds': 150})
 
