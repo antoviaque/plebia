@@ -456,7 +456,7 @@
 
         var $this = this;
 
-        $('.plebia_poster', $this.dom).attr('src', '/static/banner.php?file_path='+$this.api_obj.poster_url);
+        $('.plebia_poster', $this.dom).attr('src', encodeURI('/static/banner.php?file_path='+$this.api_obj.poster_url));
         $('.plebia_name', $this.dom).html($this.api_obj.name);
         $('.plebia_overview', $this.dom).html($this.api_obj.overview.substring(0,320));
     };
@@ -892,7 +892,7 @@
     $.plebia.Episode.prototype.update_state_all_ready = function(old_state) {
         if(old_state != 'all_ready') {
             // Thumb
-            $('.plebia_thumb', $this.dom).attr('src', '/downloads/' + $this.api_obj.video.image_path);
+            $('.plebia_thumb', $this.dom).attr('src', encodeURI('/downloads/' + $this.api_obj.video.image_path));
         }
     };
     
@@ -1015,7 +1015,7 @@
         var video = episode.api_obj.video;
 
         if(video.status == 'Transcoding' || video.status == 'Completed') {
-            var url = '/downloads/' + video.original_path;
+            var url = encodeURI('/downloads/' + video.original_path);
             return url;
         } else {
             return null;
@@ -1175,13 +1175,13 @@
 
         // URLs
         if(streaming) {
-            var video_src = '/static/stream.php?file_path=' + video_obj.webm_path;
+            var video_src = encodeURI('/static/stream.php?file_path=' + video_obj.webm_path);
         } else {
-            var video_src = '/downloads/' + video_obj.webm_path;
+            var video_src = encodeURI('/downloads/' + video_obj.webm_path);
         }
         $('video', $this.dom).attr('poster', '/downloads/' + video_obj.image_path);
         $('source', $this.dom).attr('src', video_src);
-        $('.vjs-no-video a', $this.dom).attr('href', '/downloads/' + video_obj.webm_path);
+        $('.vjs-no-video a', $this.dom).attr('href', encodeURI('/downloads/' + video_obj.webm_path));
 
         // video.js
         video_dom.VideoJS({
