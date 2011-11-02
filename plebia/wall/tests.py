@@ -547,11 +547,11 @@ Tracker status: """
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
 
-    @patch.object(IsoHuntSearcher, 'get_url')
-    def test_torrent_search_isohunt_single_season(self, mock_get_url):
-        '''Also try to search for the series without a season number when searching for a season torrent, but only when the series only has one season'''
-
-        import urllib
+    @patch.object(TorrentSearcher, 'search_series_torrent')
+    @patch.object(TorrentSearcher, 'search_season_torrent')
+    @patch.object(TorrentSearcher, 'search_episode_torrent')
+    def test_torrent_search_series_when_no_season_and_no_episode(self, mock_search_episode_torrent, mock_search_season_torrent, mock_search_series_torrent):
+        '''Also try to search for the series without a season/episode number when the rest has failed'''
 
         # Fake episode
         name = 'Test series'
@@ -559,28 +559,26 @@ Tracker status: """
         episode.season = self.create_fake_season(name=name)
         episode.save()
 
-        null_result = self.build_isohunt_result(list())
-        season_result = self.build_isohunt_result([{'name': name, 'hash': 'good hash', 'seeds':5, 'peers':20}])
-        values = [season_result, null_result, null_result]
-        def side_effect(url):
-            return values.pop()
-        mock_get_url.side_effect = side_effect
-        
-        searcher = IsoHuntSearcher()
+        # Even with two seasons
+        Season(series=episode.season.series, number=3).save()
+
+        series_torrent = Torrent(hash='good hash', seeds=5, peers=20, type='season')
+
+        mock_search_episode_torrent.return_value = None
+        mock_search_season_torrent.return_value = None
+        mock_search_series_torrent.return_value = series_torrent
+
+        searcher = TorrentSearcher()
         searcher.search_torrent(episode)
         
-        # Check that isoHunt was queried without the season number, too
-        encoded_name = urllib.quote_plus('"%s"' % name)
-        mock_get_url.assert_called_with('http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3' % encoded_name)
-
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
 
     @patch.object(TorrentSearcher, 'search_series_torrent')
     @patch.object(TorrentSearcher, 'search_season_torrent')
     @patch.object(TorrentSearcher, 'search_episode_torrent')
-    def test_torrent_search_single_season_chose_episode(self, mock_search_episode_torrent, mock_search_season_torrent, mock_search_series_torrent):
-        '''Searching for the name alone in case of a single season should not prevent from chosing the episode alone, which should be prefered if it exists'''
+    def test_torrent_search_chose_episode_over_series(self, mock_search_episode_torrent, mock_search_season_torrent, mock_search_series_torrent):
+        '''Searching for the series should not prevent from chosing the episode alone, which should be prefered if it exists'''
 
         # Fake episode
         name = 'Test series'

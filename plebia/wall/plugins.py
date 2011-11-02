@@ -77,10 +77,12 @@ class TorrentSearcher(PluginPoint):
         season_torrent = self.search_season_torrent(season)
         
         # When the series has only one season, also try without the season number
-        if season_torrent is None and series.season_set.count() == 1:
+        if season_torrent is None and episode_torrent is None:
             series_torrent = self.search_series_torrent(series)
         else:
             series_torrent = None
+
+        ## See what we should prefer ##
 
         if season_torrent is None and episode_torrent is None and series_torrent is None:
             torrent = Torrent()
