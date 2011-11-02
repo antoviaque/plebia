@@ -72,23 +72,36 @@ class TorrentSearcher(PluginPoint):
 
         episode_torrent = self.search_episode_torrent(episode)
         season_torrent = self.search_season_torrent(season)
+        
+        # When the series has only one season, also try without the season number
+        if season_torrent is None and series.season_set.count() == 1:
+            series_torrent = self.search_series_torrent(series)
+        else:
+            series_torrent = None
 
-        # See if we should prefer the season or the episode
-        if season_torrent is None and episode_torrent is None:
+        if season_torrent is None and episode_torrent is None and series_torrent is None:
             torrent = Torrent()
             torrent.status = 'Error'
-        elif season_torrent is None \
-                or (season_torrent.seeds < 10 and episode_torrent is not None):
-            torrent = episode_torrent
-            torrent.type = 'episode'
-        elif episode_torrent is None \
-                or episode_torrent.seeds < 10 \
-                or episode_torrent.seeds*10 < season_torrent.seeds:
-            torrent = season_torrent
-            torrent.type = 'season'
+        
+        # See if we should prefer the season or the episode
+        elif season_torrent is not None or episode_torrent is not None:
+            if season_torrent is None \
+                    or (season_torrent.seeds < 10 and episode_torrent is not None):
+                torrent = episode_torrent
+                torrent.type = 'episode'
+            elif episode_torrent is None \
+                    or episode_torrent.seeds < 10 \
+                    or episode_torrent.seeds*10 < season_torrent.seeds:
+                torrent = season_torrent
+                torrent.type = 'season'
+            else:
+                torrent = episode_torrent
+                torrent.type = 'episode'
+
+        # Only the series name alone
         else:
-            torrent = episode_torrent
-            torrent.type = 'episode'
+            torrent = series_torrent
+            torrent.type = 'season'
 
         print 'Chose %s' % torrent.hash
 
@@ -113,11 +126,12 @@ class IsoHuntSearcher(TorrentSearcher):
         episode_search_string = "season %d" % season.number
         season_torrent = self.search_torrent_by_string(series.name, episode_search_string)
 
-        # When the series has only one season, also try without the season number
-        if season_torrent is None and series.season_set.count() == 1:
-            season_torrent = self.search_torrent_by_string(series.name, None)
-
         return season_torrent
+
+    def search_series_torrent(self, series):
+        series_torrent = self.search_torrent_by_string(series.name, None)
+
+        return series_torrent
 
     def search_torrent_by_string(self, name, episode_search_string):
         '''Search isoHunt for an entry matching name" AND "<episode_search_string>"'''

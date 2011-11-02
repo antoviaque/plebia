@@ -58,7 +58,9 @@
     $ mkdir -p /var/www/downloads
     $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank /var/www/downloads/series/banners/posters
 
-4) Create Mysql database & configure in settings_local.py (login, password, db, host)
+4) Create Mysql database & configure in settings_local.py (login, password, db, host). Make sure your DB uses the UTF-8 encoding:
+
+    CREATE DATABASE plebia CHARACTER SET utf8;
 
 5) Populate database:
 
