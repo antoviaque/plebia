@@ -25,7 +25,7 @@ from django.conf import settings
 
 from plebia.wall.models import *
 from plebia.wall.torrentdownloader import TorrentDownloader
-from plebia.wall.plugins import IsoHuntSearcher
+from plebia.wall.plugins import IsoHuntSearcher, TorrentSearcher
 
 from mock import Mock, patch
 import json
@@ -575,8 +575,10 @@ Tracker status: """
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
 
-    @patch.object(IsoHuntSearcher, 'get_url')
-    def test_torrent_search_isohunt_single_season_chose_episode(self, mock_get_url):
+    @patch.object(TorrentSearcher, 'search_series_torrent')
+    @patch.object(TorrentSearcher, 'search_season_torrent')
+    @patch.object(TorrentSearcher, 'search_episode_torrent')
+    def test_torrent_search_single_season_chose_episode(self, mock_search_episode_torrent, mock_search_season_torrent, mock_search_series_torrent):
         '''Searching for the name alone in case of a single season should not prevent from chosing the episode alone, which should be prefered if it exists'''
 
         import urllib
@@ -587,15 +589,14 @@ Tracker status: """
         episode.season = self.create_fake_season(name=name)
         episode.save()
 
-        null_result = self.build_isohunt_result(list())
-        episode_result = self.build_isohunt_result([{'name': name+ ' s02e01', 'hash': 'good hash', 'seeds':5, 'peers':20}])
-        series_name_result = self.build_isohunt_result([{'name': name, 'hash': 'bad hash', 'seeds':500, 'peers':2000}])
-        values = [series_name_result, null_result, episode_result]
-        def side_effect(url):
-            return values.pop()
-        mock_get_url.side_effect = side_effect
-        
-        searcher = IsoHuntSearcher()
+        episode_torrent = Torrent(hash='good hash', seeds=5, peers=20, type='episode')
+        series_torrent = Torrent(hash='wrong hash', seeds=500, peers=2000, type='season')
+
+        mock_search_episode_torrent.return_value = episode_torrent
+        mock_search_season_torrent.return_value = None
+        mock_search_series_torrent.return_value = series_torrent
+
+        searcher = TorrentSearcher()
         searcher.search_torrent(episode)
         
         # Check state

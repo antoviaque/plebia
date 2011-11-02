@@ -59,7 +59,18 @@ class TorrentSearcher(PluginPoint):
             return Torrent or None
         def search_season_torrent(self, season):
             return Torrent or None
+        def search_series_torrent(self, series):
+            return Torrent or None
     """
+    
+    def search_episode_torrent(self, episode):
+        pass
+
+    def search_season_torrent(self, season):
+        pass
+
+    def search_series_torrent(self, series):
+        pass
 
     def search_torrent(self, episode):
         '''Find a torrent for the provided episode, returns the Torrent object'''
