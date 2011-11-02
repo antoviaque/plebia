@@ -196,7 +196,7 @@
         var deferred = $.Deferred();
 
         // Attach object to API URL
-        $this.api_set_url($this.api_base_url+'post/?limit=50');
+        $this.api_set_url($this.api_base_url+'post/?limit=80');
 
         // Populate stream (all posts)
         $.when($this.add_new_posts()).done(function() {
