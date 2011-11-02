@@ -218,7 +218,8 @@ class PlebiaTest(TestCase):
         os.mkdir(torrent_dir)
 
         self._test_find_single_episode_in_season_torrent(name, 1, u's02e01.avi')
-        self.create_fake_video(name, u'S02E20.avi') # Create potential false positive
+        self.create_fake_video(name, u'S02E20.avi') # Create potential false positives
+        self.create_fake_video(name, u's2e20.avi')
         self._test_find_single_episode_in_season_torrent(name, 2, u'S02E02.avi')
         self._test_find_single_episode_in_season_torrent(name, 3, u's2e3.avi')
         self._test_find_single_episode_in_season_torrent(name, 4, u'204.avi')

@@ -131,6 +131,11 @@ class SeasonPackage(Package):
 
         return video
 
+    def clean_name(self, name):
+        '''Replace separators by a single space'''
+
+        return re.sub(r'[_\W]+', ' ', name).strip()
+
     def find_episode_package(self, episode, sub_path=''):
         '''Locates the package of a specific episode within the current package'''
 
@@ -141,18 +146,13 @@ class SeasonPackage(Package):
 
         for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             # Build a filename where separators are spaces
-            clean_filename = re.sub(r'[_\W]+', ' ', filename).strip()
+            clean_filename = self.clean_name(filename)
+            clean_episode_name = self.clean_name(episode.name)
 
             # Try to match the file/dirs against the episode number
-            if re.search(r"s%02d *e%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(r"s%d *e%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(r"s%d *e%d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(r"%02dx%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(r"s%de%d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(r"%d%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(r"%d[ x]%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(r"season[ -_\.0]*%d[ -_\.]*episode[ -_\.0]*%d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-            or re.search(episode.name, clean_filename, re.IGNORECASE):
+            if re.search(r"\bs* *0*%d *[xe]* *0*%d\b" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"\bseason *0*%d *episode *0*%d\b" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(clean_episode_name, clean_filename, re.IGNORECASE):
                 # Check that this is a video or a folder
                 (file_type, file_encoding) = mimetypes.guess_type(os.path.join(self.full_path, sub_path, filename))
                 if (file_type is not None and file_type.startswith('video')) \
