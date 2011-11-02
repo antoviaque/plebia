@@ -53,25 +53,17 @@ class TorrentSearcher(PluginPoint):
     """
     Finds and builds the Torrent object for a given episode or season
 
-    Must expose the following methods:
+    Must expose the following method:
 
-        def search_episode_torrent(self, episode):
-            return Torrent or None
-        def search_season_torrent(self, season):
-            return Torrent or None
-        def search_series_torrent(self, series):
+        def search_torrent_by_string(self, name, episode_search_string):
+            '''Search engine for an entry matching "<name>" AND "<episode_search_string>"'''
+
             return Torrent or None
     """
     
-    def search_episode_torrent(self, episode):
+    def search_torrent_by_string(self, name, episode_search_string):
         pass
-
-    def search_season_torrent(self, season):
-        pass
-
-    def search_series_torrent(self, series):
-        pass
-
+    
     def search_torrent(self, episode):
         '''Find a torrent for the provided episode, returns the Torrent object'''
 
@@ -119,33 +111,49 @@ class TorrentSearcher(PluginPoint):
         torrent.save()
         return torrent
 
-
-class IsoHuntSearcher(TorrentSearcher):
-    name = 'isohunt-searcher'
-    title = 'isoHunt Torrent Searcher'
-
     def search_episode_torrent(self, episode):
         season = episode.season
         series = season.series
         episode_search_string = "s%02de%02d" % (season.number, episode.number)
-        episode_torrent = self.search_torrent_by_string(series.name, episode_search_string)
+        episode_torrent = self.search_torrent_by_string(self.clean_name(series.name), episode_search_string)
 
         return episode_torrent
 
     def search_season_torrent(self, season):
         series = season.series
         episode_search_string = "season %d" % season.number
-        season_torrent = self.search_torrent_by_string(series.name, episode_search_string)
+        season_torrent = self.search_torrent_by_string(self.clean_name(series.name), episode_search_string)
 
         return season_torrent
 
     def search_series_torrent(self, series):
-        series_torrent = self.search_torrent_by_string(series.name, None)
+        series_torrent = self.search_torrent_by_string(self.clean_name(series.name), None)
 
         return series_torrent
 
+    def clean_name(self, name):
+        '''Remove unwanted characters from name'''
+
+        return name.replace('.', '')
+
+    def get_url(self, url):
+        '''Returns the content at the provided URL, None if error'''
+
+        import requests
+        r = requests.get(url)
+
+        if r.status_code == requests.codes.ok:
+            return r.content
+        else:
+            return None
+       
+
+class IsoHuntSearcher(TorrentSearcher):
+    name = 'isohunt-searcher'
+    title = 'isoHunt Torrent Searcher'
+
     def search_torrent_by_string(self, name, episode_search_string):
-        '''Search isoHunt for an entry matching name" AND "<episode_search_string>"'''
+        '''Search isoHunt for an entry matching "<name>" AND "<episode_search_string>"'''
 
         import urllib, json
         torrent = Torrent()
@@ -210,17 +218,6 @@ class IsoHuntSearcher(TorrentSearcher):
 
         return None
 
-    def get_url(self, url):
-        '''Returns the content at the provided URL, None if error'''
-
-        import requests
-        r = requests.get(url)
-
-        if r.status_code == requests.codes.ok:
-            return r.content
-        else:
-            return None
-       
 
 # FIXME: Currently grabbing pages, in the absence of a proper API
 #        Do not use as is.

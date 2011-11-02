@@ -581,8 +581,6 @@ Tracker status: """
     def test_torrent_search_single_season_chose_episode(self, mock_search_episode_torrent, mock_search_season_torrent, mock_search_series_torrent):
         '''Searching for the name alone in case of a single season should not prevent from chosing the episode alone, which should be prefered if it exists'''
 
-        import urllib
-
         # Fake episode
         name = 'Test series'
         episode = Episode(number=1, tvdb_id=1)
@@ -601,6 +599,24 @@ Tracker status: """
         
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'episode', 'hash': 'good hash'})
+
+    @patch.object(TorrentSearcher, 'search_torrent_by_string')
+    def test_torrent_search_remove_special_chars(self, mock_search_torrent_by_string):
+        '''Special characters should be removed from the search strings'''
+
+        # Fake episode
+        name = 'Test series.'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        mock_search_torrent_by_string.return_value = None
+
+        searcher = TorrentSearcher()
+        searcher.search_torrent(episode)
+        
+        # Check state
+        mock_search_torrent_by_string.assert_called_with('Test series', None)
 
     @patch('wall.plugins.get_active_plugin')
     def test_torrent_search_when_season_torrent_already_found(self, mock_get_active_plugin):
