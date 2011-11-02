@@ -145,6 +145,8 @@ class SeasonPackage(Package):
 
             # Try to match the file/dirs against the episode number
             if re.search(r"s%02d *e%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"s%d *e%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+            or re.search(r"s%d *e%d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
             or re.search(r"%02dx%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
             or re.search(r"s%de%d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
             or re.search(r"%d%02d" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
