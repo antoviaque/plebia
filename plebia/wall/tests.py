@@ -548,6 +548,24 @@ Tracker status: """
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
 
+    def test_torrent_search_isohunt_match_result_with_season_number_in_full_letters(self):
+        '''Select season torrent from search results when the result has the season number written in full letters (ie "season two")'''
+
+        # Fake episode
+        name = 'Test series'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        # Fake the results from the search engine
+        episode_result = self.build_isohunt_result([{'name': name+' s02e01', 'hash': 'wrong hash', 'seeds':5, 'peers':4}])
+        season_result  = self.build_isohunt_result([{'name': name+' season two', 'hash': 'good hash', 'seeds':150, 'peers':1000}])
+        
+        self.run_isohunt_search(episode, episode_result, season_result)
+
+        # Check state
+        self.api_check('torrent', 1, {'status': 'New', 'type': 'season', 'hash': 'good hash'})
+
     @patch.object(TorrentSearcher, 'search_series_torrent')
     @patch.object(TorrentSearcher, 'search_season_torrent')
     @patch.object(TorrentSearcher, 'search_episode_torrent')

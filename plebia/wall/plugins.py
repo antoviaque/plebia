@@ -148,6 +148,18 @@ class TorrentSearcher(PluginPoint):
             return r.content
         else:
             return None
+
+    def int_to_fullstring(self, text):
+        '''Replaces all occurences of a 0-20 number as an int in a string, by its full letters counterpart. Ie "Season 2" becomes "Season two"'''
+
+        int_dict = {0: 'zero', 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", \
+                11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen", 17: "seventeen", 18: "eighteen", \
+                19: "nineteen", 20: "twenty"}
+
+        for num_int, num_text in int_dict.items():
+            text = re.sub(r'\b%d\b' % num_int, num_text, text)
+
+        return text
        
 
 class IsoHuntSearcher(TorrentSearcher):
@@ -193,7 +205,8 @@ class IsoHuntSearcher(TorrentSearcher):
                 # IsoHunt returns all results containing a file matching the results - we want to match the title
                 for element in [name, episode_search_string]:
                     if element is not None:
-                        title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
+                        title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE) or \
+                                      re.search(r'\b'+self.int_to_fullstring(element)+r'\b', result['title'], re.IGNORECASE) 
                         if title_match is None:
                             break
                 
