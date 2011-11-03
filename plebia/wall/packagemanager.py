@@ -196,7 +196,7 @@ class EpisodePackage(Package):
             max_filename = None 
             max_size = 0
             for video_filename in video_filename_list:
-                video_size = os.stat(os.path.join(self.full_path, video_filename))
+                video_size = os.stat(os.path.join(self.full_path, video_filename)).st_size
                 if video_size > max_size:
                     max_filename = video_filename
                     max_size = video_size

@@ -186,6 +186,31 @@ class PlebiaTest(TestCase):
         # Check that the season/episode/video was found
         self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, 'sub folder', filename) })
 
+    def test_find_single_episode_in_episode_torrent_subfolder_with_two_videos(self):
+        """When an episode has its video contained in a folder, with a sample (smaller) video too in a subfolder"""
+
+        # Fake episode
+        name = 'Test folder'
+        filename = 'Test.avi'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.torrent = self.create_fake_torrent(name=name, type="episode", status='Completed')
+        episode.save()
+
+        # Copy test file to episode name to test
+        torrent_dir = self.init_test_torrent_directory(name)
+        shutil.copy2(settings.TEST_VIDEO_PATH, os.path.join(torrent_dir, filename))
+
+        # Copy sample video, which is smaller
+        torrent_dir = os.path.join(torrent_dir, 'sample')
+        os.mkdir(torrent_dir)
+        shutil.copy2(settings.TEST_SHORT_VIDEO_PATH, os.path.join(torrent_dir))
+
+        episode.get_or_create_video()
+
+        # Check that the season/episode/video was found
+        self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, filename) })
+
     def _test_find_single_episode_in_season_torrent(self, name, number, filename, episode_name="The great episode"):
         """Helper method, to test finding a single episode name inside a season torrent
         The episode 'number' argument should be 1 on first call within same test method, and increase by 1 each call"""

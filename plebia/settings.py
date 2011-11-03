@@ -18,6 +18,7 @@ DOWNLOAD_DIR = u'/var/www/downloads/'
 
 TEST_DOWNLOAD_DIR = spath(u'tests/')
 TEST_VIDEO_PATH = ppath(u'eben_moglen-freedom_in_the_cloud.avi')
+TEST_SHORT_VIDEO_PATH = ppath(u'creative_commons.webm')
 LOCK_PATH = ppath(u'plebia/')
 BIN_DIR = ppath(u'bin/')
 STATIC_DIR = ppath(u'static/')
