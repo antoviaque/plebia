@@ -143,6 +143,7 @@ class SeasonPackage(Package):
 
         # Some extensions are missing from mime.types files
         mimetypes.add_type('video/mp4', '.m4v')
+        mimetypes.add_type('video/rmvb', '.rmvb')
 
         for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             # Build a filename where separators are spaces
@@ -152,7 +153,8 @@ class SeasonPackage(Package):
             # Try to match the file/dirs against the episode number
             if re.search(clean_episode_name, clean_filename, re.IGNORECASE) \
                 or re.search(r"\bs* *0*%d *[xe]* *0*%d\b" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
-                or re.search(r"\bseason *0*%d *episode *0*%d\b" % (season.number, episode.number), clean_filename, re.IGNORECASE):
+                or re.search(r"\bseason *0*%d *episode *0*%d\b" % (season.number, episode.number), clean_filename, re.IGNORECASE) \
+                or re.search(r"(^|[^0-9 ] +)0*%d +[^0-9 ]" % episode.number, clean_filename, re.IGNORECASE):
                 # Check that this is a video or a folder
                 (file_type, file_encoding) = mimetypes.guess_type(os.path.join(self.full_path, sub_path, filename))
                 if (file_type is not None and file_type.startswith('video')) \

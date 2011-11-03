@@ -243,8 +243,6 @@ class PlebiaTest(TestCase):
         os.mkdir(torrent_dir)
 
         self._test_find_single_episode_in_season_torrent(name, 1, u's02e01.avi')
-        self.create_fake_video(name, u'S02E20.avi') # Create potential false positives
-        self.create_fake_video(name, u's2e20.avi')
         self._test_find_single_episode_in_season_torrent(name, 2, u'S02E02.avi')
         self._test_find_single_episode_in_season_torrent(name, 3, u's2e3.avi')
         self._test_find_single_episode_in_season_torrent(name, 4, u'204.avi')
@@ -252,6 +250,8 @@ class PlebiaTest(TestCase):
         self._test_find_single_episode_in_season_torrent(name, 6, u'Season 2 - Episode 6.avi')
         self._test_find_single_episode_in_season_torrent(name, 7, u'season 02 episode 07.avi')
         self._test_find_single_episode_in_season_torrent(name, 8, u'02x08.avi')
+        self.create_fake_video(name, u'S02E90.avi') # Create potential false positives
+        self.create_fake_video(name, u's2e90.avi')
         self._test_find_single_episode_in_season_torrent(name, 9, u'[2.09].avi')
         self._test_find_single_episode_in_season_torrent(name, 10, u'[2x10].avi')
         self._test_find_single_episode_in_season_torrent(name, 11, u's02e11.m4v') # Unknown on some mime.types files
@@ -261,6 +261,9 @@ class PlebiaTest(TestCase):
         self._test_find_single_episode_in_season_torrent(name, 15, u'Test (2x15 Test) testó.avi') # Unicode
         self._test_find_single_episode_in_season_torrent(name, 16, u'episode.with-only_title.avi', episode_name='Episode with only title')
         self._test_find_single_episode_in_season_torrent(name, 17, u'Test - S2 E17 - Episode.avi')
+        self._test_find_single_episode_in_season_torrent(name, 18, u'18 - Episode.avi')
+        self._test_find_single_episode_in_season_torrent(name, 19, u'19 - Episode.rmvb')
+        self._test_find_single_episode_in_season_torrent(name, 20, u'Series - 20 - Episode.avi')
 
     def test_find_single_episode_in_episode_torrent_dir(self):
         """Episode torrent with video contained in a directory"""
