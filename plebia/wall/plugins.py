@@ -141,7 +141,7 @@ class TorrentSearcher(PluginPoint):
     def clean_name(self, name):
         '''Remove unwanted characters from name'''
 
-        return name.replace('.', '')
+        return re.sub(r'[\W_]+', ' ', name).strip()
 
     def get_url(self, url):
         '''Returns the content at the provided URL, None if error'''

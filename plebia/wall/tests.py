@@ -633,7 +633,7 @@ Tracker status: """
         '''Special characters should be removed from the search strings'''
 
         # Fake episode
-        name = 'Test series.'
+        name = 'Test: series.'
         episode = Episode(number=1, tvdb_id=1)
         episode.season = self.create_fake_season(name=name)
         episode.save()
