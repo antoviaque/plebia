@@ -548,24 +548,6 @@ Tracker status: """
         # Check state
         self.api_check('torrent', 1, {'status': 'New', 'progress': 0.0, 'type': 'season', 'hash': 'good hash'})
 
-    def test_torrent_search_isohunt_match_result_with_season_number_in_full_letters(self):
-        '''Select season torrent from search results when the result has the season number written in full letters (ie "season two")'''
-
-        # Fake episode
-        name = 'Test series'
-        episode = Episode(number=1, tvdb_id=1)
-        episode.season = self.create_fake_season(name=name)
-        episode.save()
-
-        # Fake the results from the search engine
-        episode_result = self.build_isohunt_result([{'name': name+' s02e01', 'hash': 'wrong hash', 'seeds':5, 'peers':4}])
-        season_result  = self.build_isohunt_result([{'name': name+' season two', 'hash': 'good hash', 'seeds':150, 'peers':1000}])
-        
-        self.run_isohunt_search(episode, episode_result, season_result)
-
-        # Check state
-        self.api_check('torrent', 1, {'status': 'New', 'type': 'season', 'hash': 'good hash'})
-
     @patch.object(TorrentSearcher, 'search_series_torrent')
     @patch.object(TorrentSearcher, 'search_season_torrent')
     @patch.object(TorrentSearcher, 'search_episode_torrent')
@@ -635,6 +617,30 @@ Tracker status: """
         
         # Check state
         mock_search_torrent_by_string.assert_called_with('Test series', None)
+
+    @patch.object(TorrentSearcher, 'search_torrent_by_string')
+    def test_torrent_search_with_different_season_number_types(self, mock_search_torrent_by_string):
+        '''Search different formatings for season number'''
+
+        # Fake episode
+        name = 'Test series'
+        episode = Episode(number=1, tvdb_id=1)
+        episode.season = self.create_fake_season(name=name)
+        episode.save()
+
+        called_with = list()
+        def side_effect(name, episode_string):
+            called_with.append(episode_string)
+            return None
+        mock_search_torrent_by_string.side_effect = side_effect
+
+        searcher = TorrentSearcher()
+        searcher.search_torrent(episode)
+        
+        # Check that all required searches have been done
+        for episode_string in ['season 2', 'season two']:
+            if episode_string not in called_with:
+                self.assertTrue(False, 'No search done for "%s"' % episode_string)
 
     @patch('wall.plugins.get_active_plugin')
     def test_torrent_search_when_season_torrent_already_found(self, mock_get_active_plugin):

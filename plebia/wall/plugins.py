@@ -123,8 +123,13 @@ class TorrentSearcher(PluginPoint):
 
     def search_season_torrent(self, season):
         series = season.series
-        episode_search_string = "season %d" % season.number
-        season_torrent = self.search_torrent_by_string(self.clean_name(series.name), episode_search_string)
+
+        for episode_search_string in ["season %d" % season.number, \
+                                      self.int_to_fullstring('season %s' % season.number)]:
+            season_torrent = self.search_torrent_by_string(self.clean_name(series.name), episode_search_string)
+
+            if season_torrent is not None:
+                break
 
         return season_torrent
 
@@ -205,8 +210,7 @@ class IsoHuntSearcher(TorrentSearcher):
                 # IsoHunt returns all results containing a file matching the results - we want to match the title
                 for element in [name, episode_search_string]:
                     if element is not None:
-                        title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE) or \
-                                      re.search(r'\b'+self.int_to_fullstring(element)+r'\b', result['title'], re.IGNORECASE) 
+                        title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
                         if title_match is None:
                             break
                 
