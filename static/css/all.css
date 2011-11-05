@@ -648,18 +648,22 @@ h1, h2, h3, h4, h5 {
     display: none !important;
 }
 
+/* Make sure we don't show a transparent background on fullscreen */
 .video-js-box.vjs-fullscreen {
-    /* Make sure we don't show a transparent background on fullscreen */
     background-color: black;
 }
 
+/* Don't put the close button on top of #fancybox-content
+ * the content's z-index is constrained by #fancybox-content */
+#fancybox-close {
+    z-index: 1002 !important;
+    top: -25px;
+    right: -25px;
+}
+
+/* Always expand to fullscreen, don't let fancybox constrain it */
 #fancybox-content {
-    /* Always expand to fullscreen, don't let fancybox constrain it */
     overflow: visible !important;
 }
 
-/* FIXME: Remove fancybox close button which appears on top in fullscreen */
-#fancybox-close {
-    display: none !important;
-}
 
