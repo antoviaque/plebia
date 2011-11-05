@@ -653,10 +653,9 @@ h1, h2, h3, h4, h5 {
     background-color: black;
 }
 
-.video-js-box.vjs-fullscreen video.video-js, .video-js-box.vjs-fullscreen .vjs-flash-fallback {
+#fancybox-content {
     /* Always expand to fullscreen, don't let fancybox constrain it */
-    width: 100% !important;
-    height: 100% !important;
+    overflow: visible !important;
 }
 
 /* FIXME: Remove fancybox close button which appears on top in fullscreen */
