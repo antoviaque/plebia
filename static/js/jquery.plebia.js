@@ -984,10 +984,10 @@
 
         // Set values in DOM
         $('.plebia_series_title', $this.dom).html(series.api_obj.name);
-        $('.plebia_description .plebia_title .plebia_name', $this.dom).html(episode.api_obj.name);
+        $('.plebia_description .plebia_title .plebia_name', $this.dom).html(episode.api_obj.name.substring(0,50));
         $('.plebia_description .plebia_title .plebia_season_nb', $this.dom).html(season.api_obj.number);
         $('.plebia_description .plebia_title .plebia_episode_nb', $this.dom).html(episode.api_obj.number);
-        $('.plebia_description .plebia_overview', $this.dom).html(episode.api_obj.overview);
+        $('.plebia_description .plebia_overview', $this.dom).html(episode.api_obj.overview.substring(0,300));
 
         // Load state template
         $this.update_dom();
