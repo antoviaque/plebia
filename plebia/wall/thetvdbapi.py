@@ -250,7 +250,6 @@ class TheTVDB(object):
         data = urllib.urlopen(url)
         tree = ET.parse(data)
         timestamp = int(tree.findtext("Time"))
-        print timestamp
 
         return timestamp
 

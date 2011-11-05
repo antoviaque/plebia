@@ -24,6 +24,13 @@ from djangoplugins.point import PluginPoint
 from wall.models import Torrent, Series
 import time, re, sys
 
+
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
+
 # Exceptions ########################################################
 
 class NoActivePlugin(Exception):
@@ -108,7 +115,7 @@ class TorrentSearcher(PluginPoint):
             torrent = series_torrent
             torrent.type = 'season'
 
-        print 'Chose %s' % torrent.hash
+        log.info('Chose %s', torrent.hash)
 
         torrent.save()
         return torrent
@@ -182,7 +189,7 @@ class IsoHuntSearcher(TorrentSearcher):
         else:
             search_string = '"%s"' % name
 
-        print "Request (isoHunt): '%s'" % search_string
+        log.info("Request (isoHunt): '%s'", search_string)
         url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
         content = self.get_url(url)
 
@@ -219,20 +226,20 @@ class IsoHuntSearcher(TorrentSearcher):
                 for series in similar_series:
                      similar_match = re.search(series.name, result['title'])
                      if similar_match:
-                        print 'Discarded series "%s" from "%s"' % (series.name, result['title'])
+                        log.info('Discarded series "%s" from "%s"', series.name, result['title'])
                         break
 
                 if title_match and not similar_match \
                         and result['Seeds'] != '' and result['Seeds'] >= 1 \
                         and result['leechers'] != '' and result['category'] == 'TV':
-                    print "Found '%s' (%s seeds) %s" % (result['title'], result['Seeds'], result['hash'])
+                    log.info("Found '%s' (%s seeds) %s", result['title'], result['Seeds'], result['hash'])
                     torrent.hash = result['hash']
                     torrent.seeds = result['Seeds']
                     torrent.peers = result['leechers']
                     torrent.details_url = result['link']
                     return torrent
         except KeyError:
-            print sys.exc_type, ":", "%s is not in the list." % sys.exc_value
+            log.info("%s is not in the list.", sys.exc_value)
             return None
 
         return None

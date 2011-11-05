@@ -30,6 +30,12 @@ from django.conf import settings
 from plebia.wall.downloadmanager import DownloadManager
 
 
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
+
 # Globals ###########################################################
 
 DELAY = 5
@@ -65,7 +71,7 @@ class Command(BaseCommand):
             l = lock.lock(lock_path, timeout=MAX_RUN_TIME) # wait at most 50s
             self.do(command, repeat)
         except error.LockHeld:
-            print "Active process for command '%s', aborting." % command
+            log.info("Active process for command '%s', aborting.", command)
         else:
             l.release()
 

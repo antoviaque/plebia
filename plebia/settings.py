@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import logging
 
 # Shortcuts to the real site directory and its parent.
 spath = lambda x: os.path.join(os.path.dirname(__file__), x)
@@ -22,6 +23,9 @@ TEST_SHORT_VIDEO_PATH = ppath(u'creative_commons.webm')
 LOCK_PATH = ppath(u'plebia/')
 BIN_DIR = ppath(u'bin/')
 STATIC_DIR = ppath(u'static/')
+
+LOG_LEVEL=logging.INFO
+LOG_FILE=ppath('server.log')
 
 MAX_TRANSCODING_PROCESSES=4
 

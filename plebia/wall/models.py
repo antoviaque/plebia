@@ -27,6 +27,11 @@ from django.conf import settings
 
 import re, os
 
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
 # Models ############################################################
 
 # Torrent #############################
@@ -218,7 +223,7 @@ class SeriesManager(models.Manager):
                 series = Series.objects.get(tvdb_id=series_tvdb_id)
                 # Check if this has been downloaded in the past
                 if series.is_active():
-                    print 'Updating series "%s"' % series.name
+                    log.info('Updating series "%s"', series.name)
                     series.update_from_tvdb()
             except Series.DoesNotExist:
                 pass
@@ -228,7 +233,7 @@ class SeriesManager(models.Manager):
             try:
                 episode = Episode.objects.get(tvdb_id=episode_tvdb_id)
                 episode_tvdb = tvdb.get_episode(episode_tvdb_id)
-                print 'Updating episode "%s s%de%d"' % (episode.season.series.name, episode.season.number, episode.number)
+                log.info('Updating episode "%s s%de%d"', episode.season.series.name, episode.season.number, episode.number)
                 episode.update_details(episode_tvdb)
             except Episode.DoesNotExist:
                 pass
@@ -285,7 +290,6 @@ class Series(models.Model):
         '''Number of seasons currently attached'''
 
         nb_seasons = self.season.count()
-        print nb_seasons
 
         return nb_seasons
 

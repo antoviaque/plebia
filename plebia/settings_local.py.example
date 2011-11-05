@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import logging
+
 # Utilities
 DELUGE_COMMAND = [u'/usr/local/bin/deluge-console']
 FFMPEG_PATH = u'/usr/local/bin/ffmpeg'
@@ -11,6 +13,10 @@ DOWNLOAD_DIR = u'/var/www/downloads/'
 LOCK_PATH = u'/var/www/plebia'
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+
+# Logging
+LOG_LEVEL=logging.INFO
+LOG_FILE='/var/www/plebia/log/server.log'
 
 # Set this to the number of cores/processors your server has
 MAX_TRANSCODING_PROCESSES=4
