@@ -657,8 +657,8 @@ h1, h2, h3, h4, h5 {
  * the content's z-index is constrained by #fancybox-content */
 #fancybox-close {
     z-index: 1002 !important;
-    top: -25px;
-    right: -25px;
+    top: -25px !important;
+    right: -25px !important;
 }
 
 /* Always expand to fullscreen, don't let fancybox constrain it */
