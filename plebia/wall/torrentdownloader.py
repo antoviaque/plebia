@@ -28,6 +28,12 @@ import re
 import subprocess
 
 
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
+
 # Models ############################################################
 
 class TorrentDownloadManager:
@@ -92,6 +98,8 @@ class TorrentDownloader:
     def add_hash(self, hash):
         '''Start download of new torrents'''
 
+        log.info("Asking torrent downloader to start downloading hash %s", hash)
+
         cmd = list(settings.DELUGE_COMMAND)
         cmd.append('add magnet:?xt=urn:btih:%s' % hash)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -100,12 +108,16 @@ class TorrentDownloader:
     def cancel_hash(self, hash):
         '''Stop download of torrent'''
 
+        log.info("Asking torrent downloader to STOP downloading hash %s", hash)
+
         cmd = list(settings.DELUGE_COMMAND)
         cmd.append('rm %s' % hash)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         (result, errors) = p.communicate()
 
     def get_deluge_output(self):
+        log.info("Getting updated download status output from torrent downloader")
+
         cmd = list(settings.DELUGE_COMMAND)
         cmd.append('info')
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
@@ -128,6 +140,8 @@ Tracker status:(?P<tracker_status>.+)\n?(?P<progress>.*)""", result, re.MULTILIN
 
             if m:
                 torrent.hash = m.group('torrent_hash')
+
+                log.debug("Found status update for hash %s", torrent.hash)
 
                 # Deluge shows hash as name until it can retreive it
                 if m.group('torrent_name') != m.group('torrent_hash'):

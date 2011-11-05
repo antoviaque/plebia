@@ -30,6 +30,12 @@ import os
 import mimetypes
 
 
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
+
 # Models ############################################################
 
 class PackageManager:
@@ -63,7 +69,8 @@ class Package:
             self.full_path = os.path.join(self.get_torrent_path(), path)
         else:
             self.full_path = self.get_torrent_path()
-
+ 
+        log.info("Looking in '%s' path of torrent %s", path, torrent)
         self.path = path
 
     def get_torrent_path(self):
@@ -228,6 +235,8 @@ class EpisodePackage(Package):
 
             # Uncompress any archives (rar)
             if filename.lower().endswith('.rar'):
+                log.info("Extracting archive %s", filename)
+
                 # Run unrar
                 cmd = (settings.UNRAR_PATH, 'x', '-y', os.path.join(self.full_path, sub_path, filename))
                 (result, errors) = subprocess.Popen(cmd, stdout=subprocess.PIPE).communicate()

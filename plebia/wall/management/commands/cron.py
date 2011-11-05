@@ -78,6 +78,8 @@ class Command(BaseCommand):
     def do(self, command, repeat):
         '''Run the specified action (once or repeat=True for a time-limited loop)'''
 
+        log.info("Running download manager for command '%s' (repeat=%d)", command, repeat)
+
         if not repeat:
             self.dl_manager.do(command)
         else:

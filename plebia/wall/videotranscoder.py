@@ -28,6 +28,12 @@ import subprocess
 import os
 
 
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
+
 # Globals ###########################################################
 
 FNULL = open(os.devnull, 'w')
@@ -63,10 +69,14 @@ class VideoTranscoder:
     def generate_thumbnail(self, video_path, image_path):
         '''Generate thumbnail'''
 
+        log.info('Generating thumbnail for %s', video_path)
+
         subprocess.Popen([settings.FFMPEG_PATH, '-i', video_path, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', image_path], stdout = FNULL, stderr = FNULL)
         
     def transcode_webm(self, video_src_path, video_dst_path):
         '''Convert to WebM'''
+
+        log.info('Generating WebM video for %s', video_src_path)
 
         subprocess.Popen([settings.FFMPEG_PATH, '-i', video_src_path, '-b', '1500k', '-acodec', 'libvorbis', '-ac', '2', '-ab', '96k', '-ar', '44100', '-s', '640x360', '-r', '18', video_dst_path], stdout = FNULL, stderr = FNULL)
 

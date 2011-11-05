@@ -31,6 +31,12 @@ from django.utils import simplejson
 from wall.models import *
 
 
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
+
 # Views #############################################################
 
 def index(request):
@@ -49,6 +55,8 @@ def ajax_search(request, search_string):
     # which only contains entire word matches
     series_list = Series.objects.filter(name__icontains=search_string).order_by('-first_aired')[:20]
     
+    log.info('Series found for live search "%s" => %s', search_string, series_list)
+
     return render_to_response('wall/search.html', {
         'series_list': series_list,
     }, context_instance=RequestContext(request))
@@ -56,6 +64,8 @@ def ajax_search(request, search_string):
 
 def ajax_new_post(request, series_id):
     '''Add a new post to the feed'''
+
+    log.info('New post for series_id=%d', series_id)
 
     series = Series.objects.get(id=series_id)
     # Make sure the series info and related seasons & episodes are up to date

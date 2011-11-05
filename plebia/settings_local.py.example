@@ -11,12 +11,12 @@ UNRAR_PATH = u'/usr/bin/unrar'
 # Paths
 DOWNLOAD_DIR = u'/var/www/downloads/'
 LOCK_PATH = u'/var/www/plebia'
-DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 
 # Logging
+DEBUG = False
+TEMPLATE_DEBUG = DEBUG
 LOG_LEVEL=logging.INFO
-LOG_FILE='/var/www/plebia/log/server.log'
+LOG_FILE='/var/www/plebia/server.log'
 
 # Set this to the number of cores/processors your server has
 MAX_TRANSCODING_PROCESSES=4

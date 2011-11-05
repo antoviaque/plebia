@@ -50,9 +50,11 @@ def get_active_plugin(plugin_point):
     active_plugins = plugin_point.get_plugins_qs()
     if len(active_plugins) < 1:
         raise NoActivePlugin(plugin_point)
+    
+    plugin = active_plugins[0].get_plugin()
+    log.info("Selecting plugin %s for plugin point %s", plugin, plugin_point)
 
-    return active_plugins[0].get_plugin()
-
+    return plugin
 
 # TorrentSearcher ###################################################
 
@@ -115,7 +117,7 @@ class TorrentSearcher(PluginPoint):
             torrent = series_torrent
             torrent.type = 'season'
 
-        log.info('Chose %s', torrent.hash)
+        log.info('Selecting torrent %s', torrent)
 
         torrent.save()
         return torrent
@@ -125,15 +127,19 @@ class TorrentSearcher(PluginPoint):
         series = season.series
         episode_search_string = "s%02de%02d" % (season.number, episode.number)
         episode_torrent = self.search_torrent_by_string(self.clean_name(series.name), episode_search_string)
+    
+        log.info("Episode lookup for '%s' gave torrent %s", episode_search_string, episode_torrent)
 
         return episode_torrent
 
     def search_season_torrent(self, season):
         series = season.series
 
-        for episode_search_string in ["season %d" % season.number, \
+        for season_search_string in ["season %d" % season.number, \
                                       self.int_to_fullstring('season %s' % season.number)]:
-            season_torrent = self.search_torrent_by_string(self.clean_name(series.name), episode_search_string)
+            season_torrent = self.search_torrent_by_string(self.clean_name(series.name), season_search_string)
+
+            log.info("Season lookup for '%s' gave torrent %s", season_search_string, season_torrent)
 
             if season_torrent is not None:
                 break
@@ -141,14 +147,20 @@ class TorrentSearcher(PluginPoint):
         return season_torrent
 
     def search_series_torrent(self, series):
-        series_torrent = self.search_torrent_by_string(self.clean_name(series.name), None)
+        series_search_string = self.clean_name(series.name)
+        series_torrent = self.search_torrent_by_string(series_search_string, None)
+
+        log.info("Series lookup for '%s' gave torrent %s", series_search_string, series_torrent)
 
         return series_torrent
 
     def clean_name(self, name):
         '''Remove unwanted characters from name'''
 
-        return re.sub(r'[\W_]+', ' ', name).strip()
+        clean_name = re.sub(r'[\W_]+', ' ', name).strip()
+        log.debug("Clean name for '%s' is '%s'", name, clean_name)
+
+        return clean_name
 
     def get_url(self, url):
         '''Returns the content at the provided URL, None if error'''
@@ -157,8 +169,10 @@ class TorrentSearcher(PluginPoint):
         r = requests.get(url)
 
         if r.status_code == requests.codes.ok:
+            log.debug("Retreived URL %s => %s", url, r.content)
             return r.content
         else:
+            log.debug("Could not retreive URL %s (error code=%d)", url, r.status_code)
             return None
 
     def int_to_fullstring(self, text):
@@ -168,8 +182,11 @@ class TorrentSearcher(PluginPoint):
                 11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen", 17: "seventeen", 18: "eighteen", \
                 19: "nineteen", 20: "twenty"}
 
+        text_full = text
         for num_int, num_text in int_dict.items():
             text = re.sub(r'\b%d\b' % num_int, num_text, text)
+
+        log.debug("Fullstring translation of '%s' is '%s'", text, text_full)
 
         return text
        
@@ -189,7 +206,7 @@ class IsoHuntSearcher(TorrentSearcher):
         else:
             search_string = '"%s"' % name
 
-        log.info("Request (isoHunt): '%s'", search_string)
+        log.info("isoHunt search for '%s'", search_string)
         url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
         content = self.get_url(url)
 
@@ -198,12 +215,15 @@ class IsoHuntSearcher(TorrentSearcher):
        
         try:
             answer = json.loads(content)
+            log.debug("Loaded JSON '%s'", answer)
         except ValueError:
+            log.info("Could not load JSON from '%s'", content)
             return None
 
         try:
             result_list = answer['items']['list']
             if len(result_list) < 1:
+                log.info("Empty result set")
                 return None
 
             # Series whose name contains the name of the series we are looking for
@@ -219,6 +239,7 @@ class IsoHuntSearcher(TorrentSearcher):
                     if element is not None:
                         title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
                         if title_match is None:
+                            log.info('Discarded result "%s" (seem unrelated)', result['title'])
                             break
                 
                 # Discard series containing the searched series name
@@ -226,20 +247,20 @@ class IsoHuntSearcher(TorrentSearcher):
                 for series in similar_series:
                      similar_match = re.search(series.name, result['title'])
                      if similar_match:
-                        log.info('Discarded series "%s" from "%s"', series.name, result['title'])
+                        log.info('Discarded result "%s" (seem to be about series "%s")', result['title'], series.name)
                         break
 
                 if title_match and not similar_match \
                         and result['Seeds'] != '' and result['Seeds'] >= 1 \
                         and result['leechers'] != '' and result['category'] == 'TV':
-                    log.info("Found '%s' (%s seeds) %s", result['title'], result['Seeds'], result['hash'])
+                    log.info("Accepted result '%s' (%s seeds) %s", result['title'], result['Seeds'], result['hash'])
                     torrent.hash = result['hash']
                     torrent.seeds = result['Seeds']
                     torrent.peers = result['leechers']
                     torrent.details_url = result['link']
                     return torrent
         except KeyError:
-            log.info("%s is not in the list.", sys.exc_value)
+            log.warn("Wrong format result")
             return None
 
         return None

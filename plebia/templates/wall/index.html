@@ -1,29 +1,6 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html lang="en-US" xml:lang="en-US" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <title>Plebia - Social sharing for media content</title>
+{% extends "base.html" %}
 
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-
-    <!-- CSS -->
-    <link type="text/css" rel="stylesheet" href="/static/css/all.css"> 
-    <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js.css"> 
-    <link type="text/css" rel="stylesheet" href="/static/css/dist/video-js-vim.css"> 
-    <link type="text/css" rel="stylesheet" href="/static/css/dist/jquery.liveSearch.css"> 
-    <link type="text/css" rel="stylesheet" href="/static/css/dist/jquery.fancybox-1.3.4.css"> 
-    <link type="text/css" href="/static/css/dist/jquery-ui-le-frog/jquery-ui-1.8.14.custom.css" rel="stylesheet" />
-
-    <!-- JS -->
-    <script type="text/javascript" src="/static/js/dist/jquery-1.6.2.min.js"></script>
-    <script type="text/javascript" src="/static/js/dist/jquery.query-2.1.7.js"></script>
-    <script type="text/javascript" src="/static/js/dist/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="/static/js/dist/jquery.liveSearch.js"></script>
-    <script type="text/javascript" src="/static/js/dist/jquery.fancybox-1.3.4.pack.js"></script>
-    <script type="text/javascript" src="http://freebaselibs.com/static/suggest/1.3/suggest.min.js"></script>
-    <script type="text/javascript" src="/static/js/dist/video.js" charset="utf-8"></script> 
-    <script type="text/javascript" src="/static/js/jquery.plebia.js"></script> 
-    <script type="text/javascript" src="/static/js/tests/skin.js"></script> 
-
+    {% block js_head %}
     <script>
         $(document).ready(function() {
             var skin = $.query.get('skin');
@@ -36,38 +13,17 @@
             }
         });
     </script>
+    {% endblock %}
 
-</head>
-
-<body> 
-    <div class="plebia">
-        <!-- Preloader -->
-        <div class="plebia_preloader">
-            <div class="plebia_bar plebia_block1"></div>
-            <div class="plebia_bar plebia_block2"></div>
-            <div class="plebia_bar plebia_block3"></div>
-        </div>
-
-        <!-- Header & Searchbox ---------------------------------------------------------->
-        <div class="plebia_header">
-            <div class="plebia_center">
-                <img class="plebia_logo" src="/static/img/logo.png" />
-
+    {% block header %}
                 To add a series, enter its name:<br />
                 <input class="plebia_name"></input>
                 <img class="plebia_search" src="/static/img/search.png" />
                 
                 <p><b>Warning</b>: videos can only be watched with Chromium/Chrome for now.</p>
-            </div>
-        </div>
+    {% endblock %}
 
-        <div class="plebia_columns">
-
-            <div class="plebia_column_left">
-                &nbsp;
-            </div> <!-- End 'plebia_column_left' -->
-
-            <div class="plebia_column_center">
+    {% block content %}
                 <h2>Stream</h2>
 
                 <div class="plebia_stream">
@@ -315,26 +271,6 @@
 
                     </div>
                 </div>
+    {% endblock %}
 
-            </div> <!-- End 'plebia_column_center' -->
 
-            <div class="clear_both"></div>
-
-            <div class="plebia_footer">
-                Media server powered by
-                <a href="http://plebia.org/">plebia</a>
-                (with the help of
-                <a href="http://videojs.com">video.js</a>,
-                <a href="http://deluge-torrent.org/">deluge</a>,
-                <a href="http://www.ffmpeg.org/">ffmpeg</a>,
-                <a href="http://torrentz.eu/">torrentz</a>,
-                <a href="http://www.thetvdb.com/">thetvdb</a> and
-                <a href="https://www.djangoproject.com/">django</a>)
-            </div>
-    
-        </div> <!-- End 'plebia_columns' -->
-      
-    </div> <!-- End 'plebia' -->
-
-</body>
-</html>

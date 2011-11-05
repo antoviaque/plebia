@@ -27,10 +27,12 @@ from django.conf import settings
 
 import re, os
 
+
 # Logging ###########################################################
 
 from plebia.log import get_logger
 log = get_logger(__name__)
+
 
 # Models ############################################################
 
@@ -71,6 +73,7 @@ class Torrent(models.Model):
         from plebia.wall.torrentdownloader import TorrentDownloader
 
         if self.status == 'New':
+            log.info("Starting download of torrent %s", self)
             torrent_downloader = TorrentDownloader()
             torrent_downloader.add_hash(self.hash)
             self.status = 'Queued'
@@ -78,6 +81,8 @@ class Torrent(models.Model):
 
     def update_from_torrent(self, torrent):
         '''Update status by copying attribute from another torrent'''
+
+        log.debug("Updating torrent %s from torrent %s", self, torrent)
 
         if torrent.name:
             self.name = torrent.name
@@ -97,6 +102,8 @@ class Torrent(models.Model):
         '''Locate a specific episode in a completed torrent'''
 
         from plebia.wall.packagemanager import MultiSeasonPackage, EpisodePackage
+
+        log.info('Finding video for episode %s in torrent %s', episode, self)
 
         if self.type == 'season':
             package = MultiSeasonPackage(self)
@@ -146,6 +153,8 @@ class Video(models.Model):
         video_transcoder = VideoTranscoder()
 
         if self.status == 'New' and video_transcoder.has_free_slot():
+            log.info('Starting transcoding of video %s', self)
+
             # Set paths
             prefix = self.original_path[:-4]
             self.webm_path = prefix + '.webm'
@@ -167,7 +176,11 @@ class Video(models.Model):
         from plebia.wall.videotranscoder import VideoTranscoder
         video_transcoder = VideoTranscoder()
         
+        log.debug('Checking transcoding status of video %s', self)
+
         if self.status == 'Transcoding' and not video_transcoder.is_running(self.original_path):
+            log.info('Transcoding finished for video %s', self)
+
             self.status = 'Completed'
             self.save()
 
@@ -183,11 +196,16 @@ class SeriesManager(models.Manager):
 
     def add_by_search(self, search_string):
         '''Retreiving series names for a given search string and creating any new Series objects'''
+        
+        log.info("Live search: '%s'", search_string)
+
         from thetvdbapi import TheTVDB
         tvdb = TheTVDB(settings.TVDB_API_KEY)
-        
         tvdb_series_list = tvdb.get_matching_shows(search_string+'*')
+
         for tvdb_series in tvdb_series_list:
+            log.info("Search result: '%s'", tvdb_series.name)
+
             # Check if the series already exists
             try:
                 series = Series.objects.get(name=tvdb_series.name)
@@ -195,7 +213,7 @@ class SeriesManager(models.Manager):
                 # Check that we've got all the required tags
                 if tvdb_series.name and tvdb_series.id and \
                         tvdb_series.language == 'en' and tvdb_series.banner_url:
-                    # Then create the local series object 
+                    log.info("Adding series to db: %s", tvdb_series.name)
                     series = Series()
                     series.update_summary_details(tvdb_series)
                     series.save()
@@ -215,6 +233,8 @@ class SeriesManager(models.Manager):
             update.save()
             return False
 
+        log.info("Updating series from TVDB (last update: %s)", update.time)
+
         (timestamp, series_list, episode_list) = tvdb.get_updates_by_timestamp(update.time)
 
         # Update series (details, seasons & episodes)
@@ -223,7 +243,7 @@ class SeriesManager(models.Manager):
                 series = Series.objects.get(tvdb_id=series_tvdb_id)
                 # Check if this has been downloaded in the past
                 if series.is_active():
-                    log.info('Updating series "%s"', series.name)
+                    log.info('Applying update to series "%s"', series.name)
                     series.update_from_tvdb()
             except Series.DoesNotExist:
                 pass
@@ -233,7 +253,7 @@ class SeriesManager(models.Manager):
             try:
                 episode = Episode.objects.get(tvdb_id=episode_tvdb_id)
                 episode_tvdb = tvdb.get_episode(episode_tvdb_id)
-                log.info('Updating episode "%s s%de%d"', episode.season.series.name, episode.season.number, episode.number)
+                log.info('Applying update to episode "%s s%de%d"', episode.season.series.name, episode.season.number, episode.number)
                 episode.update_details(episode_tvdb)
             except Episode.DoesNotExist:
                 pass
@@ -398,9 +418,12 @@ class Episode(models.Model):
         '''Get the torrent for this episode (whether from the episode itself, its season or search). 
         Updates self.torrent accordingly.'''
 
+        log.info("Trying to find the torrent for episode %s", self)
+
         # Check if we already have a torrent attached to this episode
         try:
             if self.torrent is not None:
+                log.info("Torrent already found %s", self.torrent)
                 return self.torrent
         except Torrent.DoesNotExist:
             pass
@@ -408,6 +431,7 @@ class Episode(models.Model):
         # Check if there is a torrent for the full season
         try:
             if self.season.torrent is not None:
+                log.info("Existing season torrent found %s", self.torrent)
                 self.torrent = self.season.torrent
                 self.save()
 
@@ -425,6 +449,8 @@ class Episode(models.Model):
         if self.torrent.type == 'season':
             self.season.torrent = self.torrent
             self.season.save()
+        
+        log.info("Torrent search returned %s", self.torrent)
 
         return self.torrent
 
@@ -433,16 +459,17 @@ class Episode(models.Model):
 
         # Check if the video has already been located for this torrent/episode
         if self.video is not None:
+            log.info("Video already found %s", self.video)
             return self.video
 
         # Otherwise try to get it from the torrent file
         if self.torrent is not None and self.torrent.status == 'Completed':
             self.video = self.torrent.get_episode_video(self)
             self.save()
-            return self.video
 
-        # No way to get the video for now
-        return None
+        log.info("Video search returned %s", self.video)
+
+        return self.video
 
     def next_episode(self):
         pass

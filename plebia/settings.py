@@ -29,7 +29,7 @@ LOG_FILE=ppath('server.log')
 
 MAX_TRANSCODING_PROCESSES=4
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
