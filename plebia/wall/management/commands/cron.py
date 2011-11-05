@@ -71,14 +71,14 @@ class Command(BaseCommand):
             l = lock.lock(lock_path, timeout=MAX_RUN_TIME) # wait at most 50s
             self.do(command, repeat)
         except error.LockHeld:
-            log.info("Active process for command '%s', aborting.", command)
+            log.debug("Active process for command '%s', aborting.", command)
         else:
             l.release()
 
     def do(self, command, repeat):
         '''Run the specified action (once or repeat=True for a time-limited loop)'''
 
-        log.info("Running download manager for command '%s' (repeat=%d)", command, repeat)
+        log.debug("Running download manager for command '%s' (repeat=%d)", command, repeat)
 
         if not repeat:
             self.dl_manager.do(command)

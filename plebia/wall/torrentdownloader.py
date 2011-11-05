@@ -116,7 +116,7 @@ class TorrentDownloader:
         (result, errors) = p.communicate()
 
     def get_deluge_output(self):
-        log.info("Getting updated download status output from torrent downloader")
+        log.debug("Getting updated download status output from torrent downloader")
 
         cmd = list(settings.DELUGE_COMMAND)
         cmd.append('info')
