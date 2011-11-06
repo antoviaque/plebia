@@ -55,7 +55,7 @@ def get_active_plugin(plugin_point):
         raise NoActivePlugin(plugin_point)
     
     plugin = active_plugins[0].get_plugin()
-    log.info("Selecting plugin %s for plugin point %s", plugin, plugin_point)
+    log.debug("Selecting plugin %s for plugin point %s", plugin, plugin_point)
 
     return plugin
 
@@ -220,7 +220,7 @@ class IsoHuntSearcher(TorrentSearcher):
             answer = json.loads(content)
             log.debug("Loaded JSON '%s'", answer)
         except ValueError:
-            log.info("Could not load JSON from '%s'", content)
+            log.warn("Could not load JSON from '%s'", content)
             return None
 
         try:
@@ -246,7 +246,7 @@ class IsoHuntSearcher(TorrentSearcher):
                     if element is not None:
                         title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
                         if title_match is None:
-                            log.info('Discarded result "%s" (seem unrelated)', result['title'])
+                            log.debug('Discarded result "%s" (seem unrelated)', result['title'])
                             break
                 
                 # Discard series containing the searched series name
@@ -254,7 +254,7 @@ class IsoHuntSearcher(TorrentSearcher):
                 for series in similar_series:
                      similar_match = re.search(series.name, result['title'])
                      if similar_match:
-                        log.info('Discarded result "%s" (seem to be about series "%s")', result['title'], series.name)
+                        log.debug('Discarded result "%s" (seem to be about series "%s")', result['title'], series.name)
                         break
 
                 if title_match and not similar_match \
