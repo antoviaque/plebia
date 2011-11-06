@@ -22,7 +22,10 @@
 
 from django.test import TestCase
 from django.conf import settings
+# Logging - Make sure exceptions are raised upon ERROR or CRITICAL log messages
+settings.RAISE_EXCEPTION_ON_ERROR = True
 
+from plebia.log import get_logger
 from plebia.wall.models import *
 from plebia.wall.torrentdownloader import TorrentDownloader
 from plebia.wall.plugins import IsoHuntSearcher, TorrentSearcher
@@ -51,6 +54,18 @@ def mkdir_p(path):
 
 class PlebiaTest(TestCase):
     #fixtures = ['video.json']
+
+    def test_raise_exception_upon_error_critical_log(self):
+        '''Make sure exceptions are raised upon ERROR or CRITICAL log messages'''
+
+        log = get_logger(__name__)
+        exception_raised = False
+        try:
+            log.error('Test error log message')
+        except:
+            exception_raised = True
+
+        self.assertEqual(exception_raised, True)
 
     def api_check(self, model, id, value_dict):
         '''Helper method to check values against the values returned by the API'''

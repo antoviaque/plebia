@@ -67,5 +67,9 @@ class ExceptionRaiserHandler(logging.Handler):
     To allow developers to not let important issues go through unnoticed, for example in unit tests'''
     
     def emit(self, record):
-        raise
+        if sys.exc_info()[0] is not None:
+            # If there is already an exception in the current context, let it propagate
+            raise
+        else:
+            raise Exception(record.getMessage())
 
