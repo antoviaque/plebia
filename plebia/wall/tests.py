@@ -22,8 +22,6 @@
 
 from django.test import TestCase
 from django.conf import settings
-# Logging - Make sure exceptions are raised upon ERROR or CRITICAL log messages
-settings.RAISE_EXCEPTION_ON_ERROR = True
 
 from plebia.log import get_logger
 from plebia.wall.models import *
@@ -57,6 +55,8 @@ class PlebiaTest(TestCase):
 
     def test_raise_exception_upon_error_critical_log(self):
         '''Make sure exceptions are raised upon ERROR or CRITICAL log messages'''
+
+        self.assertEqual(settings.RAISE_EXCEPTION_ON_ERROR, True, "To run the tests, RAISE_EXCEPTION_ON_ERROR must be set to True in the settings, otherwise some exceptions might go unnoticed")
 
         log = get_logger(__name__)
         exception_raised = False

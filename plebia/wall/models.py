@@ -25,6 +25,8 @@ from django.db import models
 from django import forms
 from django.conf import settings
 
+from plebia.wall.helpers import sane_text
+
 import re, os
 
 
@@ -64,7 +66,7 @@ class Torrent(models.Model):
     upload_speed = models.CharField('upload speed', max_length=20, blank=True)
     eta = models.CharField('remaining download time', max_length=20, blank=True)
     active_time = models.CharField('active time', max_length=20, blank=True)
-    details_url = models.CharField('url of detailled info', max_length=100, blank=True)
+    details_url = models.CharField('url of detailled info', max_length=500, blank=True)
 
     def __unicode__(self):
         return ("%s %s %s" % (self.name, self.hash, self.type))
@@ -321,26 +323,24 @@ class Series(models.Model):
         '''Update a part of the attributes based on tvdb object 
         (summary obtained through TheTVDB.get_matching_shows())'''
 
-        from plebia.wall.torrentutils import sanitize_text
-
-        self.name = sanitize_text(tvdb_series.name)
+        self.name = sane_text(tvdb_series.name, length=200)
         self.tvdb_id = tvdb_series.id
-        self.language = sanitize_text(tvdb_series.language)
-        self.overview = sanitize_text(tvdb_series.overview)[:1000]
+        self.language = sane_text(tvdb_series.language, length=200)
+        self.overview = sane_text(tvdb_series.overview, length=1000)
         self.first_aired = tvdb_series.first_aired
-        self.imdb_id = tvdb_series.imdb_id
-        self.banner_url = tvdb_series.banner_url
+        self.imdb_id = sane_text(tvdb_series.imdb_id, length=50)
+        self.banner_url = sane_text(tvdb_series.banner_url, length=200)
 
     def update_extended_details(self, tvdb_series):
         '''Update a part of the attributes based on tvdb object 
         (all details not obtained through TheTVDB.get_matching_shows())'''
 
         self.rating = tvdb_series.rating
-        self.airing_status = tvdb_series.status
-        self.poster_url = tvdb_series.poster_url
-        self.fanart_url = tvdb_series.fanart_url
+        self.airing_status = sane_text(tvdb_series.status, length=50)
+        self.poster_url = sane_text(tvdb_series.poster_url, length=200)
+        self.fanart_url = sane_text(tvdb_series.fanart_url, length=200)
         self.tvcom_id = tvdb_series.tvcom_id
-        self.zap2it_id = tvdb_series.zap2it_id
+        self.zap2it_id = sane_text(tvdb_series.zap2it_id, length=200)
         self.tvdb_last_updated = tvdb_series.last_updated
 
     def update_episodes(self, tvdb_episode_list):
@@ -350,15 +350,14 @@ class Series(models.Model):
             # Only get episodes in English to avoid duplicates
             if tvdb_episode.language == 'en':
                 season_nb = tvdb_episode.season_number
+                episode_nb = tvdb_episode.episode_number
                 tvdb_id = tvdb_episode.id
 
                 # Don't handle specials (season 0)
-                if int(season_nb):
+                if int(season_nb) and int(episode_nb):
                     season = Season.objects.get_or_create(series=self, number=season_nb)[0]
 
-                    episode_nb = tvdb_episode.episode_number
                     episode = Episode.objects.get_or_create(season=season, number=episode_nb, tvdb_id=tvdb_id)[0]
-
                     episode.update_details(tvdb_episode)
                     episode.save()
 
@@ -403,19 +402,17 @@ class Episode(models.Model):
     def update_details(self, tvdb_episode):
         '''Update attributes based on a tvdb object'''
 
-        from plebia.wall.torrentutils import sanitize_text
-
         self.tvdb_id = tvdb_episode.id
-        self.name = sanitize_text(tvdb_episode.name)
-        self.overview = sanitize_text(tvdb_episode.overview)[:1000]
-        self.director = sanitize_text(tvdb_episode.director)
-        self.guest_stars = sanitize_text(tvdb_episode.guest_stars)
-        self.language = tvdb_episode.language
+        self.name = sane_text(tvdb_episode.name, length=200)
+        self.overview = sane_text(tvdb_episode.overview, length=1000)
+        self.director = sane_text(tvdb_episode.director, length=255)
+        self.guest_stars = sane_text(tvdb_episode.guest_stars, length=255)
+        self.language = sane_text(tvdb_episode.language, length=50)
         self.rating = tvdb_episode.rating
-        self.writer = sanitize_text(tvdb_episode.writer)
+        self.writer = sane_text(tvdb_episode.writer, length=255)
         self.first_aired = tvdb_episode.first_aired
-        self.image_url = tvdb_episode.image
-        self.imdb_id = tvdb_episode.imdb_id
+        self.image_url = sane_text(tvdb_episode.image, length=200)
+        self.imdb_id = sane_text(tvdb_episode.imdb_id, length=50)
         self.tvdb_last_updated = tvdb_episode.last_updated
 
     def get_or_create_torrent(self):

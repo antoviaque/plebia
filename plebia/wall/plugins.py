@@ -21,7 +21,10 @@
 # Includes ##########################################################
 
 from djangoplugins.point import PluginPoint
+
 from wall.models import Torrent, Series
+from wall.helpers import sane_text
+
 import time, re, sys
 
 
@@ -261,7 +264,7 @@ class IsoHuntSearcher(TorrentSearcher):
                     torrent.hash = result['hash']
                     torrent.seeds = result['Seeds']
                     torrent.peers = result['leechers']
-                    torrent.details_url = result['link']
+                    torrent.details_url = sane_text(result['link'], length=500)
                     return torrent
         except KeyError:
             log.error("Wrong format result")
@@ -335,18 +338,4 @@ class IsoHuntSearcher(TorrentSearcher):
 #
 #        return html_result
 #
-#    def sanitize_text(self, text):
-#        '''Remove non-string characters from text'''
-#
-#        sane_text = u''
-#
-#        # HTML NULL entity
-#        text = text.replace('&#0', '')
-#
-#        for c in text:
-#            # Make sure it's not a control character
-#            if ord(c) >= 32 and ord(c) <= 126:
-#                sane_text += c
-#
-#        return sane_text
 

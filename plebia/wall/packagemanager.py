@@ -21,8 +21,10 @@
 # Includes ##########################################################
 
 from django.db.models import Q
-from plebia.wall.models import Torrent, Episode, Video
 from django.conf import settings
+
+from plebia.wall.models import Torrent, Episode, Video
+from plebia.wall.helpers import sane_text
 
 import re
 import subprocess
@@ -194,9 +196,9 @@ class EpisodePackage(Package):
         # If the torrent is a single file, that's the one we want
         if os.path.isfile(self.full_path):
             if self.path:
-                video.original_path = os.path.join(self.torrent.name, self.path)
+                video.original_path = sane_text(os.path.join(self.torrent.name, self.path), length=490)
             else:
-                video.original_path = self.torrent.name
+                video.original_path = sane_text(self.torrent.name, length=490)
         # If the torrent is a directory, look inside
         elif os.path.isdir(self.full_path):
             # First, extract files from archives in this directory to be able to find those files too
@@ -218,7 +220,7 @@ class EpisodePackage(Package):
 
             # Check if there was any video at all
             if max_filename is not None:
-                video.original_path = os.path.join(self.torrent.name, self.path, max_filename)
+                video.original_path = sane_text(os.path.join(self.torrent.name, self.path, max_filename), 490)
             else:
                 video = Video.objects.get_not_found_video()
         else:
