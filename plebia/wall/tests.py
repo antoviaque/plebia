@@ -529,6 +529,17 @@ Tracker status: """
         searcher = IsoHuntSearcher()
         searcher.search_torrent(episode)
 
+    @patch.object(IsoHuntSearcher, 'get_url')
+    def test_torrent_search_isohunt_empty_result(self, mock_get_url):
+        '''Handle empty result sets gracefully'''
+
+        mock_get_url.return_value = """{"title": "isoHunt", "link": "http://isohunt.com", "description": "BitTorrent Search", "language": "en-us", "category": "TV", "max_results": 1000, "ttl": 15, "image": {"title": "isoHunt", "url": "http://isohunt.com/", "link": "http://isohunt.com/", "width": 157, "height": 45}, "lastBuildDate": "Sun, 06 Nov 2011 15:54:15 GMT","pubDate": "Sun, 06 Nov 2011 15:54:15 GMT","total_results":0, "censored":0}"""
+
+        searcher = IsoHuntSearcher()
+        torrent = searcher.search_torrent_by_string('Test series', None)
+
+        self.assertEqual(torrent, None)
+
     def test_torrent_search_isohunt_only_season_minimum_seeds(self):
         '''Select season torrent from search results when only the season has the minimum number of seeds required'''
 

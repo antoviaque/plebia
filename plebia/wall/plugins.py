@@ -221,9 +221,13 @@ class IsoHuntSearcher(TorrentSearcher):
             return None
 
         try:
+            if answer['total_results'] == 0:
+                log.info("Empty result set")
+                return None
+
             result_list = answer['items']['list']
             if len(result_list) < 1:
-                log.info("Empty result set")
+                log.error("Empty result set with wrong total_results value")
                 return None
 
             # Series whose name contains the name of the series we are looking for
@@ -260,7 +264,7 @@ class IsoHuntSearcher(TorrentSearcher):
                     torrent.details_url = result['link']
                     return torrent
         except KeyError:
-            log.warn("Wrong format result")
+            log.error("Wrong format result")
             return None
 
         return None
