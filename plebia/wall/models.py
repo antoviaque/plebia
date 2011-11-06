@@ -307,7 +307,7 @@ class Series(models.Model):
     def is_active(self):
         '''Check if series details (episodes, seasons...) need to be updated'''
 
-        if self.nb_seasons > 0:
+        if self.nb_seasons() >= 1:
             return True
         else:
             return False
