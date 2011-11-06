@@ -98,6 +98,9 @@ class MultiSeasonPackage(Package):
     def find_season_package(self, season, sub_path=''):
         '''Locates the package of a specific season within the current package'''
 
+        if not os.path.isdir(os.path.join(self.full_path, sub_path)):
+            return None
+
         # Try to match the directories against a season name/number
         for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             if os.path.isdir(os.path.join(self.full_path, sub_path, filename)):
@@ -151,6 +154,9 @@ class SeasonPackage(Package):
         # Some extensions are missing from mime.types files
         mimetypes.add_type('video/mp4', '.m4v')
         mimetypes.add_type('video/rmvb', '.rmvb')
+        
+        if not os.path.isdir(os.path.join(self.full_path, sub_path)):
+            return None
 
         for filename in os.listdir(os.path.join(self.full_path, sub_path)):
             # Build a filename where separators are spaces

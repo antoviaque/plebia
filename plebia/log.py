@@ -33,10 +33,21 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', 
 # Functions #########################################################
 
 def get_logger(name):
-    return logging.getLogger(name)
+    """Return the logger for the provided name (usually __name__ of calling module)"""
+
+    log = logging.getLogger(name)
+
+    # Raise exceptions for important log issues in DEBUG mode
+    if settings.RAISE_EXCEPTION_ON_ERROR:
+        logging.handlers.ExceptionRaiserHandler = ExceptionRaiserHandler
+        handler = logging.handlers.ExceptionRaiserHandler()
+        handler.setLevel(logging.ERROR) # Only for WARN & CRITICAL log messages
+        log.addHandler(handler)
+
+    return log
 
 def handle_exception(exc_type, exc_value, exc_traceback):
-    """Used by cron processes, for which exceptions aren't automatically caught'"""
+    """Used by cron processes, django only automatically catches exceptions for HTTP requests"""
 
     log = get_logger(__name__)
     formatted_exception = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
@@ -47,4 +58,14 @@ def catch_exceptions():
     '''Install handler for exceptions'''
     
     sys.excepthook = handle_exception
+
+
+# Handlers ##########################################################
+
+class ExceptionRaiserHandler(logging.Handler):
+    '''Raise exception when a message is handled by this handler
+    To allow developers to not let important issues go through unnoticed, for example in unit tests'''
+    
+    def emit(self, record):
+        raise
 

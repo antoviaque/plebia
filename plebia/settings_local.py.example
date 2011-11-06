@@ -13,10 +13,11 @@ DOWNLOAD_DIR = u'/var/www/downloads/'
 LOCK_PATH = u'/var/www/plebia'
 
 # Logging
-DEBUG = False
+DEBUG = False # To display errors in browser
 TEMPLATE_DEBUG = DEBUG
 LOG_LEVEL=logging.INFO
 LOG_FILE='/var/www/plebia/server.log'
+RAISE_EXCEPTION_ON_ERROR=False  # Set to True to get all exceptions in unit tests (stops for any ERROR or CRITICAL log message)
 
 # Set this to the number of cores/processors your server has
 MAX_TRANSCODING_PROCESSES=4

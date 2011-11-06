@@ -24,13 +24,13 @@ LOCK_PATH = ppath(u'plebia/')
 BIN_DIR = ppath(u'bin/')
 STATIC_DIR = ppath(u'static/')
 
-LOG_LEVEL=logging.INFO
-LOG_FILE=ppath('server.log')
-
-MAX_TRANSCODING_PROCESSES=4
-
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
+LOG_LEVEL=logging.INFO
+LOG_FILE=ppath('server.log')
+RAISE_EXCEPTION_ON_ERROR=False 
+
+MAX_TRANSCODING_PROCESSES=4
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),

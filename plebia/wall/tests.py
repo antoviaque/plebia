@@ -80,7 +80,6 @@ class PlebiaTest(TestCase):
         season = Season.objects.get_or_create(number=2, series=series)[0]
         return season
 
-
     def create_fake_torrent(self, name="Test", status="Downloading", type="episode"):
         # Fake the newly downloaded torrent
         torrent = Torrent()
@@ -210,6 +209,28 @@ class PlebiaTest(TestCase):
 
         # Check that the season/episode/video was found
         self.api_check('video', 1, { 'status': 'New', 'original_path': os.path.join(episode.torrent.name, filename) })
+
+    def test_find_single_episode_in_single_file_season_torrent_error(self):
+        """When an season torrent is a single file, fail racefully when looking for a single episode"""
+
+        filename='Test.avi'
+
+        # Fake episode
+        episode = Episode(number=1, tvdb_id=1, name='Test episode')
+        episode.season = self.create_fake_season(name='Test series')
+        episode.torrent = Torrent(hash='aaaa', name=filename, type='season', status='Completed')
+        episode.torrent.save()
+        episode.save()
+
+        # Create torrent file
+        mkdir_p(settings.TEST_DOWNLOAD_DIR)
+        settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
+        shutil.copy2(settings.TEST_VIDEO_PATH, os.path.join(settings.TEST_DOWNLOAD_DIR, filename))
+
+        episode.get_or_create_video()
+
+        # Check that the season/episode/video was found
+        self.api_check('video', 1, { 'status': 'Not found' })
 
     def _test_find_single_episode_in_season_torrent(self, name, number, filename, episode_name="The great episode"):
         """Helper method, to test finding a single episode name inside a season torrent

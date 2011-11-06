@@ -125,6 +125,7 @@ VIDEO_STATUSES = (
     ('Transcoding', 'Transcoding'),
     ('Completed', 'Completed'),
     ('Error', 'Error'),
+    ('Not found', 'Not found'),
 )
 
 class VideoManager(models.Manager):
@@ -445,7 +446,12 @@ class Episode(models.Model):
         # No torrent yet, need to search for one
         from wall.plugins import TorrentSearcher, get_active_plugin
         torrent_searcher = get_active_plugin(TorrentSearcher)
-        self.torrent = torrent_searcher.search_torrent(self)
+        try:
+            self.torrent = torrent_searcher.search_torrent(self)
+        except:
+            log.exception("Error while searching for torrent for episode %s", self)
+            self.torrent = Torrent(status='Error')
+            self.torrent.save()
         self.save()
 
         # If it's a season torrent, register it on the season too
@@ -470,10 +476,15 @@ class Episode(models.Model):
 
         # Otherwise try to get it from the torrent file
         if self.torrent is not None and self.torrent.status == 'Completed':
-            self.video = self.torrent.get_episode_video(self)
+            try:
+                self.video = self.torrent.get_episode_video(self)
+            except:
+                log.exception("Error while searching for video for episode %s in torrent %s", self, self.torrent)
+                self.video = Video(status='Error')
+                self.video.save()
             self.save()
 
-        if self.video.status == 'Error':
+        if self.video.status == 'Error' or self.video.status == 'Not found':
             log.warn('Could not find video for episode %s in torrent %s', self, self.torrent)
         else:
             log.info("Video search for episode %s returned %s", self, self.video)
