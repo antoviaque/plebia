@@ -33,7 +33,8 @@ def sane_text(text, length=0):
     '''Remove non-string characters from text, and optionally limit size to length characters (0 for no limit)'''
 
     if not isinstance(text, basestring):
-        log.error('Provided text is not a string "%s"', text)
+        log.debug('Provided text is not a string "%s"', text)
+        return ''
 
     # HTML NULL entity
     sane_text = text.replace(u'&#0', u'')
