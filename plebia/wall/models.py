@@ -96,6 +96,9 @@ class Torrent(models.Model):
         self.seeds = torrent.seeds
         self.peers = torrent.peers
 
+        if self.status == 'Error':
+            log.warn('Could not download torrent %s', torrent)
+
         self.save()
 
     def get_episode_video(self, episode):
@@ -450,7 +453,10 @@ class Episode(models.Model):
             self.season.torrent = self.torrent
             self.season.save()
         
-        log.info("Torrent search returned %s", self.torrent)
+        if self.torrent.status == 'Error':
+            log.warn('Could not find torrent for episode %s', self)
+        else:
+            log.info("Torrent search for episode %s returned %s", self, self.torrent)
 
         return self.torrent
 
@@ -467,7 +473,10 @@ class Episode(models.Model):
             self.video = self.torrent.get_episode_video(self)
             self.save()
 
-        log.info("Video search returned %s", self.video)
+        if self.video.status == 'Error':
+            log.warn('Could not find video for episode %s in torrent %s', self, self.torrent)
+        else:
+            log.info("Video search for episode %s returned %s", self, self.video)
 
         return self.video
 
