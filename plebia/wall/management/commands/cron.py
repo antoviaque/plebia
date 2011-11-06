@@ -80,7 +80,7 @@ class Command(BaseCommand):
         '''Run the specified action (once or repeat=True for a time-limited loop)'''
 
         log.debug("Running download manager for command '%s' (repeat=%d)", command, repeat)
-        hhjghjg
+
         if not repeat:
             self.dl_manager.do(command)
         else:
