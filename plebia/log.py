@@ -21,8 +21,7 @@
 # Includes ##########################################################
 
 from django.conf import settings
-import logging
-
+import logging, sys, traceback
 
 # Init ##############################################################
 
@@ -36,4 +35,16 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', 
 def get_logger(name):
     return logging.getLogger(name)
 
+def handle_exception(exc_type, exc_value, exc_traceback):
+    """Used by cron processes, for which exceptions aren't automatically caught'"""
+
+    log = get_logger(__name__)
+    formatted_exception = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+    log.critical("Uncaught exception:\n"+formatted_exception)
+    sys.exit(1)
+
+def catch_exceptions():
+    '''Install handler for exceptions'''
+    
+    sys.excepthook = handle_exception
 

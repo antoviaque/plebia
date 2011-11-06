@@ -32,8 +32,9 @@ from plebia.wall.downloadmanager import DownloadManager
 
 # Logging ###########################################################
 
-from plebia.log import get_logger
+from plebia.log import get_logger, catch_exceptions
 log = get_logger(__name__)
+catch_exceptions()
 
 
 # Globals ###########################################################
@@ -79,7 +80,7 @@ class Command(BaseCommand):
         '''Run the specified action (once or repeat=True for a time-limited loop)'''
 
         log.debug("Running download manager for command '%s' (repeat=%d)", command, repeat)
-
+        hhjghjg
         if not repeat:
             self.dl_manager.do(command)
         else:
