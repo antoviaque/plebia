@@ -631,7 +631,7 @@
         var $this = this;
         var deferred = $.Deferred();
 
-        var elems = $('.plebia_state_searching, .plebia_state_queued, .plebia_state_searching, .plebia_state_downloading, .plebia_state_transcoding_not_ready', $this.dom);
+        var elems = $('.plebia_state_searching, .plebia_state_not_aired, .plebia_state_queued, .plebia_state_downloading, .plebia_state_transcoding_not_ready', $this.dom);
         var count = elems.length;
 
         // Refresh season if any episode needs update
@@ -668,9 +668,9 @@
 
     // List of states 
     $.plebia.StatefulDOM.prototype.state_list = new Array("new",
-                                                          "queued",
-                                                          "not_aired",
                                                           "searching",
+                                                          "not_aired",
+                                                          "queued",
                                                           "downloading",
                                                           "transcoding_not_ready",
                                                           "all_ready",
@@ -825,7 +825,7 @@
 
             if(video.status == 'New') {
                 return 'downloading';
-            } else if(video.status == 'Transcoding') {
+            } else if(video.status == 'Queued' || video.status == 'Transcoding') {
                 return 'transcoding_not_ready';
             } else if(video.status == 'Completed') {
                 return 'all_ready';
@@ -877,6 +877,8 @@
     // States updates ///////////
 
     $.plebia.Episode.prototype.update_state_searching = function(old_state) {
+        var $this = this;
+
         if(old_state != 'searching') {
             // Progress bar init
             $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
@@ -884,19 +886,16 @@
     };
     
     $.plebia.Episode.prototype.update_state_not_aired = function(old_state) {
+        var $this = this;
+
         if(old_state != 'not_aired') {
             $('.plebia_air_date', $this.dom).html($this.api_obj.first_aired.substring(0,10));
         }
     };
     
-    $.plebia.Episode.prototype.update_state_all_ready = function(old_state) {
-        if(old_state != 'all_ready') {
-            // Thumb
-            $('.plebia_thumb', $this.dom).attr('src', encodeURI('/downloads/' + $this.api_obj.video.image_path));
-        }
-    };
-    
     $.plebia.Episode.prototype.update_state_downloading = function(old_state) {
+        var $this = this;
+
         if(old_state != 'downloading') {
             // Progress bar init
             $('.plebia_progress_bar', $this.dom).progressbar({value: 0});
@@ -909,6 +908,24 @@
         $('.plebia_eta .plebia_eta_value', $this.dom).html($this.api_obj.torrent.eta);
     };
 
+    $.plebia.Episode.prototype.update_state_transcoding_not_ready = function(old_state) {
+        var $this = this;
+
+        if(old_state != 'transcoding_not_ready') {
+            // Thumb
+            $('.plebia_thumb', $this.dom).attr('src', encodeURI('/downloads/' + $this.api_obj.video.image_path));
+        }
+    };
+    
+    $.plebia.Episode.prototype.update_state_all_ready = function(old_state) {
+        var $this = this;
+
+        if(old_state != 'all_ready') {
+            // Thumb
+            $('.plebia_thumb', $this.dom).attr('src', encodeURI('/downloads/' + $this.api_obj.video.image_path));
+        }
+    };
+    
 
     // Watchbox /////////////////////////////////////////////////////////////////////////
 
@@ -1014,12 +1031,8 @@
         var episode = $this.episode_dom[0].episode;
         var video = episode.api_obj.video;
 
-        if(video.status == 'Transcoding' || video.status == 'Completed') {
-            var url = encodeURI('/downloads/' + video.original_path);
-            return url;
-        } else {
-            return null;
-        }
+        var url = encodeURI('/downloads/' + video.original_path);
+        return url;
     };
 
     // XXX TODO
@@ -1070,6 +1083,16 @@
         }
     };
 
+    // STATE: not aired /////////////////////
+    $.plebia.WatchBox.prototype.update_state_not_aired = function(old_state) {
+        var $this = this;
+
+        if(old_state != 'not_aired') {
+            $this.load_state_template('not_aired');
+            $('.plebia_air_date', $this.dom).html($this.api_obj.first_aired);
+        }
+    };
+    
     // STATE: queued ////////////////////////
     $.plebia.WatchBox.prototype.update_state_queued = function(old_state) {
         var $this = this;
@@ -1147,6 +1170,11 @@
         if(old_state != 'transcoding_not_ready') {
             $this.load_state_template('transcoding_not_ready');
 
+            // Thumb
+            var episode = $this.episode_dom[0].episode;
+            var video_obj = episode.api_obj.video;
+            $('.plebia_thumb', $this.dom).attr('src', encodeURI('/downloads/' + video_obj.image_path));
+
             // Download link
             var url = $this.get_download_url();
             $('.plebia_download .video_link', $this.dom).attr('href', url);
@@ -1161,36 +1189,28 @@
         if(old_state != 'all_ready') {
             $this.load_state_template('all_ready');
 
-            // Video init
-            $this.init_video(false);
-        }
-    };
-
-    $.plebia.WatchBox.prototype.init_video = function(streaming) {
-        var $this = this;
-
-        var episode = $this.episode_dom[0].episode;
-        var video_obj = episode.api_obj.video;
-        var video_dom = $('video', $this.dom);
-
-        // URLs
-        if(streaming) {
-            var video_src = encodeURI('/static/stream.php?file_path=' + video_obj.webm_path);
-        } else {
+            var episode = $this.episode_dom[0].episode;
+            var video_obj = episode.api_obj.video;
+            var video_dom = $('video', $this.dom);
             var video_src = encodeURI('/downloads/' + video_obj.webm_path);
-        }
-        $('video', $this.dom).attr('poster', '/downloads/' + video_obj.image_path);
-        $('source', $this.dom).attr('src', video_src);
-        $('.vjs-no-video a', $this.dom).attr('href', encodeURI('/downloads/' + video_obj.webm_path));
 
-        // video.js
-        video_dom.VideoJS({
-            controlsBelow: false, // Display control bar below video instead of in front of
-            controlsHiding: true, // Hide controls when mouse is not over the video
-            defaultVolume: 0.85, // Will be overridden by user's last volume if available
-            flashVersion: 9, // Required flash version for fallback
-            linksHiding: true // Hide download links when video is supported
-        });
+            $('video', $this.dom).attr('poster', '/downloads/' + video_obj.image_path);
+            $('source', $this.dom).attr('src', video_src);
+            $('.vjs-no-video a', $this.dom).attr('href', encodeURI('/downloads/' + video_obj.webm_path));
+
+            // video.js
+            video_dom.VideoJS({
+                controlsBelow: false, // Display control bar below video instead of in front of
+                controlsHiding: true, // Hide controls when mouse is not over the video
+                defaultVolume: 0.85, // Will be overridden by user's last volume if available
+                flashVersion: 9, // Required flash version for fallback
+                linksHiding: true // Hide download links when video is supported
+            });
+            
+            // Download link
+            var url = $this.get_download_url();
+            $('.video_link', $this.dom).attr('href', url);
+        }
     };
 
     // STATE: error //////////////////////////

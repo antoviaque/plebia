@@ -164,6 +164,8 @@ h1, h2, h3, h4, h5 {
 .plebia .plebia_stream .plebia_post .plebia_user_avatar {
     position: absolute;
     left: 0px;
+    width: 70px;
+    height: 70px;
 }
 
 .plebia .plebia_stream .plebia_post .plebia_user_name {
@@ -531,6 +533,28 @@ h1, h2, h3, h4, h5 {
 
 /* STATE: transcoding_not_ready */
 
+.plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_thumb {
+    position: absolute;
+    top: 0px;
+}
+
+.plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_info {
+    position: absolute;
+    top: 50px;
+    width: 100%;
+    background-color: #D2D2D2;
+    font-weight: bold;
+    filter: alpha(opacity=80);
+    opacity: .90;
+    color: #2D2D2D;
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+.plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_info a.video_link {
+    color: #2D2D2D;
+}
+
 .plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_download {
     float: left;
     width: 45%;
@@ -544,6 +568,18 @@ h1, h2, h3, h4, h5 {
 .plebia_watchbox.plebia_state_transcoding_not_ready .plebia_state .plebia_wait img.plebia_wait_icon {
     width: 120px;
     height: 120px;
+}
+
+/* STATE: downloading */
+
+.plebia_watchbox.plebia_state_all_ready .plebia_state a.video_link {
+    float: right;
+}
+
+.plebia_watchbox.plebia_state_all_ready .plebia_state .plebia_download_icon {
+    width: 20px;
+    height: 20px;
+    margin-top: 5px;
 }
 
 /* STATE: error */

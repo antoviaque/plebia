@@ -30,7 +30,7 @@ LOG_LEVEL=logging.INFO
 LOG_FILE=ppath('server.log')
 RAISE_EXCEPTION_ON_ERROR=False 
 
-MAX_TRANSCODING_PROCESSES=4
+MAX_TRANSCODING_PROCESSES=1
 
 ADMINS = (
     # ('Your Name', 'your_email@domain.com'),

@@ -124,6 +124,7 @@ class Torrent(models.Model):
 
 VIDEO_STATUSES = (
     ('New', 'New'),
+    ('Queued', 'Queued'),
     ('Transcoding', 'Transcoding'),
     ('Completed', 'Completed'),
     ('Error', 'Error'),
@@ -158,9 +159,7 @@ class Video(models.Model):
         from plebia.wall.videotranscoder import VideoTranscoder
         video_transcoder = VideoTranscoder()
 
-        if self.status == 'New' and video_transcoder.has_free_slot():
-            log.info('Starting transcoding of video %s', self)
-
+        if self.status == 'New':
             # Set paths
             prefix = self.original_path[:-4]
             self.webm_path = prefix + '.webm'
@@ -170,6 +169,13 @@ class Video(models.Model):
 
             # Thumb
             video_transcoder.generate_thumbnail(self.full_path(self.original_path), self.full_path(self.image_path))
+            
+            self.status = 'Queued'
+            self.save()
+
+        if self.status == 'Queued' and video_transcoder.has_free_slot():
+            log.info('Starting transcoding of video %s', self)
+
             # WebM
             video_transcoder.transcode_webm(self.full_path(self.original_path), self.full_path(self.webm_path))
 
@@ -315,7 +321,7 @@ class Series(models.Model):
     def nb_seasons(self):
         '''Number of seasons currently attached'''
 
-        nb_seasons = self.season.count()
+        nb_seasons = self.season_set.count()
 
         return nb_seasons
 
@@ -424,7 +430,7 @@ class Episode(models.Model):
         # Check if we already have a torrent attached to this episode
         try:
             if self.torrent is not None:
-                log.info("Torrent already found %s", self.torrent)
+                log.info("Torrent already found %s", self.season.torrent)
                 return self.torrent
         except Torrent.DoesNotExist:
             pass

@@ -38,8 +38,8 @@
                         <!-- Related API object -->
                         <input type="hidden" class="plebia_api_url" value="" />
                         
-                        <img src="/static/img/avatar.jpg" class="plebia_user_avatar" />
-                        <div class="plebia_user_name">Xavier Antoviaque</div> -
+                        <img src="/static/img/avatar.png" class="plebia_user_avatar" />
+                        <div class="plebia_user_name">Anonymous</div> -
                         <div class="plebia_post_time"></div>
                         
                         <div class="plebia_post_content">
@@ -103,6 +103,37 @@
                         
                     <!-- Episode (small) - States ---------------------------------->
                     <div class="plebia_episode_small_states">
+                        <!-- Episode STATE: 'searching' -->
+                        <div class="plebia_episode_searching">
+                            <div class="plebia_start">Searching...</div>
+                            <div class="plebia_progress_bar"></div>
+                        </div>
+
+                        <!-- Episode STATE: 'not_aired' -->
+                        <div class="plebia_episode_not_aired">
+                            <div class="plebia_start">Upcoming</div>
+                            <div class="plebia_air_date"></div>
+                        </div>
+
+                        <!-- Episode STATE: 'queued' -->
+                        <div class="plebia_episode_queued">
+                            <div class="plebia_start">Queued</div>
+                        </div>
+
+                        <!-- Episode STATE: 'downloading' -->
+                        <div class="plebia_episode_downloading">
+                            <div class="plebia_percent"><span class="plebia_percent_value"></span>%</div>
+                            <div class="plebia_progress_bar"></div>
+                            <div class="plebia_eta"><span class="plebia_eta_value"></span></div>
+                        </div>
+
+                        <!-- Episode STATE: 'transcoding_not_ready' -->
+                        <div class="plebia_episode_transcoding_not_ready">
+                            <img class="plebia_thumb" src="javascript://" />
+                            <img src="/static/img/download.png" class="plebia_download"/><br />
+                            <img src="/static/img/wait.png" class="plebia_wait" /><br />
+                        </div>
+
                         <!-- Episode STATE: 'all_ready' +watched -->
                         <div class="plebia_episode_all_ready">
                             <img class="plebia_thumb" src="javascript://" />
@@ -117,39 +148,9 @@
                             <img class="plebia_new" src="/static/img/new.png" />
                         </div>
 
-                        <!-- Episode STATE: 'transcoding_not_ready' -->
-                        <div class="plebia_episode_transcoding_not_ready">
-                            <img src="/static/img/download.png" class="plebia_download"/><br />
-                            <img src="/static/img/wait.png" class="plebia_wait" /><br />
-                        </div>
-                                    
                         <!-- Episode STATE: 'error' -->
                         <div class="plebia_episode_error">
                             <img src="/static/img/error.png" class="plebia_error"/><br />
-                        </div>
-
-                        <!-- Episode STATE: 'downloading' -->
-                        <div class="plebia_episode_downloading">
-                            <div class="plebia_percent"><span class="plebia_percent_value"></span>%</div>
-                            <div class="plebia_progress_bar"></div>
-                            <div class="plebia_eta"><span class="plebia_eta_value"></span></div>
-                        </div>
-
-                        <!-- Episode STATE: 'searching' -->
-                        <div class="plebia_episode_searching">
-                            <div class="plebia_start">Searching...</div>
-                            <div class="plebia_progress_bar"></div>
-                        </div>
-
-                        <!-- Episode STATE: 'queued' -->
-                        <div class="plebia_episode_queued">
-                            <div class="plebia_start">Queued</div>
-                        </div>
-
-                        <!-- Episode STATE: 'not_aired' -->
-                        <div class="plebia_episode_not_aired">
-                            <div class="plebia_start">Upcoming</div>
-                            <div class="plebia_air_date"></div>
                         </div>
                     </div>
 
@@ -181,6 +182,13 @@
                             <div class="plebia_info">
                                 Searching for video...
                                 &nbsp;<img src="/static/img/loading.gif" class="plebia_loading_icon" />
+                            </div>
+                        </div>
+
+                        <!-- STATE: 'not_aired' -->
+                        <div class="plebia_watchbox_not_aired">
+                            <div class="plebia_info">
+                                This episode has not aired yet. Currently scheduled for <span class="plebia_air_date"></span>
                             </div>
                         </div>
 
@@ -216,37 +224,24 @@
                         
                         <!-- STATE: transcoding_not_ready -->
                         <div class="plebia_watchbox_transcoding_not_ready">
+                            <img src="javascript://" class="plebia_thumb" />
                             <div class="plebia_info">
                                 Video successfully retreived! You can:
                                 <div>
                                     <div class="plebia_download">
                                         <a href="#" class="video_link">
                                             <img src="/static/img/download.png" class="plebia_download_icon"/><br />
-                                            Download it to your computer
+                                            Download it to your computer now
                                         </a>
                                     </div>
                                     or
                                     <div class="plebia_wait">
                                         <img src="/static/img/wait.png" class="plebia_wait_icon" /><br />
-                                        Wait for the streaming to become ready (currently converting the video)
+                                        Wait for the streaming to become ready...
                                     </div>
                                 </div>
                                 <div class="clear_both"></div>
                             </div>
-                        </div>
-                        
-                        <!-- STATE: transcoding_ready -->
-                        <div class="plebia_watchbox_transcoding_ready">
-                            <div class="video-js-box vim-css"> 
-                                <video class="video-js" width="640" height="360" controls="controls" preload="auto" poster=""> 
-                                    <source type='video/webm; codecs="vp8, vorbis"' />
-                                </video> 
-                                <p class="vjs-no-video"><strong>Download Video:</strong> 
-                                    <a href="#">WebM</a>
-                                </p> 
-                            </div> 
-                            <div class="plebia_video_transcoding_in_progress"><img src="/static/img/loading.gif" /> This video is still being converted. You will only be able to pause, resume or move it forward/backward when this is completed.</div>
-                            <div class="plebia_video_transcoding_done"><img src="/static/img/ok.png" /> Video conversion done! <a href="javascript://">Refresh</a> the video if you need to pause, resume or move it forward/backward.</div>
                         </div>
                         
                         <!-- STATE: all_ready -->
@@ -255,10 +250,11 @@
                                 <video class="video-js" width="640" height="360" controls="controls" preload="none" poster=""> 
                                     <source type='video/webm; codecs="vp8, vorbis"' />
                                 </video> 
-                                <p class="vjs-no-video"><strong>Download Video:</strong> 
-                                    <a href="#">WebM</a>
-                                </p> 
                             </div> 
+                            <a href="#" class="video_link">
+                                Download video file
+                                <img src="/static/img/download.png" class="plebia_download_icon"/>
+                            </a>
                         </div>
                         
                         <!-- STATE: error -->

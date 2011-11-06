@@ -53,11 +53,12 @@ class VideoTranscodingManager:
         # Get Video() objects which must be updated
         video_list = Video.objects.filter(\
                 Q(status='New') | \
+                Q(status='Queued') | \
                 Q(status='Transcoding'))\
                 .order_by('-date_added')
         
         for video in video_list:
-            if video.status == 'New':
+            if video.status == 'New' or video.status == 'Queued':
                 video.start_transcoding()
 
             elif video.status == 'Transcoding':
@@ -71,7 +72,10 @@ class VideoTranscoder:
 
         log.info('Generating thumbnail for %s', video_path)
 
-        subprocess.Popen([settings.FFMPEG_PATH, '-i', video_path, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', image_path], stdout = FNULL, stderr = FNULL)
+        p = subprocess.Popen([settings.FFMPEG_PATH, '-i', video_path, '-ss', '120', '-vframes', '1', '-r', '1', '-s', '640x360', '-f', 'image2', image_path], stdout = FNULL, stderr = FNULL)
+        
+        # Wait for thumb to be generated before continuing
+        (result, errors) = p.communicate()
         
     def transcode_webm(self, video_src_path, video_dst_path):
         '''Convert to WebM'''
