@@ -79,17 +79,29 @@ def ajax_new_post(request, series_id):
 def status(request):
     '''Statistics about the operations of the server'''
 
-    objects_stats = list()
-
+    # Stats of objects state
+    object_stat = list()
     for model_class in [Episode, Video, Torrent]:
         nb_processing = model_class.processing_objects.count()
         nb_completed = model_class.completed_objects.count()
         nb_error = model_class.error_objects.count()
         percent_success = '%.0f' % (nb_completed*100/(nb_completed+nb_error)) + '%'
-        objects_stats.append([model_class.__name__+'s', nb_processing, nb_completed, nb_error, percent_success])
+        object_stat.append([model_class.__name__+'s', nb_processing, nb_completed, nb_error, percent_success])
+
+    # Stats of log messages levels
+    import re
+    log_stat = list()
+    with open(settings.LOG_FILE) as f:
+        log = f.read()
+        nb_info = len(re.findall(r'\[INFO\]', log))
+        nb_warning = len(re.findall(r'\[WARNING\]', log))
+        nb_error = len(re.findall(r'\[ERROR\]', log))
+        nb_critical = len(re.findall(r'\[CRITICAL\]', log))
+        log_stat.append([nb_info, nb_warning, nb_error, nb_critical])
 
     return render_to_response('wall/status.html', {
-        'objects_stats': objects_stats,
+        'object_stat': object_stat,
+        'log_stat': log_stat,
     }, context_instance=RequestContext(request))
 
 

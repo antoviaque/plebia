@@ -8,9 +8,9 @@
     {% endblock %}
 
     {% block content %}
-                <h2>Status</h2>
+                <h2>Objects status</h2>
 
-                <table class="plebia_stats">
+                <table class="plebia_stat plebia_object_stat">
                     <tr>
                         <td></td>
                         <td>Processing</td>
@@ -18,7 +18,25 @@
                         <td>Error</td>
                         <td>Success rate</td>
                     </tr>
-                    {% for line in objects_stats %}
+                    {% for line in object_stat %}
+                    <tr>
+                        {% for cell in line %}
+                        <td class="plebia_cell_{{ forloop.counter }}">{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+
+                <h2>Logs status</h2>
+
+                <table class="plebia_stat plebia_log_stat">
+                    <tr>
+                        <td>Info</td>
+                        <td>Warning</td>
+                        <td>Error</td>
+                        <td>Critical</td>
+                    </tr>
+                    {% for line in log_stat %}
                     <tr>
                         {% for cell in line %}
                         <td class="plebia_cell_{{ forloop.counter }}">{{ cell }}</td>

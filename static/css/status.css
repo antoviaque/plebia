@@ -17,9 +17,9 @@
  * "AGPLv3".  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* Post ************************************************************/
+/* Stats tables ************************************************************/
 
-.plebia table.plebia_stats {
+.plebia table.plebia_stat {
     margin: 20px;
     -moz-border-radius: 10px 10px 10px 10px;
     -webkit-border-radius: 10px 10px 10px 10px;
@@ -28,19 +28,18 @@
     text-align: center;
 }
 
-.plebia table.plebia_stats td {
+.plebia table.plebia_stat td {
     padding: 10px;
 }
 
-.plebia table.plebia_stats td.plebia_cell_2 {
-    color: orange;
-}
+/* Objects stats */
+.plebia table.plebia_object_stat td.plebia_cell_2 { color: orange; }
+.plebia table.plebia_object_stat td.plebia_cell_3 { color: green; }
+.plebia table.plebia_object_stat td.plebia_cell_4 { color: red; }
 
-.plebia table.plebia_stats td.plebia_cell_3 {
-    color: green;
-}
-
-.plebia table.plebia_stats td.plebia_cell_4 {
-    color: red;
-}
+/* Log stat */
+.plebia table.plebia_log_stat td.plebia_cell_1 { color: green; }
+.plebia table.plebia_log_stat td.plebia_cell_2 { color: orange; }
+.plebia table.plebia_log_stat td.plebia_cell_3 { color: red; }
+.plebia table.plebia_log_stat td.plebia_cell_4 { color: red; }
 
