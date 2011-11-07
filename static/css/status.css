@@ -33,13 +33,13 @@
 }
 
 /* Objects stats */
-.plebia table.plebia_object_stat td.plebia_cell_2 { color: orange; }
-.plebia table.plebia_object_stat td.plebia_cell_3 { color: green; }
-.plebia table.plebia_object_stat td.plebia_cell_4 { color: red; }
+.plebia .plebia_object_stat .plebia_cell_2 a { color: orange; }
+.plebia .plebia_object_stat .plebia_cell_3 a { color: green; }
+.plebia .plebia_object_stat .plebia_cell_4 a { color: red; }
 
 /* Log stat */
-.plebia table.plebia_log_stat td.plebia_cell_1 { color: green; }
-.plebia table.plebia_log_stat td.plebia_cell_2 { color: orange; }
-.plebia table.plebia_log_stat td.plebia_cell_3 { color: red; }
-.plebia table.plebia_log_stat td.plebia_cell_4 { color: red; }
+.plebia .plebia_log_stat .plebia_cell_1 { color: green; }
+.plebia .plebia_log_stat .plebia_cell_2 { color: orange; }
+.plebia .plebia_log_stat .plebia_cell_3 { color: red; }
+.plebia .plebia_log_stat .plebia_cell_4 { color: red; }
 

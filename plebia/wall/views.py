@@ -82,10 +82,11 @@ def status(request):
     # Stats of objects state
     object_stat = list()
     for model_class in [Episode, Video, Torrent]:
-        nb_processing = model_class.processing_objects.count()
-        nb_completed = model_class.completed_objects.count()
-        nb_error = model_class.error_objects.count()
-        percent_success = '%.0f' % (nb_completed*100/(nb_completed+nb_error)) + '%'
+        url = "/status/%s/" % model_class.__name__.lower()
+        nb_processing = {'value': model_class.processing_objects.count(), 'url': url+'processing/'}
+        nb_completed = {'value': model_class.completed_objects.count(), 'url': url+'completed/'}
+        nb_error = {'value': model_class.error_objects.count(), 'url': url+'error/'}
+        percent_success = {'value': '%.0f' % (nb_completed['value']*100/(nb_completed['value']+nb_error['value'])) + '%', 'url': None}
         object_stat.append([model_class.__name__+'s', nb_processing, nb_completed, nb_error, percent_success])
 
     # Stats of log messages levels
@@ -104,4 +105,21 @@ def status(request):
         'log_stat': log_stat,
     }, context_instance=RequestContext(request))
 
+def status_object_detail(request, obj_type, obj_status):
+    '''List of objects for a given type & status'''
+
+    if obj_type == 'episode':
+        obj_class = Episode
+    elif obj_type == 'video':
+        obj_class = Video
+    elif obj_type == 'torrent':
+        obj_class = Torrent
+
+    object_list = getattr(obj_class, '%s_objects' % obj_status).all()
+
+    return render_to_response('wall/status_object_detail.html', {
+        'object_list': object_list,
+        'obj_type': obj_type,
+        'obj_status': obj_status,
+    }, context_instance=RequestContext(request))
 

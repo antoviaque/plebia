@@ -21,7 +21,11 @@
                     {% for line in object_stat %}
                     <tr>
                         {% for cell in line %}
-                        <td class="plebia_cell_{{ forloop.counter }}">{{ cell }}</td>
+                        <td class="plebia_cell_{{ forloop.counter }}">
+                            {% if cell.url %}<a href="{{ cell.url }}">{% endif %}
+                                {{ cell.value }}
+                            {% if cell.url %}</a>{% endif %}
+                        </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+    {% block css_head %}
+    <link type="text/css" rel="stylesheet" href="/static/css/status.css"> 
+    {% endblock %}
+
+    {% block header %}
+    {% endblock %}
+
+    {% block content %}
+                <h2>{{ obj_type }} objects with status {{ obj_status }}</h2>
+
+                <ul class="plebia_stat plebia_object_stat">
+                    {% for obj in object_list %}
+                    <li><a href="/api/v1/{{ obj_type }}/{{ obj.id }}/?format=xml">{{ obj }}</li>
+                    {% endfor %}
+                </ul>
+    {% endblock %}
+
+

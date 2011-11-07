@@ -44,6 +44,7 @@ urlpatterns = patterns('wall.views',
     (r'^ajax/search/(?P<search_string>.+)$', 'ajax_search'),
     (r'^ajax/newpost/(?P<series_id>\d+)/$', 'ajax_new_post'),
     (r'^api/', include(v1_api.urls)),
-    (r'^status', 'status'),
+    (r'^status/*$', 'status'),
+    (r'^status/(?P<obj_type>\w+)/(?P<obj_status>\w+)/$', 'status_object_detail'),
 )
 
