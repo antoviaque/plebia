@@ -22,6 +22,7 @@
 
 from django.db.models.signals import pre_save, post_save
 from django.db import models
+from django.db.models import Q
 from django import forms
 from django.conf import settings
 
@@ -53,6 +54,23 @@ TORRENT_STATUSES = (
     ('Error', 'Error'),
 )
 
+class ProcessingTorrentManager(models.Manager):
+    def get_query_set(self):
+        return super(ProcessingTorrentManager, self).get_query_set().filter(\
+                Q(status='New') | \
+                Q(status='Queued') | \
+                Q(status='Downloading'))
+
+class CompletedTorrentManager(models.Manager):
+    def get_query_set(self):
+        return super(CompletedTorrentManager, self).get_query_set().filter(\
+                Q(status='Completed'))
+
+class ErrorTorrentManager(models.Manager):
+    def get_query_set(self):
+        return super(ErrorTorrentManager, self).get_query_set().filter(\
+                Q(status='Error'))
+
 class Torrent(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     hash = models.CharField('torrent hash/magnet', max_length=200, blank=True)
@@ -67,6 +85,11 @@ class Torrent(models.Model):
     eta = models.CharField('remaining download time', max_length=20, blank=True)
     active_time = models.CharField('active time', max_length=20, blank=True)
     details_url = models.CharField('url of detailled info', max_length=500, blank=True)
+
+    objects = models.Manager()
+    processing_objects = ProcessingTorrentManager()
+    completed_objects = CompletedTorrentManager()
+    error_objects = ErrorTorrentManager()
 
     def __unicode__(self):
         return ("%s %s %s" % (self.name, self.hash, self.type))
@@ -131,8 +154,25 @@ VIDEO_STATUSES = (
     ('Not found', 'Not found'),
 )
 
-class VideoManager(models.Manager):
+class ProcessingVideoManager(models.Manager):
+    def get_query_set(self):
+        return super(ProcessingVideoManager, self).get_query_set().filter(\
+                Q(status='New') | \
+                Q(status='Queued') | \
+                Q(status='Transcoding'))
 
+class CompletedVideoManager(models.Manager):
+    def get_query_set(self):
+        return super(CompletedVideoManager, self).get_query_set().filter(\
+                Q(status='Completed'))
+
+class ErrorVideoManager(models.Manager):
+    def get_query_set(self):
+        return super(ErrorVideoManager, self).get_query_set().filter(\
+                Q(status='Not found') | \
+                Q(status='Error'))
+
+class VideoManager(models.Manager):
     def get_not_found_video(self):
         '''Returns a "Not found" Video object'''
 
@@ -151,6 +191,9 @@ class Video(models.Model):
     image_path = models.CharField('file path (image)', max_length=500, blank=True)
 
     objects = VideoManager()
+    processing_objects = ProcessingVideoManager()
+    completed_objects = CompletedVideoManager()
+    error_objects = ErrorVideoManager()
 
     def __unicode__(self):
         return ("%s %s" % (self.original_path, self.status))
@@ -382,6 +425,29 @@ class Season(models.Model):
 
 # Episode #############################
 
+class ProcessingEpisodeManager(models.Manager):
+    def get_query_set(self):
+        return super(ProcessingEpisodeManager, self).get_query_set().filter(\
+                Q(torrent__status='New') | \
+                Q(torrent__status='Queued') | \
+                Q(torrent__status='Downloading') | \
+                Q(video__status='New') | \
+                Q(video__status='Queued') | \
+                Q(video__status='Transcoding'))
+
+class CompletedEpisodeManager(models.Manager):
+    def get_query_set(self):
+        return super(CompletedEpisodeManager, self).get_query_set().filter(\
+                Q(torrent__status='Completed'), \
+                Q(video__status='Completed'))
+
+class ErrorEpisodeManager(models.Manager):
+    def get_query_set(self):
+        return super(ErrorEpisodeManager, self).get_query_set().filter(\
+                Q(torrent__status='Error') | \
+                Q(video__status='Not found') | \
+                Q(video__status='Error'))
+
 class Episode(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     number = models.IntegerField('number')
@@ -401,6 +467,11 @@ class Episode(models.Model):
     imdb_id = models.CharField('imdb id', max_length=50, blank=True)
     tvdb_last_updated = models.DateTimeField('last updated on tvdb', null=True) 
     watched = models.BooleanField('watched', default=False)
+
+    objects = models.Manager()
+    processing_objects = ProcessingEpisodeManager()
+    completed_objects = CompletedEpisodeManager()
+    error_objects = ErrorEpisodeManager()
 
     def __unicode__(self):
         return ("%s (number %d)" % (self.season, self.number))

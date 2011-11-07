@@ -76,4 +76,20 @@ def ajax_new_post(request, series_id):
 
     return HttpResponse(simplejson.dumps(['/api/v1/post/%d/' % post.id,]))
 
+def status(request):
+    '''Statistics about the operations of the server'''
+
+    objects_stats = list()
+
+    for model_class in [Episode, Video, Torrent]:
+        nb_processing = model_class.processing_objects.count()
+        nb_completed = model_class.completed_objects.count()
+        nb_error = model_class.error_objects.count()
+        percent_success = '%.0f' % (nb_completed*100/(nb_completed+nb_error)) + '%'
+        objects_stats.append([model_class.__name__+'s', nb_processing, nb_completed, nb_error, percent_success])
+
+    return render_to_response('wall/status.html', {
+        'objects_stats': objects_stats,
+    }, context_instance=RequestContext(request))
+
 

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+    {% block css_head %}
+    <link type="text/css" rel="stylesheet" href="/static/css/status.css"> 
+    {% endblock %}
+
+    {% block header %}
+    {% endblock %}
+
+    {% block content %}
+                <h2>Status</h2>
+
+                <table class="plebia_stats">
+                    <tr>
+                        <td></td>
+                        <td>Processing</td>
+                        <td>Success</td>
+                        <td>Error</td>
+                        <td>Success rate</td>
+                    </tr>
+                    {% for line in objects_stats %}
+                    <tr>
+                        {% for cell in line %}
+                        <td class="plebia_cell_{{ forloop.counter }}">{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </table>
+    {% endblock %}
+
+
