@@ -83,11 +83,12 @@ def status(request):
     object_stat = list()
     for model_class in [Episode, Video, Torrent]:
         url = "/status/%s/" % model_class.__name__.lower()
+        name = {'value': model_class.__name__+'s', 'url': None}
         nb_processing = {'value': model_class.processing_objects.count(), 'url': url+'processing/'}
         nb_completed = {'value': model_class.completed_objects.count(), 'url': url+'completed/'}
         nb_error = {'value': model_class.error_objects.count(), 'url': url+'error/'}
         percent_success = {'value': '%.0f' % (nb_completed['value']*100/(nb_completed['value']+nb_error['value'])) + '%', 'url': None}
-        object_stat.append([model_class.__name__+'s', nb_processing, nb_completed, nb_error, percent_success])
+        object_stat.append([name, nb_processing, nb_completed, nb_error, percent_success])
 
     # Stats of log messages levels
     import re
