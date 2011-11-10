@@ -79,7 +79,7 @@ MAILTO=your@email.org
 * * * * * /var/www/plebia/plebia/manage.py cron torrent_download
 * * * * * /var/www/plebia/plebia/manage.py cron package_management
 * * * * * /var/www/plebia/plebia/manage.py cron video_transcoding
-0 * * * * /var/www/plebia/plebia/manage.py cron contentdb_update
+0 * * * * /var/www/plebia/plebia/manage.py cron contentdb_update --no-repeat
 
 Cron jobs should be silent (they log messages in LOG_PATH), if you receive messages from them by email, you can fill a bug in the tracker.
 
