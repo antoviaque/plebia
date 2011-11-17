@@ -26,7 +26,7 @@ from django.db.models import Q
 from django import forms
 from django.conf import settings
 
-from plebia.wall.helpers import sane_text
+from wall.helpers import sane_text
 
 import re, os
 
@@ -85,6 +85,7 @@ class Torrent(models.Model):
     eta = models.CharField('remaining download time', max_length=20, blank=True)
     active_time = models.CharField('active time', max_length=20, blank=True)
     details_url = models.CharField('url of detailled info', max_length=500, blank=True)
+    tracker_url = models.CharField('url of tracker', max_length=500, blank=True)
 
     objects = models.Manager()
     processing_objects = ProcessingTorrentManager()
@@ -94,13 +95,20 @@ class Torrent(models.Model):
     def __unicode__(self):
         return ("%s %s %s" % (self.name, self.hash, self.type))
 
+    def get_magnet(self):
+        '''Builds the magnet URL of the current torrent'''
+
+        from urllib import quote
+        magnet_link = 'magnet:?xt=urn:btih:%s&tr=%s' % (self.hash, quote(self.tracker_url))
+        return magnet_link
+
     def start_download(self):
-        from plebia.wall.torrentdownloader import TorrentDownloader
+        from wall.torrentdownloader import TorrentDownloader
 
         if self.status == 'New':
             log.info("Starting download of torrent %s", self)
             torrent_downloader = TorrentDownloader()
-            torrent_downloader.add_hash(self.hash)
+            torrent_downloader.add_magnet(self.get_magnet())
             self.status = 'Queued'
             self.save()
 
@@ -129,7 +137,7 @@ class Torrent(models.Model):
     def get_episode_video(self, episode):
         '''Locate a specific episode in a completed torrent'''
 
-        from plebia.wall.packagemanager import MultiSeasonPackage, EpisodePackage
+        from wall.packagemanager import MultiSeasonPackage, EpisodePackage
 
         log.info('Finding video for episode %s in torrent %s', episode, self)
 
@@ -199,7 +207,7 @@ class Video(models.Model):
         return ("%s %s" % (self.original_path, self.status))
 
     def start_transcoding(self):
-        from plebia.wall.videotranscoder import VideoTranscoder
+        from wall.videotranscoder import VideoTranscoder
         video_transcoder = VideoTranscoder()
 
         if self.status == 'New':
@@ -228,7 +236,7 @@ class Video(models.Model):
     def update_transcoding_status(self):
         '''Check if video transcoding is over'''
 
-        from plebia.wall.videotranscoder import VideoTranscoder
+        from wall.videotranscoder import VideoTranscoder
         video_transcoder = VideoTranscoder()
         
         log.debug('Checking transcoding status of video %s', self)

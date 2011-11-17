@@ -23,8 +23,8 @@
 from django.db.models import Q
 from django.conf import settings
 
-from plebia.wall.models import Torrent, Episode, Video
-from plebia.wall.helpers import sane_text
+from wall.models import Torrent, Episode, Video
+from wall.helpers import sane_text
 
 import re
 import subprocess
@@ -34,7 +34,7 @@ import mimetypes
 
 # Logging ###########################################################
 
-from plebia.log import get_logger
+from log import get_logger
 log = get_logger(__name__)
 
 

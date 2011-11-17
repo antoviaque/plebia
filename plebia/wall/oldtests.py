@@ -45,7 +45,7 @@
         self.api_check('video', 1, {'status': 'Transcoding'})
         self.api_check('video', 3, {'status': 'Transcoding'})
 
-    @patch('plebia.wall.torrentutils.submit_form')
+    @patch('wall.torrentutils.submit_form')
     def test_add_post_series(self, mock_submit_form):
         """Add an episode by downloading a full season (first and second episode of the same season)"""
 
@@ -108,7 +108,7 @@
         self.api_check('video', 1, None)
 
 
-    @patch('plebia.wall.torrentutils.submit_form')
+    @patch('wall.torrentutils.submit_form')
     def test_select_season_over_episode_when_few_seeds(self, mock_submit_form):
         """When an episode torrent is found but has only a few seeds, prefer the season"""
 

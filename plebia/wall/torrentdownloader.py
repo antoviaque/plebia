@@ -20,7 +20,7 @@
 
 # Includes ##########################################################
 
-from plebia.wall.models import Torrent
+from wall.models import Torrent
 from django.db.models import Q
 from django.conf import settings
 
@@ -95,13 +95,13 @@ class TorrentDownloader:
     def __init__(self):
         self.torrent_list = None
 
-    def add_hash(self, hash):
-        '''Start download of new torrents'''
+    def add_magnet(self, magnet):
+        '''Start download of a new torrent using a magnet URI'''
 
-        log.info("Asking torrent downloader to start downloading hash %s", hash)
+        log.info("Asking torrent downloader to start downloading magnet %s", magnet)
 
         cmd = list(settings.DELUGE_COMMAND)
-        cmd.append('add magnet:?xt=urn:btih:%s' % hash)
+        cmd.append('add %s' % magnet)
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         (result, errors) = p.communicate()
 

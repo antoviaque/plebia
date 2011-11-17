@@ -20,11 +20,11 @@
 
 # Includes ##########################################################
 
-from plebia.wall.torrentsearcher import TorrentSearchManager
-from plebia.wall.torrentdownloader import TorrentDownloadManager
-from plebia.wall.packagemanager import PackageManager
-from plebia.wall.videotranscoder import VideoTranscodingManager
-from plebia.wall.contentdbupdater import ContentDBUpdateManager
+from wall.torrentsearcher import TorrentSearchManager
+from wall.torrentdownloader import TorrentDownloadManager
+from wall.packagemanager import PackageManager
+from wall.videotranscoder import VideoTranscodingManager
+from wall.contentdbupdater import ContentDBUpdateManager
 
 # Models ############################################################
 

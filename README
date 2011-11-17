@@ -1,8 +1,68 @@
-= Installation =
+= 1. Installation =
 
 See INSTALL file for installation instructions.
 
-= Migrations =
+
+= 2. Running tests =
+
+== 3a. Django/Python tests ==
+
+* Without coverage:
+
+    $ plebia/manage.py test
+
+* With coverage:
+
+    $ plebia/manage.py test_coverage
+
+The coverage report will then be visible at http://localhost/static/tests/
+
+
+== 3b. JS/QUnit tests ==
+
+* Without coverage: Go to http://localhost/static/js/tests/
+
+* JSCoverage install (see http://siliconforks.com/jscoverage/manual.html )
+
+    $ svn co http://svn.siliconforks.com/jscoverage/trunk jscoverage
+    $ cd jscoverage/
+    $ bash ./bootstrap.sh
+    $ ./configure
+    $ make
+    $ sudo make install
+
+* Running JSCoverage:
+
+    $ cd static/
+    $ jscoverage --encoding=UTF-8 js/ jscoverage/
+
+The coverage report will be at: http://localhost/static/jscoverage/jscoverage.html?tests/ 
+
+
+= 3. Migrations =
 
 $ ./plebia/manage.py schemamigration wall --auto ; ./plebia/manage.py migrate wall
+
+
+= 4. Quick completion test for a list of series =
+
+* In plebia/settings_local.py add/edit the TEST_SERIES_LIST to set your list of series 
+  (see plebia/settings.py for how to use the setting)
+
+* Run the test (can take some time depending on the number of series):
+
+    $ ./plebia/manage.py test wall.PlebiaTest.test_series_processing
+
+* Monitor test through the log file log/server.log
+
+* Upon completion, use the following command to load a test server with the state of the
+  database upon completion of the tests (json file path configured with the 
+  TEST_DB_DUMP_PATH setting, which can be overriden in settings_local.py)
+
+    $ ./plebia/manage.py testserver /tmp/plebia_test_db.json
+
+* Point your browser to the status page from the server you just launched, for example:
+
+    http://127.0.0.1:8000/status/
+
 

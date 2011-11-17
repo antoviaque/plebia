@@ -45,3 +45,27 @@ def sane_text(text, length=0):
 
     return sane_text
 
+
+def get_url(url, sleep_time=2):
+    '''Returns the content at the provided URL, None if error
+    Pause for sleep_time seconds before making the request, to avoid spamming websites with requests'''
+
+    import requests, time
+
+    time.sleep(sleep_time)
+    r = requests.get(url)
+
+    if r.status_code == requests.codes.ok:
+        log.debug("Retreived URL %s => %s", url, r.content)
+        return r.content
+    else:
+        log.debug("Could not retreive URL %s (error code=%d)", url, r.status_code)
+        return None
+
+def open_url(url):
+    '''Returns a file handler to the provided URL'''
+
+    import urllib
+
+    return urllib.urlopen(url)
+

@@ -11,6 +11,7 @@ UNRAR_PATH = u'/usr/bin/unrar'
 # Paths
 DOWNLOAD_DIR = u'/var/www/downloads/'
 LOCK_PATH = u'/var/www/plebia'
+TORRENT_SEARCH_CACHE_DIR = u'/tmp/torrent-search-cache/'
 
 # Logging
 DEBUG = False # To display errors in browser

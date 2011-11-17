@@ -27,7 +27,7 @@ from mercurial import lock, error
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 
-from plebia.wall.downloadmanager import DownloadManager
+from wall.downloadmanager import DownloadManager
 
 
 # Logging ###########################################################

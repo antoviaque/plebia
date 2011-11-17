@@ -24,6 +24,14 @@ import re
 
 import xml.etree.cElementTree as ET
 
+import wall.helpers
+
+# Logging ###########################################################
+
+from plebia.log import get_logger
+log = get_logger(__name__)
+
+
 class TheTVDB(object):
     def __init__(self, api_key):
         self.api_key = api_key
@@ -179,7 +187,7 @@ class TheTVDB(object):
         """Get a list of shows matching show_name."""
         get_args = urllib.urlencode({"seriesname": show_name}, doseq=True)
         url = "%s/GetSeries.php?%s" % (self.base_url, get_args)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         show_list = []
 
         if data:
@@ -187,14 +195,14 @@ class TheTVDB(object):
                 tree = ET.parse(data)
                 show_list = [TheTVDB.Show(show, self.mirror_url) for show in tree.getiterator("Series")]
             except SyntaxError:
-                pass
+                log.error("Could not parse contents of %s => %s", url, data.read())
 
         return show_list
 
     def get_show(self, show_id):
         """Get the show object matching this show_id."""
         url = "%s/series/%s/" % (self.base_key_url, show_id)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         
         show = None
         try:
@@ -203,28 +211,26 @@ class TheTVDB(object):
         
             show = TheTVDB.Show(show_node, self.mirror_url)
         except SyntaxError:
-            pass
+            log.error("Could not parse contents of %s => %s", url, data.read())
         
         return show
 
     def get_episode(self, episode_id):
         """Get the episode object matching this episode_id."""
         url = "%s/episodes/%s/en.xml" % (self.base_key_url, episode_id)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         
         tree = ET.parse(data)
         episode_node = tree.find("Episode")
 
         episode = TheTVDB.Episode(episode_node, self.mirror_url)
-        #except SyntaxError:
-        #    pass
         
         return episode
     
     def get_show_and_episodes(self, show_id):
         """Get the show object and all matching episode objects for this show_id."""
         url = "%s/series/%s/all/" % (self.base_key_url, show_id)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         
         show_and_episodes = None
         try:
@@ -240,14 +246,14 @@ class TheTVDB(object):
         
             show_and_episodes = (show, episodes)
         except SyntaxError:
-            pass
+            log.error("Could not parse contents of %s => %s", url, data.read())
         
         return show_and_episodes
 
     def get_server_time(self):
         '''Get the current server time, used to generate update diffs'''
         url = "%s/Updates.php?type=none" % self.base_url
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         tree = ET.parse(data)
         timestamp = int(tree.findtext("Time"))
 
@@ -256,7 +262,7 @@ class TheTVDB(object):
     def get_updates_by_timestamp(self, timestamp):
         '''Returns (timestamp, series_list, episode_list) of updated series/episodes since <timestamp>'''
         url = "%s/Updates.php?type=all&time=%d" % (self.base_url, timestamp)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         tree = ET.parse(data)
 
         series_node_list = tree.getiterator("Series")
@@ -272,7 +278,7 @@ class TheTVDB(object):
     def get_updated_shows_by_period(self, period = "day"):
         """Get a list of show ids which have been updated within this period."""
         url = "%s/updates/updates_%s.xml" % (self.base_key_url, period)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         tree = ET.parse(data)
 
         series_nodes = tree.getiterator("Series")
@@ -282,7 +288,7 @@ class TheTVDB(object):
     def get_updated_episodes_by_period(self, period = "day"):
         """Get a list of episode ids which have been updated within this period."""
         url = "%s/updates/updates_%s.xml" % (self.base_key_url, period)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         tree = ET.parse(data)
 
         episode_nodes = tree.getiterator("Episode")
@@ -292,7 +298,7 @@ class TheTVDB(object):
     def get_show_image_choices(self, show_id):
         """Get a list of image urls and types relating to this show."""
         url = "%s/series/%s/banners.xml" % (self.base_key_url, show_id)
-        data = urllib.urlopen(url)
+        data = wall.helpers.open_url(url)
         tree = ET.parse(data)
 
         images = []
@@ -307,3 +313,5 @@ class TheTVDB(object):
             images.append((banner_url, banner_type))
 
         return images
+
+

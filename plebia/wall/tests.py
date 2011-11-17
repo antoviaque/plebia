@@ -24,9 +24,9 @@ from django.test import TestCase
 from django.conf import settings
 
 from plebia.log import get_logger
-from plebia.wall.models import *
-from plebia.wall.torrentdownloader import TorrentDownloader
-from plebia.wall.plugins import IsoHuntSearcher, TorrentSearcher
+from wall.models import *
+from wall.torrentdownloader import TorrentDownloader
+from wall.plugins import IsoHuntSearcher, TorrentSearcher
 
 from mock import Mock, patch
 import json
@@ -95,6 +95,13 @@ class PlebiaTest(TestCase):
         season = Season.objects.get_or_create(number=2, series=series)[0]
         return season
 
+    def create_torrent_dir(self, name):
+        '''Create torrent directory in the test download dir'''
+
+        mkdir_p(settings.TEST_DOWNLOAD_DIR)
+        mkdir_p(os.path.join(settings.TEST_DOWNLOAD_DIR, name))
+        settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
+
     def create_fake_torrent(self, name="Test", status="Downloading", type="episode"):
         # Fake the newly downloaded torrent
         torrent = Torrent()
@@ -106,10 +113,7 @@ class PlebiaTest(TestCase):
         torrent.peers = 10
         torrent.save()
 
-        # Create torrent directory
-        mkdir_p(settings.TEST_DOWNLOAD_DIR)
-        mkdir_p(os.path.join(settings.TEST_DOWNLOAD_DIR, torrent.name))
-        settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
+        self.create_torrent_dir(torrent.name)
 
         return torrent
 
@@ -516,7 +520,7 @@ Tracker status: """
 
         return result
 
-    @patch.object(IsoHuntSearcher, 'get_url')
+    @patch('wall.helpers.get_url')
     def run_isohunt_search(self, episode, episode_result, season_result, mock_get_url):
         '''Run plugin code for searching torrent, based on mock isoHunt results'''
         
@@ -529,7 +533,7 @@ Tracker status: """
         searcher = IsoHuntSearcher()
         searcher.search_torrent(episode)
 
-    @patch.object(IsoHuntSearcher, 'get_url')
+    @patch('wall.helpers.get_url')
     def test_torrent_search_isohunt_empty_result(self, mock_get_url):
         '''Handle empty result sets gracefully'''
 
@@ -750,5 +754,200 @@ Tracker status: """
         episode2.get_or_create_torrent()
         # Check state
         self.assertEqual(episode2.torrent.id, 1)
+
+    @patch('wall.videotranscoder.VideoTranscoder')
+    def test_series_processing(self, mock_video_transcoder):
+        '''Fake download of a list of test series to process and get success rates on'''
+
+        import wall.plugins, wall.thetvdbapi, wall.helpers
+        from wall.bittorrent import Bittorrent
+
+        settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
+
+        default_open_url = None
+        default_get_url = None
+        default_add_magnet = None
+        default_update_torrents = None
+        
+        bt = Bittorrent()
+        mkdir_p(settings.TORRENT_SEARCH_CACHE_DIR)
+
+        # Don't let the other tests continue without reverting to the default methods/objects
+        # we override in this test
+        try:
+            #### Retreive TVDB data for test strings ####
+
+            # Cache it to allow to run this test multiple consecutive times quickly, without 
+            # having to query the db engine every time
+            def open_url(url):
+                url_id = url.replace('/', '_')
+                cache_path = os.path.join(settings.TORRENT_SEARCH_CACHE_DIR, url_id)
+
+                if not os.path.isfile(cache_path):
+                    cache_fp = default_open_url(url)
+                    with open(cache_path, 'w') as f:
+                        f.write(cache_fp.read())
+
+                return open(cache_path)
+
+            default_open_url = wall.helpers.open_url
+            wall.helpers.open_url = open_url
+
+            for series_name in settings.TEST_SERIES_LIST:
+                # Retreive series info
+                Series.objects.add_by_search(series_name)
+                
+                # Make series active (scheduled for download)
+                series = Series.objects.get(name=series_name)
+                series.update_from_tvdb()
+
+
+            #### Torrent search ####
+
+            from wall.downloadmanager import DownloadManager
+
+            def get_url(url, sleep_time=2):
+                url_id = url.replace('/', '_')
+                cached_content = bt.get_cache(url_id)
+                if cached_content:
+                    return cached_content
+                else:
+                    content = default_get_url(url, sleep_time=sleep_time)
+                    bt.set_cache(url_id, content)
+                    return content
+
+            default_get_url = wall.helpers.get_url
+            wall.helpers.get_url = get_url
+
+            download_manager = DownloadManager()
+            download_manager.do('torrent_search')
+
+
+            #### Torrent download ####
+
+            def add_magnet(self2, magnet):
+                bt.add_magnet(magnet, cache=True)
+
+            import wall.torrentdownloader
+            default_add_magnet = wall.torrentdownloader.TorrentDownloader.add_magnet
+            wall.torrentdownloader.TorrentDownloader.add_magnet = add_magnet
+
+            # Don't try to update those "fake" torrents against Deluge
+            def update_torrents(self):
+                pass
+            default_update_torrents = wall.torrentdownloader.TorrentDownloadManager.update_torrents
+            wall.torrentdownloader.TorrentDownloadManager.update_torrents = update_torrents
+
+            # The actual processing of the torrents objects
+            download_manager.do('torrent_download')
+
+            # Fake the actual download - stop as soon as we get metadata info
+            # Don't try for more than timeout_delay seconds
+            import time
+            timeout_delay = 600
+            stop_time = time.time() + timeout_delay
+            while time.time() <= stop_time and Torrent.processing_objects.count() > 0:
+                time.sleep(1)
+
+                # Got over each of the torrents still processing, and mark as completed or error
+                # those for which metadata has been retreived
+                for torrent in Torrent.processing_objects.all():
+                    torrent_info = bt.get_torrent_info(torrent.hash, cache=True)
+                    if torrent_info:
+                        # Reset time left each time we get a new result, to be sure each torrent had a chance
+                        stop_time = time.time() + timeout_delay
+
+                        # Stop downloading this torrent if it wasn't in the cache
+                        if bt.find_hash(torrent.hash):
+                            bt.remove_torrent(torrent.hash)
+
+                        # Create fake torrent files based on the retreived torrent info
+                        for torrent_file_info in torrent_info['files']:
+                            torrent_file = os.path.join(settings.TEST_DOWNLOAD_DIR, torrent_file_info['path'])
+                            mkdir_p(os.path.split(torrent_file)[0])
+                            with open(torrent_file, 'w') as f: 
+                                f.write('#' * (torrent_file_info['size']/1000)) # Fill the files with fake data, to keep file sizes poportional
+
+                        if torrent_info['status']['list_seeds'] > 0:
+                            status = 'Completed'
+                        else:
+                            status = 'Error'
+
+                        torrent.status = status
+                        torrent.name = torrent_info['name']
+                        torrent.seeds = torrent_info['status']['list_seeds']
+                        torrent.save()
+
+            # Mark remaining torrents as failed (we didn't even manage to get the metadata for them)
+            for torrent in Torrent.processing_objects.all():
+                torrent.status = 'Error'
+                torrent.seeds = -1 # Differentiate from those with metadata but without seeds
+                torrent.save()
+
+
+            #### Package management ####
+
+            download_manager.do('package_management')
+
+
+            #### Video transcoding ####
+
+            # Don't actually transcode anything
+            vt = mock_video_transcoder.return_value
+
+            # Never delay any transcoding processing
+            vt.has_free_slot.return_value = True
+
+            # Transcoding completes immediately
+            vt.is_running.return_value = False
+
+            # Run twice (first to start transcoding videos, second to mark transcoding as completed
+            download_manager.do('video_transcoding')
+            download_manager.do('video_transcoding')
+
+
+            #### Report ####
+
+            self.dump_test_db()
+            self.dump_processing_stats()
+            
+        #### Cleanup ####
+
+        except:
+            raise
+        finally:
+            if default_open_url is not None:
+                wall.helpers.open_url = default_open_url
+            if default_get_url is not None:
+                wall.helpers.get_url = default_get_url
+            if default_add_magnet is not None:
+                wall.torrentdownloader.TorrentDownloader.add_magnet = default_add_magnet
+            if default_update_torrents is not None:
+                wall.torrentdownloader.TorrentDownloadManager.update_torrents = default_update_torrents
+
+    def dump_test_db(self):
+        '''Writes the current DB state to a JSON file
+        To be used with ./manage.py testserver <file> for later exploration'''
+
+        from django.core import serializers
+
+        all_objects = list(Series.objects.all()) \
+                    + list(Season.objects.all()) \
+                    + list(Episode.objects.all()) \
+                    + list(Torrent.objects.all()) \
+                    + list(Video.objects.all())
+
+        with open(settings.TEST_DB_DUMP_PATH, "w") as f:
+            data = serializers.serialize("json", all_objects, stream=f)
+
+    def dump_processing_stats(self):
+        '''Write down the status of objects currently loaded by tests in a HTML file'''
+
+        c = self.client
+        response = c.get('/status')
+
+        mkdir_p(settings.COVERAGE_REPORT_HTML_OUTPUT_DIR)
+        with open(os.path.join(settings.COVERAGE_REPORT_HTML_OUTPUT_DIR, "completion.html"), 'w') as f:
+            f.write(response.content)
 
 

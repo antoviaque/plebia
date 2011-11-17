@@ -20,7 +20,7 @@
 
 # Includes ##########################################################
 
-from plebia.wall.models import Series
+from wall.models import Series
 
 
 # Models ############################################################

@@ -23,7 +23,7 @@
 from djangoplugins.point import PluginPoint
 
 from wall.models import Torrent, Series
-from wall.helpers import sane_text
+import wall.helpers
 
 import time, re, sys
 
@@ -78,9 +78,6 @@ class TorrentSearcher(PluginPoint):
     
     def search_torrent(self, episode):
         '''Find a torrent for the provided episode, returns the Torrent object'''
-
-        # Do not spam the torrent search engine
-        time.sleep(2)
 
         season = episode.season
         series = season.series
@@ -165,19 +162,6 @@ class TorrentSearcher(PluginPoint):
 
         return clean_name
 
-    def get_url(self, url):
-        '''Returns the content at the provided URL, None if error'''
-
-        import requests
-        r = requests.get(url)
-
-        if r.status_code == requests.codes.ok:
-            log.debug("Retreived URL %s => %s", url, r.content)
-            return r.content
-        else:
-            log.debug("Could not retreive URL %s (error code=%d)", url, r.status_code)
-            return None
-
     def int_to_fullstring(self, text):
         '''Replaces all occurences of a 0-20 number as an int in a string, by its full letters counterpart. Ie "Season 2" becomes "Season two"'''
 
@@ -211,7 +195,7 @@ class IsoHuntSearcher(TorrentSearcher):
 
         log.info("isoHunt search for '%s'", search_string)
         url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
-        content = self.get_url(url)
+        content = wall.helpers.get_url(url)
 
         if content is None:
             return None
@@ -264,7 +248,8 @@ class IsoHuntSearcher(TorrentSearcher):
                     torrent.hash = result['hash']
                     torrent.seeds = result['Seeds']
                     torrent.peers = result['leechers']
-                    torrent.details_url = sane_text(result['link'], length=500)
+                    torrent.details_url = wall.helpers.sane_text(result['link'], length=500)
+                    torrent.tracker_url = wall.helpers.sane_text(result['tracker_url'], length=500)
                     return torrent
         except KeyError:
             log.error("Wrong format result")

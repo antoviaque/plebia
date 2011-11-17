@@ -21,7 +21,7 @@
 # Includes ##########################################################
 
 from django.db.models import Q
-from plebia.wall.models import Video
+from wall.models import Video
 from django.conf import settings
 
 import subprocess

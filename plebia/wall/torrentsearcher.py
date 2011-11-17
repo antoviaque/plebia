@@ -21,7 +21,7 @@
 # Includes ##########################################################
 
 from django.db.models import Q
-from plebia.wall.models import Episode, Torrent
+from wall.models import Episode, Torrent
 
 from lxml.html import soupparser
 from lxml.cssselect import CSSSelector

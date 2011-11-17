@@ -87,7 +87,13 @@ def status(request):
         nb_processing = {'value': model_class.processing_objects.count(), 'url': url+'processing/'}
         nb_completed = {'value': model_class.completed_objects.count(), 'url': url+'completed/'}
         nb_error = {'value': model_class.error_objects.count(), 'url': url+'error/'}
-        percent_success = {'value': '%.0f' % (nb_completed['value']*100/(nb_completed['value']+nb_error['value'])) + '%', 'url': None}
+
+        if nb_completed['value'] == 0 and nb_error['value'] == 0:
+            percent_success_value = 'n/a'
+        else:
+            percent_success_value = '%.0f' % (nb_completed['value']*100/(nb_completed['value']+nb_error['value'])) + '%'
+        percent_success = {'value': percent_success_value, 'url': None}
+
         object_stat.append([name, nb_processing, nb_completed, nb_error, percent_success])
 
     # Stats of log messages levels
