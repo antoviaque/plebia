@@ -42,11 +42,14 @@ class Bittorrent:
 
         self.cache_dir = settings.TORRENT_SEARCH_CACHE_DIR
 
+        # Start BT session
         self.session = lt.session()
         self.session.listen_on(6881, 6891)
         self.load_state()
 
-        self.session.start_dht()
+        # Start DHT server
+        dht_data = self.get_cache('bt_dht_data')
+        self.session.start_dht(dht_data)
 
         self.params = {
             'save_path': settings.DOWNLOAD_DIR.encode('ascii'),
@@ -70,6 +73,7 @@ class Bittorrent:
 
         log.debug('Saving current session')
         self.set_cache('bt_session_data', self.session.save_state())
+        self.set_cache('bt_dht_data', self.session.dht_state())
 
     def add_magnet(self, magnet_uri, cache=False):
         '''Schedule a magnet link for download. If cache=True, only add it if the metadata
