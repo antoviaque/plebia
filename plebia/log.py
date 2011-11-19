@@ -21,7 +21,8 @@
 # Includes ##########################################################
 
 from django.conf import settings
-import logging, sys, traceback
+import logging, logging.handlers
+import sys, traceback
 
 # Init ##############################################################
 
