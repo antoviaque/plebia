@@ -58,21 +58,21 @@
     $ mkdir -p /var/www/downloads
     $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank /var/www/downloads/series/banners/posters
 
-4) Create Mysql database & configure in settings_local.py (login, password, db, host). Make sure your DB uses the UTF-8 encoding:
+4) Create Mysql database & configure in settings_local.py (login, password, db, host). 
 
-    CREATE DATABASE plebia CHARACTER SET utf8;
+5) Make sure your DB uses the UTF-8 encoding (see http://parand.com/say/index.php/2008/06/11/djangomysql-how-to-fix-unicode-aka-mysterious-question-marks/ )
 
-5) Populate database:
+6) Populate database:
 
     $ plebia/manage.py syncdb
     $ plebia/manage.py migrate
     $ plebia/manage.py syncplugins
 
-6) Select the plugin you would like to use for torrent search:
+7) Select the plugin you would like to use for torrent search:
 
     http://localhost/admin/djangoplugins/plugin/ (login/pass being the one set during syncdb, above)
 
-7) Add cron jobs:
+8) Add cron jobs:
 
 MAILTO=your@email.org
 * * * * * /var/www/plebia/plebia/manage.py cron torrent_search
