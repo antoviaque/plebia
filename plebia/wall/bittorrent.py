@@ -54,7 +54,7 @@ class Bittorrent:
             'save_path': settings.DOWNLOAD_DIR.encode('ascii'),
             'storage_mode': lt.storage_mode_t(2),
             'paused': False,
-            'auto_managed': True,
+            'auto_managed': False,
             'duplicate_is_error': True}
 
         self.handle_dict = {}
