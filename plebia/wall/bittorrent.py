@@ -45,7 +45,6 @@ class Bittorrent:
         # Start BT session
         self.session = lt.session()
         self.session.listen_on(6881, 6891)
-        self.load_state()
 
         # Start DHT server
         dht_data = self.get_cache('bt_dht_data')
@@ -60,19 +59,10 @@ class Bittorrent:
 
         self.handle_dict = {}
 
-    def load_state(self):
-        '''Loads the session environment variables if available from cache'''
-
-        session_data = self.get_cache('bt_session_data')
-        if session_data is not None:
-            log.info('Loading existing cached session')
-            self.session.load_state(session_data)
-
     def save_state(self):
         '''Save a copy of the current sessions variables to the cache'''
 
         log.debug('Saving current session')
-        self.set_cache('bt_session_data', self.session.save_state())
         self.set_cache('bt_dht_data', self.session.dht_state())
 
     def add_magnet(self, magnet_uri, cache=False):
@@ -128,10 +118,6 @@ class Bittorrent:
         
         status = self.session.status()
         return { 
-                'dht_upload_rate': status.dht_upload_rate, 
-                'dht_download_rate': status.dht_download_rate, 
-                'total_dht_download': status.total_dht_download, 
-                'total_dht_upload': status.total_dht_upload, 
                 'dht_nodes': status.dht_nodes, 
                 'dht_node_cache': status.dht_node_cache,
                 'dht_torrents': status.dht_torrents,

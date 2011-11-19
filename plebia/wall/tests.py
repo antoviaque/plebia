@@ -861,7 +861,7 @@ Tracker status: """
             # Fake the actual download - stop as soon as we get metadata info
             # Don't try for more than timeout_delay seconds
             import time
-            timeout_delay = 600
+            timeout_delay = 3600*10
             stop_time = time.time() + timeout_delay
             while time.time() <= stop_time and Torrent.processing_objects.count() > 0:
                 time.sleep(1)

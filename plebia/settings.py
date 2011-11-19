@@ -144,3 +144,7 @@ INSTALLED_APPS = (
 
 from settings_local import *
 
+# Run tests in memory
+if 'test' in sys.argv or 'testserver' in sys.argv:
+    DATABASES['default'] = {'ENGINE': 'sqlite3'}
+
