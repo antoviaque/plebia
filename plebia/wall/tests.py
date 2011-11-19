@@ -26,7 +26,7 @@ from django.conf import settings
 from plebia.log import get_logger
 from wall.models import *
 from wall.torrentdownloader import TorrentDownloader
-from wall.plugins import IsoHuntSearcher, TorrentSearcher
+from wall.plugins import *
 
 from mock import Mock, patch
 import json
@@ -755,6 +755,18 @@ Tracker status: """
         # Check state
         self.assertEqual(episode2.torrent.id, 1)
 
+    def select_plugin(self, plugin_point, plugin_name):
+        '''Make the specified plugin the only one active for a given plugin point'''
+
+        from djangoplugins.models import ENABLED, DISABLED
+
+        for plugin in plugin_point.get_plugins_qs():
+            if plugin.name == plugin_name:
+                plugin.status = ENABLED
+            else:
+                plugin.status = DISABLED
+            plugin.save()
+
     @patch('wall.videotranscoder.VideoTranscoder')
     def test_series_processing(self, mock_video_transcoder):
         '''Fake download of a list of test series to process and get success rates on'''
@@ -762,15 +774,20 @@ Tracker status: """
         import wall.plugins, wall.thetvdbapi, wall.helpers
         from wall.bittorrent import Bittorrent
 
+        # Don't pollute the real download dir
         settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
 
         default_open_url = None
         default_get_url = None
         default_add_magnet = None
         default_update_torrents = None
-        
+
+        # Custom bittorrent client
         bt = Bittorrent()
         mkdir_p(settings.TORRENT_SEARCH_CACHE_DIR)
+
+        # FIXME: Tests should cover all plugins
+        self.select_plugin(TorrentSearcher, 'torrentz-searcher')
 
         # Don't let the other tests continue without reverting to the default methods/objects
         # we override in this test
@@ -848,6 +865,8 @@ Tracker status: """
             stop_time = time.time() + timeout_delay
             while time.time() <= stop_time and Torrent.processing_objects.count() > 0:
                 time.sleep(1)
+
+                log.info("Remaining torrents: %d, DHT: %s, queue: %s", Torrent.processing_objects.count(), bt.dht_stats(), bt.queue_stats())
 
                 # Got over each of the torrents still processing, and mark as completed or error
                 # those for which metadata has been retreived

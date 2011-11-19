@@ -53,7 +53,9 @@ def get_url(url, sleep_time=2):
     import requests, time
 
     time.sleep(sleep_time)
-    r = requests.get(url)
+
+    headers = {'User-Agent': 'Plebia/0.1'}
+    r = requests.get(url, headers=headers)
 
     if r.status_code == requests.codes.ok:
         log.debug("Retreived URL %s => %s", url, r.content)

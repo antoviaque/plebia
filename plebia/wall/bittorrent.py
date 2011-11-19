@@ -119,6 +119,37 @@ class Bittorrent:
 
         return self.session.status()
 
+    def dht_stats(self):
+        '''Returns statistics about the current state of the DHT communications'''
+        
+        status = self.session.status()
+        return { 
+                'dht_upload_rate': status.dht_upload_rate, 
+                'dht_download_rate': status.dht_download_rate, 
+                'total_dht_download': status.total_dht_download, 
+                'total_dht_upload': status.total_dht_upload, 
+                'dht_nodes': status.dht_nodes, 
+                'dht_node_cache': status.dht_node_cache,
+                'dht_torrents': status.dht_torrents,
+                'dht_global_nodes': status.dht_global_nodes
+               }
+
+    def queue_stats(self):
+        '''Returns statistics about the torrents currently in the queue'''
+
+        status = {}
+        for torrent in self.session.get_torrents():
+            state = torrent.status().state
+            if state in status:
+                status[state] += 1
+            else:
+                status[state] = 1
+
+        return {
+                'status': status
+                }
+
+
     def get_torrent_info(self, hash, cache=False):
         '''Get current torrent status information for a given hash, if the metadata is 
         already available. See http://www.rasterbar.com/products/libtorrent/manual.html#torrent-info

@@ -25,7 +25,7 @@ from djangoplugins.point import PluginPoint
 from wall.models import Torrent, Series
 import wall.helpers
 
-import time, re, sys
+import time, re, sys, urllib
 
 
 # Logging ###########################################################
@@ -178,6 +178,66 @@ class TorrentSearcher(PluginPoint):
         return text
        
 
+class TorrentzSearcher(TorrentSearcher):
+    name = 'torrentz-searcher'
+    title = 'Torrentz Torrent Searcher'
+
+    def search_torrent_by_string(self, name, episode_search_string):
+        import feedparser
+
+        # Retreive data from torrentz Atom feed
+        search_string = u'(tv|television) "%s"' % name
+        if episode_search_string is not None:
+            search_string += u' "%s"' % episode_search_string
+
+        log.info("Torrentz search for '%s'", search_string)
+        url = "https://torrentz.eu/feed?q=%s" % urllib.quote_plus(search_string)
+        content = wall.helpers.get_url(url)
+
+        if content is None:
+            return None
+        
+        # Get the list of torrents results
+        res = feedparser.parse(content)
+        if not res.entries:
+            log.info("No results found for %s", search_string)
+            return None
+
+        # Build the torrent object
+        for element in res.entries:
+            torrent = self.get_torrent_from_result(element)
+
+            if torrent.hash is None or torrent.seeds is None or torrent.seeds <= 0:
+                log.info("Discarded result for lack of seeds or hash: %s", element)
+            else:
+                return torrent
+
+        log.info("No good result found for %s", search_string)
+        return None
+
+    def get_torrent_from_result(self, result):
+        '''Converts a result from the current engine to a Torrent object'''
+
+        torrent = Torrent()
+
+        torrent.title = wall.helpers.sane_text(result.title)
+        torrent.hash = self.get_result_description_item('hash', result.description)
+        torrent.seeds = self.get_result_description_item('seeds', result.description)
+        torrent.peers = self.get_result_description_item('peers', result.description)
+ 
+        return torrent
+
+    def get_result_description_item(self, name, description):
+        '''Extract a single item from a torrentz RSS result description'''
+
+        m = re.search(r'\b' + name + r': ([0-9a-z]+)\b', description, re.IGNORECASE)
+        if m is None:
+            log.info('Could not find %s in description "%s"', name, description)
+            return None
+        else:
+            return wall.helpers.sane_text(m.group(1))
+
+
 class IsoHuntSearcher(TorrentSearcher):
     name = 'isohunt-searcher'
     title = 'isoHunt Torrent Searcher'
@@ -185,7 +245,7 @@ class IsoHuntSearcher(TorrentSearcher):
     def search_torrent_by_string(self, name, episode_search_string):
         '''Search isoHunt for an entry matching "<name>" AND "<episode_search_string>"'''
 
-        import urllib, json
+        import json
         torrent = Torrent()
 
         if episode_search_string is not None:
@@ -257,70 +317,4 @@ class IsoHuntSearcher(TorrentSearcher):
 
         return None
 
-
-# FIXME: Currently grabbing pages, in the absence of a proper API
-#        Do not use as is.
-#class TorrentzSearcher(TorrentSearcher):
-#    name = 'torrentz-searcher'
-#    title = 'Torrentz Torrent Searcher'
-#
-#    def search_episode_torrent(self, episode):
-#        season = episode.season
-#        search_string = "(tv|television) %s s%02de%02d" % (series.name, season.number, episode.number)
-#        episode_torrent = self.search_torrent_by_string(search_string)
-#
-#        return episode_torrent
-#
-#    def search_season_torrent(self, season):
-#        search_string = "(tv|television) %s season %d" % (series.name, season.number)
-#        season_torrent = self.search_torrent_by_string(search_string)
-#
-#        return season_torrent
-#
-#    def search_torrent_by_string(self, search_string):
-#        torrent = Torrent()
-#        html_result = self.submit_form("http://torrentz.com/", search_string)
-#
-#        # First check if any torrent was found at all
-#        if(html_result is None or re.search("Could not match your exact query", html_result)):
-#            return None
-#        
-#        # Get the list of torrents results
-#        sane_text = self.sanitize_text(html_result)
-#        root = soupparser.fromstring(sane_text)
-#        sel = CSSSelector(".results dl")
-#        element = sel(root)
-#        if element is None:
-#            return None
-#        else:
-#            # Build the torrent object
-#            torrent.hash = element[0].cssselect("dt a")[0].get("href")[1:]
-#            torrent.seeds = int(element[0].cssselect("dd .u")[0].text_content().translate(None, ','))
-#            torrent.peers = int(element[0].cssselect("dd .d")[0].text_content().translate(None, ','))
-#            if torrent.hash is None or torrent.seeds is None or torrent.seeds <= 0:
-#                return None
-#            else:
-#                return torrent
-#
-#
-#    def submit_form(self, url, text):
-#        import httplib
-#
-#        try:
-#            br = mechanize.Browser()
-#            br.open(url)
-#
-#            # Debug - show every request in log
-#            curr_time = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
-#            print '%s: %s => %s' % (curr_time, url, text)
-#
-#            br.select_form(nr=0)
-#            br["f"] = text
-#            response = br.submit()
-#            html_result = response.get_data()
-#        except httplib.BadStatusLine:
-#            html_result = None
-#
-#        return html_result
-#
 

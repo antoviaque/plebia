@@ -9,7 +9,7 @@
 
 1) Install packages (Debian/Ubuntu):
 
-    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar python-coverage libapache2-mod-php5 libapache2-mod-wsgi python-mysqldb mercurial
+    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar python-coverage libapache2-mod-php5 libapache2-mod-wsgi python-mysqldb mercurial python-feedparser
     $ sudo pip install Django==1.2.5
     $ sudo pip install django-tastypie==0.9.9
     $ sudo pip install lxml==2.3

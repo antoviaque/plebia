@@ -99,7 +99,11 @@ class Torrent(models.Model):
         '''Builds the magnet URL of the current torrent'''
 
         from urllib import quote
-        magnet_link = 'magnet:?xt=urn:btih:%s&tr=%s' % (self.hash, quote(self.tracker_url))
+
+        magnet_link = 'magnet:?xt=urn:btih:%s' % self.hash
+        if self.tracker_url:
+            magnet_link += '&tr=%s' % quote(self.tracker_url)
+        
         return magnet_link
 
     def start_download(self):
@@ -517,7 +521,7 @@ class Episode(models.Model):
         # Check if there is a torrent for the full season
         try:
             if self.season.torrent is not None:
-                log.info("Existing season torrent found %s", self.torrent)
+                log.info("Existing season torrent found %s", self.season.torrent)
                 self.torrent = self.season.torrent
                 self.save()
 
