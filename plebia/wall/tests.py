@@ -25,25 +25,13 @@ from django.conf import settings
 
 from plebia.log import get_logger
 from wall.models import *
-from wall.torrentdownloader import TorrentDownloader
 from wall.plugins import *
+from wall.helpers import mkdir_p
+from cache import get_cache, set_cache
 
 from mock import Mock, patch
 import json
 import os, shutil
-
-
-# Helpers ###########################################################
-
-import os, errno
-
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc: # Python >2.5
-        if exc.errno == errno.EEXIST:
-            pass
-        else: raise
 
 
 # Tests #############################################################
@@ -348,165 +336,6 @@ class PlebiaTest(TestCase):
         # Check that the season/episode/video was found
         self.api_check('video', 1, { 'status': 'New', 'original_path': filename })
 
-    @patch.object(TorrentDownloader, 'get_deluge_output')
-    @patch.object(TorrentDownloader, 'cancel_hash')
-    def update_torrent_from_deluge_output(self, deluge_output, torrent, mock_cancel_hash, mock_get_deluge_output, cancel_hash=False):
-        '''Mock TorrentDownloader.get_deluge_output to pass the provided fake deluge_output and update the torrent with it'''
-
-        mock_get_deluge_output.return_value = deluge_output
-
-        torrent_downloader = TorrentDownloader()
-        torrent_downloader.update_torrent_list()
-        torrent_downloader.update_no_seed_timeout()
-
-        updated_torrent = torrent_downloader.get_torrent_by_hash(torrent.hash)
-        torrent.update_from_torrent(updated_torrent)
-
-        # If requested check that the cancel_hash() method was called
-        if cancel_hash:
-            mock_cancel_hash.assert_called_once_with(torrent.hash)
-
-    def test_torrent_download_update_queued(self):
-        '''Updates info about a queued torrent download from torrent downloader'''
-
-        # Init data
-        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
-        torrent.save()
-
-        deluge_output = """
-Name: """ + torrent_hash + """
-ID: """ + torrent_hash + """
-State: Queued
-Seeds: 0 (0) Peers: 0 (0) Availability: 0.00
-Size: 0.0 KiB/0.0 KiB Ratio: -1.000
-Seed time: 0 days 00:00:00 Active: 0 days 00:00:01
-Tracker status: 
-Progress: 0.00% [~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
-
-        self.update_torrent_from_deluge_output(deluge_output, torrent)
-
-        # Check state
-        self.api_check('torrent', 1, {'status': 'Queued', 'progress': 0.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 00:00:01', 'seeds': 0, 'peers': 0})
-
-
-    def test_torrent_download_update_started_no_progress(self):
-        '''Updates info about a torrent download from torrent downloader, when just started but not reached any seeds/peers yet'''
-
-        # Init data
-        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
-        torrent.save()
-
-        deluge_output = """
-Name: """ + torrent_hash + """
-ID: """ + torrent_hash + """
-State: Downloading Down Speed: 0.0 KiB/s Up Speed: 0.0 KiB/s
-Seeds: 0 (0) Peers: 0 (0) Availability: 0.00
-Size: 0.0 KiB/0.0 KiB Ratio: -1.000
-Seed time: 0 days 00:00:00 Active: 0 days 00:21:10
-Tracker status: 
-Progress: 0.00% [~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
-
-        self.update_torrent_from_deluge_output(deluge_output, torrent)
-
-        # Check state
-        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 0.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 00:21:10', 'seeds': 0, 'peers': 0})
-
-    def test_torrent_download_update_no_seed_timeout(self):
-        '''Updates info about a torrent download from torrent downloader, when the download has been started for some time and has no seed'''
-
-        # Init data
-        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
-        torrent.save()
-
-        deluge_output = """
-Name: """ + torrent_hash + """
-ID: """ + torrent_hash + """
-State: Downloading Down Speed: 0.0 KiB/s Up Speed: 0.0 KiB/s
-Seeds: 0 (0) Peers: 1 (2) Availability: 0.00
-Size: 50.0 KiB/100.0 KiB Ratio: -1.000
-Seed time: 0 days 00:00:00 Active: 0 days 10:21:10
-Tracker status: 
-Progress: 50.00% [##############################~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
-
-        self.update_torrent_from_deluge_output(deluge_output, torrent, cancel_hash=True)
-
-        # Check state
-        self.api_check('torrent', 1, {'status': 'Error', 'progress': 50.0, 'type': 'season', 'hash': torrent_hash, 'name': '', 'download_speed': '0.0 KiB/s', 'upload_speed': '0.0 KiB/s', 'eta': '', 'active_time': '0 days 10:21:10', 'seeds': 0, 'peers': 2})
-
-    def test_torrent_download_update_started_progress(self):
-        '''Updates info about a torrent download from torrent downloader, when it has made some progress'''
-
-        # Init data
-        torrent_name = 'Test_Season_2'
-        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
-        torrent.save()
-
-        deluge_output = """
-Name: """ + torrent_name + """
-ID: """ + torrent_hash + """
-State: Downloading Down Speed: 361.0 KiB/s Up Speed: 10.0 KiB/s ETA: 8m 4s
-Seeds: 25 (28) Peers: 4 (388) Availability: 29.01
-Size: 4.4 MiB/175.0 MiB Ratio: 0.000
-Seed time: 0 days 00:00:00 Active: 0 days 00:01:33
-Tracker status: 
-Progress: 2.50% [#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~]"""
-
-        self.update_torrent_from_deluge_output(deluge_output, torrent)
-
-        # Check state
-        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 2.50, 'type': 'season', 'hash': torrent_hash, 'name': torrent_name, 'download_speed': '361.0 KiB/s', 'upload_speed': '10.0 KiB/s', 'eta': '8m 4s', 'active_time': '0 days 00:01:33', 'seeds': 28, 'peers': 388})
-
-    def test_torrent_download_update_finishing(self):
-        '''Updates info about a torrent download from torrent downloader, when it is in the last percent (marked as 100%)'''
-
-        # Init data
-        torrent_name = 'Test_Season_2'
-        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
-        torrent.save()
-
-        deluge_output = """
-Name: """ + torrent_name + """
-ID: """ + torrent_hash + """
-State: Downloading Down Speed: 361.0 KiB/s Up Speed: 10.0 KiB/s ETA: 8m 4s
-Seeds: 25 (28) Peers: 4 (388) Availability: 29.01
-Size: 174.4 MiB/175.0 MiB Ratio: 0.000
-Seed time: 0 days 00:00:00 Active: 0 days 00:01:33
-Tracker status: 
-Progress: 100.00% [############################################################]"""
-
-        self.update_torrent_from_deluge_output(deluge_output, torrent)
-
-        # Check state
-        self.api_check('torrent', 1, {'status': 'Downloading', 'progress': 100.0, 'type': 'season', 'hash': torrent_hash, 'name': torrent_name, 'download_speed': '361.0 KiB/s', 'upload_speed': '10.0 KiB/s', 'eta': '8m 4s', 'active_time': '0 days 00:01:33', 'seeds': 28, 'peers': 388})
-
-    def test_torrent_download_update_completed(self):
-        '''Updates info about a torrent download from torrent downloader, when it completes'''
-
-        # Init data
-        torrent_name = 'Test_Season_2'
-        torrent_hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-        torrent = Torrent(hash=torrent_hash, name='', type='season', status='Queued')
-        torrent.save()
-
-        deluge_output = """
-Name: """ + torrent_name + """
-ID: """ + torrent_hash + """
-State: Seeding Up Speed: 0.9 KiB/s
-Seeds: 0 (1920) Peers: 3 (2066) Availability: 0.00
-Size: 176.0 MiB/176.0 MiB Ratio: 5.196
-Seed time: 0 days 16:02:37 Active: 0 days 16:06:40
-Tracker status: """
-
-        self.update_torrent_from_deluge_output(deluge_output, torrent)
-
-        # Check state
-        self.api_check('torrent', 1, {'status': 'Completed', 'progress': 100.0, 'type': 'season', 'hash': torrent_hash, 'name': torrent_name, 'download_speed': '0.0 KiB/s', 'upload_speed': '0.9 KiB/s', 'eta': '', 'active_time': '0 days 16:06:40', 'seeds': 1920, 'peers': 2066})
-
     def build_isohunt_result(self, torrent_dict_array):
         """Builds and returns a IsoHunt result string. torrent_dict_array=[{'name':'Torrent name', 'hash':'aaaa', 'seeds':10, 'peers':20}, ...]"""
 
@@ -772,19 +601,13 @@ Tracker status: """
         '''Fake download of a list of test series to process and get success rates on'''
 
         import wall.plugins, wall.thetvdbapi, wall.helpers
-        from wall.bittorrent import Bittorrent
 
         # Don't pollute the real download dir
         settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
 
         default_open_url = None
+        default_update_queued_torrents = None
         default_get_url = None
-        default_add_magnet = None
-        default_update_torrents = None
-
-        # Custom bittorrent client
-        bt = Bittorrent()
-        mkdir_p(settings.TORRENT_SEARCH_CACHE_DIR)
 
         # FIXME: Tests should cover all plugins
         self.select_plugin(TorrentSearcher, 'torrentz-searcher')
@@ -798,8 +621,11 @@ Tracker status: """
             # having to query the db engine every time
             def open_url(url):
                 url_id = url.replace('/', '_')
-                cache_path = os.path.join(settings.TORRENT_SEARCH_CACHE_DIR, url_id)
+                cache_path = os.path.join(settings.CACHE_DIR, url_id)
 
+                # TVDB's parsing really wants a fp to an actual file
+                # Instead of using get/set_cache, prepare the file directly
+                mkdir_p(settings.CACHE_DIR)
                 if not os.path.isfile(cache_path):
                     cache_fp = default_open_url(url)
                     with open(cache_path, 'w') as f:
@@ -825,12 +651,12 @@ Tracker status: """
 
             def get_url(url, sleep_time=2):
                 url_id = url.replace('/', '_')
-                cached_content = bt.get_cache(url_id)
+                cached_content = get_cache(url_id)
                 if cached_content:
                     return cached_content
                 else:
                     content = default_get_url(url, sleep_time=sleep_time)
-                    bt.set_cache(url_id, content)
+                    set_cache(url_id, content)
                     return content
 
             default_get_url = wall.helpers.get_url
@@ -842,61 +668,35 @@ Tracker status: """
 
             #### Torrent download ####
 
-            def add_magnet(self2, magnet):
-                bt.add_magnet(magnet, cache=True)
+            # Don't actually download the torrents, create fake torrent files
+            # based on the retreived torrent info
+            def update_queued_torrents(self):
+                for torrent in Torrent.objects.filter(status='Queued'):
+                    # Mark directly as completed
+                    torrent.status = 'Completed'
+                    torrent.save()
+
+                    # Iterate over each of the torrent files
+                    for torrent_file_info in json.loads(torrent.file_list):
+                        torrent_file = os.path.join(settings.TEST_DOWNLOAD_DIR, torrent_file_info['path'])
+                        mkdir_p(os.path.split(torrent_file)[0])
+                        
+                        # Fill the files with fake data, to keep file sizes poportional
+                        with open(torrent_file, 'w') as f: 
+                            f.write('#' * (torrent_file_info['size']/1000)) 
 
             import wall.torrentdownloader
-            default_add_magnet = wall.torrentdownloader.TorrentDownloader.add_magnet
-            wall.torrentdownloader.TorrentDownloader.add_magnet = add_magnet
+            default_update_queued_torrents = wall.torrentdownloader.TorrentDownloadManager.update_queued_torrents
+            wall.torrentdownloader.TorrentDownloadManager.update_queued_torrents = update_queued_torrents
 
-            # Don't try to update those "fake" torrents against Deluge
-            def update_torrents(self):
-                pass
-            default_update_torrents = wall.torrentdownloader.TorrentDownloadManager.update_torrents
-            wall.torrentdownloader.TorrentDownloadManager.update_torrents = update_torrents
+            # TODO: Add caching of torrent info
 
-            # The actual processing of the torrents objects
-            download_manager.do('torrent_download')
-
-            # Fake the actual download - stop as soon as we get metadata info
-            # Don't try for more than timeout_delay seconds
-            import time
-            timeout_delay = 3600*10
-            stop_time = time.time() + timeout_delay
-            while time.time() <= stop_time and Torrent.processing_objects.count() > 0:
+            # Wait until all torrents metadata have been downloaded or paused
+            while Torrent.objects.filter(Q(status="New")|Q(status='Downloading metadata')|Q(status='Queued')).count() > 0:
+                # The actual processing of the torrents objects
+                download_manager.do('torrent_download')
                 time.sleep(1)
-
-                log.info("Remaining torrents: %d, DHT: %s, queue: %s", Torrent.processing_objects.count(), bt.dht_stats(), bt.queue_stats())
-
-                # Got over each of the torrents still processing, and mark as completed or error
-                # those for which metadata has been retreived
-                for torrent in Torrent.processing_objects.all():
-                    torrent_info = bt.get_torrent_info(torrent.hash, cache=True)
-                    if torrent_info:
-                        # Reset time left each time we get a new result, to be sure each torrent had a chance
-                        stop_time = time.time() + timeout_delay
-
-                        # Stop downloading this torrent if it wasn't in the cache
-                        if bt.find_hash(torrent.hash):
-                            bt.remove_torrent(torrent.hash)
-
-                        # Create fake torrent files based on the retreived torrent info
-                        for torrent_file_info in torrent_info['files']:
-                            torrent_file = os.path.join(settings.TEST_DOWNLOAD_DIR, torrent_file_info['path'])
-                            mkdir_p(os.path.split(torrent_file)[0])
-                            with open(torrent_file, 'w') as f: 
-                                f.write('#' * (torrent_file_info['size']/1000)) # Fill the files with fake data, to keep file sizes poportional
-
-                        if torrent_info['status']['list_seeds'] > 0:
-                            status = 'Completed'
-                        else:
-                            status = 'Error'
-
-                        torrent.status = status
-                        torrent.name = torrent_info['name']
-                        torrent.seeds = torrent_info['status']['list_seeds']
-                        torrent.save()
-
+            
             # Mark remaining torrents as failed (we didn't even manage to get the metadata for them)
             for torrent in Torrent.processing_objects.all():
                 torrent.status = 'Error'
@@ -939,10 +739,8 @@ Tracker status: """
                 wall.helpers.open_url = default_open_url
             if default_get_url is not None:
                 wall.helpers.get_url = default_get_url
-            if default_add_magnet is not None:
-                wall.torrentdownloader.TorrentDownloader.add_magnet = default_add_magnet
-            if default_update_torrents is not None:
-                wall.torrentdownloader.TorrentDownloadManager.update_torrents = default_update_torrents
+            if default_update_queued_torrents is not None:
+                wall.torrentdownloader.TorrentDownloadManager.update_queued_torrents = default_update_queued_torrents
 
     def dump_test_db(self):
         '''Writes the current DB state to a JSON file

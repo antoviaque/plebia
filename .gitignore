@@ -5,3 +5,5 @@
 plebia.sqlite*
 *.log
 .*.pid
+log/
+plebia/cache

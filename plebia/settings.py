@@ -22,10 +22,24 @@ TEST_VIDEO_PATH = ppath(u'eben_moglen-freedom_in_the_cloud.avi')
 TEST_SHORT_VIDEO_PATH = ppath(u'creative_commons.webm')
 TEST_SERIES_LIST = ['Pioneer One']
 TEST_DB_DUMP_PATH = u'/tmp/plebia_test_db.json'
-TORRENT_SEARCH_CACHE_DIR = u'/tmp/torrent-search-cache/'
+CACHE_DIR = spath(u'cache/')
 LOCK_PATH = ppath(u'plebia/')
 BIN_DIR = ppath(u'bin/')
 STATIC_DIR = ppath(u'static/')
+
+CACHE_BACKEND = 'db://plebia_cache'
+
+SOFTWARE_NAME="Plebia"
+SOFTWARE_VERSION=0.1
+SOFTWARE_USER_AGENT="%s/%f" % (SOFTWARE_NAME, SOFTWARE_VERSION)
+
+# BitTorrent
+BITTORRENT_PORTS=(6881, 6891)
+BITTORRENT_MAX_METADATA_DOWNLOADS=20
+BITTORRENT_METADATA_TIMEOUT=300
+BITTORRENT_MAX_DOWNLOADS=10
+BITTORRENT_DOWNLOAD_TIMEOUT=3600
+BITTORRENT_MAX_SEEDS=5
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG

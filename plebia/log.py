@@ -31,6 +31,10 @@ logging.basicConfig(format='%(asctime)s [%(levelname)s] %(name)s: %(message)s', 
                     level=settings.LOG_LEVEL, \
                     filename=settings.LOG_FILE)
 
+# Set sane levels of logging for external modules
+import south.logger
+logging.getLogger('south').setLevel(logging.INFO)
+
 # Functions #########################################################
 
 def get_logger(name):

@@ -48,6 +48,8 @@ TORRENT_TYPES = (
 
 TORRENT_STATUSES = (
     ('New', 'New'),
+    ('Downloading metadata', 'Downloading metadata'),
+    ('Paused metadata', 'Paused metadata'),
     ('Queued', 'Queued'),
     ('Downloading', 'Downloading'),
     ('Completed', 'Completed'),
@@ -58,6 +60,8 @@ class ProcessingTorrentManager(models.Manager):
     def get_query_set(self):
         return super(ProcessingTorrentManager, self).get_query_set().filter(\
                 Q(status='New') | \
+                Q(status='Downloading metadata') | \
+                Q(status='Paused metadata') | \
                 Q(status='Queued') | \
                 Q(status='Downloading'))
 
@@ -77,6 +81,7 @@ class Torrent(models.Model):
     name = models.CharField('name', max_length=200, blank=True)
     type = models.CharField('type', max_length=20, choices=TORRENT_TYPES, blank=True)
     status = models.CharField('download status', max_length=20, choices=TORRENT_STATUSES, default='New')
+    last_status_change = models.DateTimeField('date added', auto_now_add=True)
     progress = models.FloatField('download progress', default=0)
     seeds = models.IntegerField('seeds', null=True)
     peers = models.IntegerField('peers', null=True)
@@ -86,6 +91,7 @@ class Torrent(models.Model):
     active_time = models.CharField('active time', max_length=20, blank=True)
     details_url = models.CharField('url of detailled info', max_length=500, blank=True)
     tracker_url = models.CharField('url of tracker', max_length=500, blank=True)
+    file_list = models.TextField('files in torrent (JSON)', blank=True)
 
     objects = models.Manager()
     processing_objects = ProcessingTorrentManager()
@@ -106,35 +112,41 @@ class Torrent(models.Model):
         
         return magnet_link
 
-    def start_download(self):
-        from wall.torrentdownloader import TorrentDownloader
+    def set_status(self, new_status):
+        '''Change the status of the torrent and update last_status_change timestamp'''
 
-        if self.status == 'New':
-            log.info("Starting download of torrent %s", self)
-            torrent_downloader = TorrentDownloader()
-            torrent_downloader.add_magnet(self.get_magnet())
-            self.status = 'Queued'
-            self.save()
+        from datetime import datetime
+
+        self.status = new_status
+        self.last_status_change = datetime.now()
+        self.save()
+
+    def is_timeout(self, delay):
+        '''Check if the last change of status occured more than <delay> seconds ago'''
+
+        from datetime import datetime, timedelta
+
+        timeout_time = self.last_status_change + timedelta(seconds=delay)
+        if datetime.now() > timeout_time:
+            return True
+        else:
+            return False
 
     def update_from_torrent(self, torrent):
-        '''Update status by copying attribute from another torrent'''
+        '''Update status by copying attribute from another torrent
+        Does not update the status or last_status_change.'''
 
         log.debug("Updating torrent %s from torrent %s", self, torrent)
 
-        if torrent.name:
-            self.name = torrent.name
-
+        self.name = torrent.name
         self.progress = torrent.progress
-        self.status = torrent.status
         self.download_speed = torrent.download_speed
         self.upload_speed = torrent.upload_speed
         self.eta = torrent.eta
         self.active_time = torrent.active_time
         self.seeds = torrent.seeds
         self.peers = torrent.peers
-
-        if self.status == 'Error':
-            log.warn('Could not download torrent %s', torrent)
+        self.file_list = torrent.file_list
 
         self.save()
 

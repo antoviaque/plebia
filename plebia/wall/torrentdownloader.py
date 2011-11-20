@@ -21,9 +21,12 @@
 # Includes ##########################################################
 
 from wall.models import Torrent
+from wall.cache import get_cache, set_cache
 from django.db.models import Q
 from django.conf import settings
 
+import libtorrent as lt
+import time
 import re
 import subprocess
 
@@ -37,205 +40,303 @@ log = get_logger(__name__)
 # Models ############################################################
 
 class TorrentDownloadManager:
-    '''Update statistics of downloads from deluge'''
+    '''Bittorrent client'''
 
     def __init__(self):
-        pass
+        '''Start a bittorrent client'''
 
+        self.bt = Bittorrent()
+        self.resume_downloads()
 
-    def do(self):
-        '''Perform the maintenance'''
+    def resume_downloads(self):
+        '''Use model states to know which torrents were running the last time
+        the download manager was running'''
 
-        # Start downloading newly registered torrents
-        self.start_torrents()
-
-        # Update status of currently downloading torrents
-        self.update_torrents()
-
-
-    def start_torrents(self):
-        '''Start downloading newly registered torrents'''
-        
-        # Get Torrent() objects which must be updated
         torrent_list = Torrent.objects.filter(\
-                Q(status='New'))\
-                .order_by('-date_added')
-
-        for torrent in torrent_list:
-            # Start the torrent download
-            torrent.start_download()
-
-    def update_torrents(self):
-        '''Update status of currently downloading torrents'''
-
-        # Get Torrent() objects which must be updated
-        db_torrent_list = Torrent.objects.filter(\
-                Q(status='Queued') | \
+                Q(status='Downloading metadata') | \
                 Q(status='Downloading'))\
                 .order_by('-date_added')
 
-        # Refresh downloader status
-        torrent_downloader = TorrentDownloader()
-        torrent_downloader.update_torrent_list()
+        for torrent in torrent_list:
+            self.bt.add_magnet(torrent.get_magnet())
 
-        # Cancel downloads which don't find seeds
-        torrent_downloader.update_no_seed_timeout()
+    def do(self):
+        '''Do the periodic update'''
 
-        for db_torrent in db_torrent_list:
-            # Match the current torrent with information returned by deluge
-            dl_torrent = torrent_downloader.get_torrent_by_hash(db_torrent.hash)
+        # Save current DHT state to allow to retreive it later if restarted
+        self.bt.save_dht_state()
 
-            # Update progress of downloading torrent
-            if dl_torrent:
-                db_torrent.update_from_torrent(dl_torrent)
+        # Log
+        log.info("Remaining torrents: %d (DHT: %d, DL: %d), DHT: %s, queue: %s", \
+                    Torrent.processing_objects.count(), \
+                    Torrent.objects.filter(Q(status='New')|Q(status='Downloading metadata')).count(), \
+                    Torrent.objects.filter(Q(status='Queued')|Q(status='Downloading')).count(), \
+                    self.bt.dht_stats(), \
+                    self.bt.queue_stats())
+
+        # Update currently downloading torrents (& mark ones completed)
+        self.update_downloading_torrents()
+
+        # Start queued downloads when there's room
+        self.update_queued_torrents()
+
+        # Queue torrents for which metadata has been received,
+        # pause torrents for which metadata retrieval takes too long
+        self.update_downloading_metadata_torrents()
+
+        # Start downloading metadata for new torrents when there is room
+        self.start_metadata_downloads('New')
+
+        # Last comes trying again paused metadata, after all new torrent had a chance
+        # (this is to avoid getting the queue stuck with not found metadata)
+        self.start_metadata_downloads('Paused metadata')
+
+    def start_metadata_downloads(self, status):
+        '''Start downloading metadata for torrents in <status> when there is room'''
+        
+        torrent_list = Torrent.objects.filter(\
+                Q(status=status))\
+                .order_by('last_status_change')
+
+        for torrent in torrent_list:
+            if self.has_free_metadata_slot():
+                log.info("Starting to retrieve metadata for torrent %s", torrent)
+                self.bt.add_magnet(torrent.get_magnet())
+                torrent.set_status('Downloading metadata')
+
+    def has_free_metadata_slot(self):
+        '''Check if there is room for adding a new metadata download'''
+        
+        return Torrent.objects.filter(status='Downloading metadata').count() < settings.BITTORRENT_MAX_METADATA_DOWNLOADS
+
+    def update_downloading_metadata_torrents(self):
+        '''See if torrents currently downloading metadata need update'''
+
+        torrent_list = Torrent.objects.filter(\
+                Q(status='Downloading metadata'))\
+                .order_by('last_status_change')
+
+        for torrent in torrent_list:
+            # Queue torrents for which metadata has been received
+            if self.bt.has_metadata_for_hash(torrent.hash):
+                log.info("Retrieved metadata for torrent %s", torrent)
+                
+                # Update misc info of torrent
+                torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
+                torrent.update_from_torrent(torrent_bt)
+                
+                self.bt.remove_hash(torrent.hash)
+                torrent.set_status('Queued')
+
+            # Pause torrents for which metadata retrieval takes too long
+            if torrent.is_timeout(settings.BITTORRENT_METADATA_TIMEOUT):
+                log.info("Did not retreive metadata in time for torrent %s, pausing to give room for others.", torrent)
+                self.bt.remove_hash(torrent.hash)
+                torrent.set_status('Paused metadata')
+
+    def update_queued_torrents(self):
+        '''Start queued downloads when there's room'''
+
+        torrent_list = Torrent.objects.filter(\
+                Q(status='Queued')) \
+                .order_by('last_status_change')
+
+        for torrent in torrent_list:
+            if self.has_free_download_slot():
+                log.info("Starting to download torrent %s", torrent)
+                self.bt.add_magnet(torrent.get_magnet())
+                torrent.set_status('Downloading')
+
+    def has_free_download_slot(self):
+        '''Check if there is room for adding a new download (does not include metadata downloads)'''
+        
+        return Torrent.objects.filter(status='Downloading').count() < settings.BITTORRENT_MAX_DOWNLOADS
+
+    def update_downloading_torrents(self):
+        '''Update currently downloading torrents'''
+
+        torrent_list = Torrent.objects.filter(\
+                Q(status='Downloading'))\
+                .order_by('last_status_change')
+        
+        for torrent_db in torrent_list:
+            torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
+
+            # Mark torrents which are completed
+            if torrent_bt.status == 'Completed':
+                log.info("Completed downloading torrent %s", torrent)
+                self.bt.remove_hash(torrent.hash)
+                torrent.set_status('Completed')
+
+            # Cancel downloads which don't find seeds/error, etc.
+            elif torrent_bt.status == 'Error':
+                log.warn("Error downloading torrent %s", torrent)
+                self.bt.remove_hash(torrent.hash)
+                torrent.set_status('Error')
+
+            # Cancel downloads still without seeds after some time
+            elif torrent_db.is_timeout(settings.BITTORRENT_DOWNLOAD_NOSEED_TIMEOUT) and torrent_bt.seeds == 0:
+                log.warn("No seeds found for torrent %s", torrent)
+                self.bt.remove_hash(torrent.hash)
+                torrent.set_status('Error')
+
+            # Update misc info of torrent
+            torrent_db.update_from_torrent(torrent_bt)
 
 
-class TorrentDownloader:
+class Bittorrent:
 
     def __init__(self):
-        self.torrent_list = None
+        '''Starts a bittorrent client'''
 
-    def add_magnet(self, magnet):
-        '''Start download of a new torrent using a magnet URI'''
+        log.info('Starting bittorrent client')
 
-        log.info("Asking torrent downloader to start downloading magnet %s", magnet)
+        # Settings
+        self.session = lt.session()
+        session_settings = lt.session_settings()
+        session_settings.user_agent = '%s libtorrent/%d.%d' % (settings.SOFTWARE_USER_AGENT, lt.version_major, lt.version_minor)
+        session_settings.active_downloads = settings.BITTORRENT_MAX_DOWNLOADS + settings.BITTORRENT_MAX_METADATA_DOWNLOADS
+        session_settings.active_seeds = settings.BITTORRENT_MAX_SEEDS
+        session_settings.active_limit = settings.BITTORRENT_MAX_DOWNLOADS + settings.BITTORRENT_MAX_SEEDS + settings.BITTORRENT_MAX_METADATA_DOWNLOADS
+        self.session.set_settings(session_settings)
 
-        cmd = list(settings.DELUGE_COMMAND)
-        cmd.append('add %s' % magnet)
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        (result, errors) = p.communicate()
+        # Start BT server
+        ports = settings.BITTORRENT_PORTS
+        self.session.listen_on(ports[0], ports[1])
 
-    def cancel_hash(self, hash):
-        '''Stop download of torrent'''
+        # Start DHT server
+        dht_data = get_cache('bt_dht_data')
+        self.session.start_dht(dht_data)
 
-        log.info("Asking torrent downloader to STOP downloading hash %s", hash)
+        self.params = {
+            'save_path': settings.DOWNLOAD_DIR.encode('ascii'), # FIXME: support non-ascii characters
+            'storage_mode': lt.storage_mode_t(2),
+            'paused': False,
+            'auto_managed': True,
+            'duplicate_is_error': True}
 
-        cmd = list(settings.DELUGE_COMMAND)
-        cmd.append('rm %s' % hash)
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        (result, errors) = p.communicate()
+        self.handle_dict = {}
 
-    def get_deluge_output(self):
-        log.debug("Getting updated download status output from torrent downloader")
+    def save_dht_state(self):
+        '''Save a copy of the current DHT state to the cache'''
 
-        cmd = list(settings.DELUGE_COMMAND)
-        cmd.append('info')
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        (output, errors) = p.communicate()
-        return output
+        log.debug('Saving current DHT session')
+        set_cache('bt_dht_data', self.session.dht_state())
 
-    def update_torrent_list(self):
-        output = self.get_deluge_output()
-        result_list = output.lstrip().split("\n \n")
-        torrent_list = list()
-        for result in result_list:
-            torrent = Torrent()
-            m = re.match(r"""Name: (?P<torrent_name>.+)
-ID: (?P<torrent_hash>.+)
-State: (?P<state>.+)
-Seeds: (?P<seeds>.+)
-Size: (?P<size>.+)
-Seed time: (?P<seed_time>.+)
-Tracker status:(?P<tracker_status>.+)\n?(?P<progress>.*)""", result, re.MULTILINE)
+    def add_magnet(self, magnet_uri):
+        '''Schedule a magnet link for download'''
 
-            if m:
-                torrent.hash = m.group('torrent_hash')
+        # Convert to str which libtorrent expects
+        magnet_uri = magnet_uri.encode('ascii')
+        hash = magnet_uri[20:60]
 
-                log.debug("Found status update for hash %s", torrent.hash)
+        if hash not in self.handle_dict: # Check we aren't already processing this torrent
+            log.info('Adding to the download queue: %s', magnet_uri)
+            handle = lt.add_magnet_uri(self.session, magnet_uri, self.params)
+            self.handle_dict[hash] = handle
+        else:
+            log.error('Already in the download queue: %s', magnet_uri)
 
-                # Deluge shows hash as name until it can retreive it
-                if m.group('torrent_name') != m.group('torrent_hash'):
-                    torrent.name = m.group('torrent_name')
-                else:
-                    torrent.name = ''
+        return True
 
-                # Download speed
-                m2 = re.search(r"Down Speed: (?P<download_speed>\d+\.\d+ .iB.s)", m.group('state'))
-                if m2:
-                    torrent.download_speed = m2.group('download_speed')
-                else:
-                    torrent.download_speed = "0.0 KiB/s"
+    def get_handle_for_hash(self, hash):
+        '''Return the handle for a given hash, if currently in the queue'''
 
-                # Upload speed
-                m2 = re.search(r"Up Speed: (?P<upload_speed>\d+\.\d+ .iB.s)", m.group('state'))
-                if m2:
-                    torrent.upload_speed = m2.group('upload_speed')
-                else:
-                    torrent.upload_speed = "0.0 KiB/s"
+        if hash in self.handle_dict:
+            return self.handle_dict[hash]
+        else:
+            return None
 
-                # ETA
-                m2 = re.search(r"ETA: (?P<eta>.*)$", m.group('state'))
-                if m2:
-                    torrent.eta = m2.group('eta')
-                else:
-                    torrent.eta = ""
+    def remove_hash(self, hash):
+        '''Stop a torrent from downloading and remove it from the queue'''
 
-                # Seeds & peers
-                m2 = re.search(r"\d+ \((?P<seeds>\d+)\) Peers: \d+ \((?P<peers>\d+)\)", m.group('seeds'))
-                if m2:
-                    torrent.seeds = int(m2.group('seeds'))
-                    torrent.peers = int(m2.group('peers'))
-                else:
-                    torrent.seeds = None
-                    torrent.peers = None
+        handle = self.get_handle_for_hash(hash)
+        if handle is None or not handle.is_valid():
+            log.error('Could not find torrent handle for hash %s', hash)
+            return False
+        else:
+            log.info('Removing torrent from queue for hash %s', hash)
+            self.session.remove_torrent(handle)
+            del(self.handle_dict[hash])
+            return True
 
-                # Active time
-                m2 = re.search(r"Active: (?P<active_time>.*)$", m.group('seed_time'))
-                if m2:
-                    torrent.active_time = m2.group('active_time')
-                else:
-                    torrent.active_time = ''
+    def has_metadata_for_hash(self, hash):
+        '''Return true if the metadata download is completed for hash'''
 
-                # Progress isn't shown once completed
-                m2 = re.match(r"Progress: (?P<torrent_progress>\d+\.\d+)", m.group('progress'))
-                if m2:
-                    torrent.progress = float(m2.group('torrent_progress'))
-                else:
-                    torrent.progress = 100.0
+        handle = self.get_handle_for_hash(hash)
+        return handle.has_metadata()
 
-                # Status
-                m2 = re.search(r"^(?P<state>[^ ]+).*$", m.group('state'))
-                if m2:
-                    # Do not care about queued seeding status, which for us is a completed status
-                    if torrent.progress == 100.0:
-                        if m2.group('state') == 'Downloading':
-                            torrent.status = 'Downloading'
-                        else:
-                            torrent.status = 'Completed'
-                    else:
-                        if m2.group('state') == 'Queued':
-                            torrent.status = 'Queued'
-                        elif m2.group('state') == 'Downloading':
-                            torrent.status = 'Downloading'
-                        else:
-                            torrent.status = 'Error'
-                else:
-                    torrent.status = 'Error'
+    def get_torrent_info_for_hash(self, hash):
+        '''Returns a Torrent() object containing miscanealous info about the torrent
+        State is either: 'Downloading', 'Completed' or 'Error'.'''
 
-                torrent_list.append(torrent)
+        import json
+        from datetime import timedelta
 
-        # Update
-        self.torrent_list = torrent_list
+        torrent = Torrent()
+        handle = self.get_handle_for_hash(hash)
+        status = handle.status()
+        info = handle.get_torrent_info()
 
-    def update_no_seed_timeout(self):
-        '''Cancel downloads which don't find seeds'''
+        torrent.name = info.name()
+        torrent.progress = status.progress
+        torrent.download_speed = "%.3f MB/s" % (status.download_rate/(1024*1024))
+        torrent.upload_speed = "%.3f MB/s" % (status.upload_rate/(1024*1024))
+        torrent.active_time = status.active_time
+        torrent.seeds = status.list_seeds
+        torrent.peers = status.list_peers
+
+        # ETA
+        size_left = info.total_size() - status.total_done
+        seconds_left = size_left / status.download_rate
+        torrent.eta = str(timedelta(seconds=seconds_left))
+
+        # Files
+        file_list = list()
+        for res_file in info.files():
+            file_list.append({'path': unicode(res_file.path, 'utf-8'), 'size': res_file.size})
+        torrent.file_list = json.dumps(file_list)
+
+        # Status
+        log.info('Built torrent info for BT hash %s (status = %s, error = %s)', hash, status.state, status.error)
+        if status.state == 'seeding':
+            torrent.status = 'Completed'
+        elif status.error or status.state == 'seeding':
+            torrent.status = 'Error'
+        else:
+            torrent.status = 'Downloading'
+
+        return torrent
+
+    def get_status(self):
+        '''Returns the current server status, including DHT'''
+
+        return self.session.status()
+
+    def dht_stats(self):
+        '''Returns statistics about the current state of the DHT communications'''
         
-        torrent_list = list()
-        for torrent in self.torrent_list:
-            if torrent.status == 'Downloading' and torrent.seeds == 0 and torrent.active_time[:9] != '0 days 00': # active download for more than 1h
-                torrent.status = 'Error'
-                self.cancel_hash(torrent.hash)
-            
-            torrent_list.append(torrent)
+        status = self.session.status()
+        return { 
+                'dht_nodes': status.dht_nodes, 
+                'dht_node_cache': status.dht_node_cache,
+                'dht_torrents': status.dht_torrents,
+                'dht_global_nodes': status.dht_global_nodes
+               }
 
-        self.torrent_list = torrent_list
+    def queue_stats(self):
+        '''Returns statistics about the torrents currently in the queue'''
 
-    def get_torrent_by_hash(self, torrent_hash):
-        for torrent in self.torrent_list:
-            if torrent.hash == torrent_hash:
-                return torrent
-        return None
+        status = {}
+        for torrent in self.session.get_torrents():
+            state = torrent.status().state
+            if state in status:
+                status[state] += 1
+            else:
+                status[state] = 1
 
-
+        return {
+                'status': status
+                }
 
 

@@ -11,7 +11,7 @@ UNRAR_PATH = u'/usr/bin/unrar'
 # Paths
 DOWNLOAD_DIR = u'/var/www/downloads/'
 LOCK_PATH = u'/var/www/plebia'
-TORRENT_SEARCH_CACHE_DIR = u'/tmp/torrent-search-cache/'
+CACHE_DIR = u'/var/www/plebia/plebia/cache'
 
 # Logging
 DEBUG = False # To display errors in browser
@@ -19,6 +19,8 @@ TEMPLATE_DEBUG = DEBUG
 LOG_LEVEL=logging.INFO
 LOG_FILE='/var/www/plebia/server.log'
 RAISE_EXCEPTION_ON_ERROR=False  # Set to True to get all exceptions in unit tests (stops for any ERROR or CRITICAL log message)
+
+BITTORRENT_PORTS=(6881, 6891)
 
 # Set this to the number of cores/processors your server has, minus 1
 # (ie set it to 1 if you have 1-2 cores, 3 if you have 4 cores, etc.)

@@ -39,7 +39,7 @@ catch_exceptions()
 
 # Globals ###########################################################
 
-DELAY = 5
+DELAY = 3
 MAX_RUN_TIME=50 # seconds
 
 
@@ -50,6 +50,9 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('-n', '--no-repeat', action="store_false", dest='repeat', default=True,
             help='Do not repeat every few seconds for one minute, execute just once'),
+        )
+        make_option('-f', '--forever', action="store_false", dest='forever', default=False,
+            help='Keep iterating infinitely (and keep objects running, like the bittorrent client)'),
         )
 
     def __init__(self):
@@ -64,29 +67,32 @@ class Command(BaseCommand):
             raise CommandError('You must specify one valid command (%s)' % repr(self.dl_manager.get_actions_list()))
 
         command = args[0]
-        repeat = options.get('repeat', True)
+        repeat = options.get('repeat')
+        forever = options.get('forever')
 
         # Only allow one cron process per command to run at a single time
         lock_path = os.path.join(settings.LOCK_PATH, '.%s.pid' % command)
         try:
             l = lock.lock(lock_path, timeout=MAX_RUN_TIME) # wait at most 50s
-            self.do(command, repeat)
+            self.do(command, repeat, forever)
         except error.LockHeld:
             log.debug("Active process for command '%s', aborting.", command)
         else:
             l.release()
 
-    def do(self, command, repeat):
-        '''Run the specified action (once or repeat=True for a time-limited loop)'''
+    def do(self, command, repeat, forever):
+        '''Run the specified action 
+        - once or repeat=True for a time-limited loop
+        - for MAX_RUN_TIME or forever=True for forever'''
 
         log.debug("Running download manager for command '%s' (repeat=%d)", command, repeat)
 
         if not repeat:
             self.dl_manager.do(command)
         else:
-            # Runs the specified action, every DELAY seconds for 1 minute
+            # Runs the specified action, every DELAY seconds for X minutes
             stop_time = self.start + MAX_RUN_TIME - DELAY
-            while time.time() <= stop_time:
+            while forever or time.time() <= stop_time:
                 self.dl_manager.do(command)
                 time.sleep(DELAY)
             

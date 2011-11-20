@@ -9,7 +9,7 @@
 
 1) Install packages (Debian/Ubuntu):
 
-    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar python-coverage libapache2-mod-php5 libapache2-mod-wsgi python-mysqldb mercurial python-feedparser
+    $ sudo apt-get install python-pip python-mechanize libxml2-dev libxslt1-dev python2.6-dev unrar python-coverage libapache2-mod-php5 libapache2-mod-wsgi python-mysqldb mercurial python-feedparser python-openssl python-simplejson python-libtorrent 
     $ sudo pip install Django==1.2.5
     $ sudo pip install django-tastypie==0.9.9
     $ sudo pip install lxml==2.3
@@ -21,22 +21,6 @@
     $ sudo easy_install South
 
 2) Install development version of ffmpeg, with libvpx: http://ubuntuforums.org/showthread.php?t=786095 (works for Ubuntu and Debian - for Debian repositories to add: http://debian-multimedia.org/ )
-
-3) Install deluge-console and deluged 1.3.3 
-
-    $ wget http://download.deluge-torrent.org/source/deluge-1.3.3.tar.gz
-
-4) Follow instructions at http://dev.deluge-torrent.org/wiki/Installing/Source
-
-5) Then in configurations file (with deluged process not running):
-
-    <   "max_active_downloading": 3, 
-    ---
-    >   "max_active_downloading": 10, 
-
-    <   "max_active_limit": 8,
-    ---
-    <   "max_active_limit": 15,
 
 
 = 2. Configuration =
@@ -53,7 +37,7 @@
     - in webserver/apache/django.wsgi
         * path
 
-3) Create downloads directory (as previously configured in deluge):
+3) Create downloads directory (as previously configured in settings):
 
     $ mkdir -p /var/www/downloads
     $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank /var/www/downloads/series/banners/posters
@@ -67,6 +51,7 @@
     $ plebia/manage.py syncdb
     $ plebia/manage.py migrate
     $ plebia/manage.py syncplugins
+    $ plebia/manage.py createcachetable plebia_cache
 
 7) Select the plugin you would like to use for torrent search:
 
@@ -76,7 +61,7 @@
 
 MAILTO=your@email.org
 * * * * * /var/www/plebia/plebia/manage.py cron torrent_search
-* * * * * /var/www/plebia/plebia/manage.py cron torrent_download
+* * * * * /var/www/plebia/plebia/manage.py cron torrent_download --forever
 * * * * * /var/www/plebia/plebia/manage.py cron package_management
 * * * * * /var/www/plebia/plebia/manage.py cron video_transcoding
 0 * * * * /var/www/plebia/plebia/manage.py cron contentdb_update --no-repeat
@@ -153,13 +138,11 @@ Cron jobs should be silent (they log messages in LOG_PATH), if you receive messa
 
 = 3. Running =
 
-1) Start deluge and apache:
+1) Start apache:
 
-    $ deluged
     $ sudo /etc/init.d/apache2 restart
 
 2) Go to http://localhost/
-
 
 * If running the developer environment:
 

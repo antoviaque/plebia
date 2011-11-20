@@ -20,6 +20,7 @@
 
 # Includes ##########################################################
 
+from django.conf import settings
 
 # Logging ###########################################################
 
@@ -54,7 +55,7 @@ def get_url(url, sleep_time=2):
 
     time.sleep(sleep_time)
 
-    headers = {'User-Agent': 'Plebia/0.1'}
+    headers = {'User-Agent': settings.SOFTWARE_USER_AGENT}
     r = requests.get(url, headers=headers)
 
     if r.status_code == requests.codes.ok:
@@ -70,4 +71,17 @@ def open_url(url):
     import urllib
 
     return urllib.urlopen(url)
+
+def mkdir_p(path):
+    '''Recursive mkdir that doesn't fail when the directory already exists'''
+
+    import os, errno
+
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST:
+            pass
+        else: raise
+
 
