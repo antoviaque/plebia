@@ -259,7 +259,7 @@ class Bittorrent:
 
         handle = self.get_handle_for_hash(hash)
         if handle is None or not handle.is_valid():
-            log.error('Could not find torrent handle for hash %s', hash)
+            log.info('Could not find torrent handle for hash %s', hash)
             return False
         else:
             log.info('Removing torrent from queue for hash %s', hash)

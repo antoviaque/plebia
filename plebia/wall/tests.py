@@ -610,7 +610,6 @@ class PlebiaTest(TestCase):
         default_get_url = None
         default_get_torrent_info_for_hash = None
         default_add_magnet = None
-        default_remove_hash = None
 
         # FIXME: Tests should cover all plugins
         self.select_plugin(TorrentSearcher, 'torrentz-searcher')
@@ -724,15 +723,6 @@ class PlebiaTest(TestCase):
             default_add_magnet = wall.torrentdownloader.Bittorrent.add_magnet
             wall.torrentdownloader.Bittorrent.add_magnet = add_magnet
 
-            def remove_hash(self, hash):
-                if get_cache(hash) is None:
-                    default_remove_hash(self, hash)
-                else:
-                    log.info('Not removing hash, torrent info found in cache for %s', hash)
-
-            default_remove_hash = wall.torrentdownloader.Bittorrent.remove_hash
-            wall.torrentdownloader.Bittorrent.remove_hash = remove_hash
-
             # Wait until all torrents metadata have been downloaded or cancelled #
 
             while Torrent.objects.filter(Q(status="New")|Q(status='Downloading metadata')|Q(status='Queued')).count() > 0:
@@ -782,8 +772,6 @@ class PlebiaTest(TestCase):
                 wall.torrentdownloader.Bittorrent.get_torrent_info_for_hash = default_get_torrent_info_for_hash
             if default_add_magnet is not None:
                 wall.torrentdownloader.Bittorrent.add_magnet = default_add_magnet
-            if default_remove_hash is not None:
-                wall.torrentdownloader.Bittorrent.remove_hash = default_remove_hash
 
     def dump_test_db(self):
         '''Writes the current DB state to a JSON file
