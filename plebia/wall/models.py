@@ -77,7 +77,7 @@ class ErrorTorrentManager(models.Manager):
 
 class Torrent(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
-    hash = models.CharField('torrent hash/magnet', max_length=200, blank=True)
+    hash = models.CharField('torrent hash/magnet', max_length=200, blank=True, unique=True)
     name = models.CharField('name', max_length=200, blank=True)
     type = models.CharField('type', max_length=20, choices=TORRENT_TYPES, blank=True)
     status = models.CharField('download status', max_length=20, choices=TORRENT_STATUSES, default='New')

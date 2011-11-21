@@ -119,6 +119,13 @@ class TorrentSearcher(PluginPoint):
 
         log.info('Selecting torrent %s', torrent)
 
+        # Check if this torrent is already in the database
+        try:
+            existing_torrent = Torrent.objects.get(hash=torrent.hash)
+            torrent = existing_torrent
+        except Torrent.DoesNotExist:
+            pass
+
         torrent.save()
         return torrent
 
