@@ -707,7 +707,7 @@ class PlebiaTest(TestCase):
                     torrent = default_get_torrent_info_for_hash(self, hash)
                     # Only cache once we've got the metadata
                     if torrent.has_metadata:
-                        log.error('Adding torrent info in cache for %s', hash)
+                        log.info('Adding torrent info in cache for %s', hash)
                         set_cache(hash, torrent)
                     return torrent
             
