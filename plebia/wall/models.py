@@ -90,7 +90,7 @@ class Torrent(models.Model):
     eta = models.CharField('remaining download time', max_length=20, blank=True)
     active_time = models.CharField('active time', max_length=20, blank=True)
     details_url = models.CharField('url of detailled info', max_length=500, blank=True)
-    tracker_url = models.CharField('url of tracker', max_length=500, blank=True)
+    tracker_url_list = models.TextField('urls of trackers (JSON)', blank=True)
     file_list = models.TextField('files in torrent (JSON)', blank=True)
 
     objects = models.Manager()
@@ -105,10 +105,12 @@ class Torrent(models.Model):
         '''Builds the magnet URL of the current torrent'''
 
         from urllib import quote
+        import json
 
         magnet_link = 'magnet:?xt=urn:btih:%s' % self.hash
-        if self.tracker_url:
-            magnet_link += '&tr=%s' % quote(self.tracker_url)
+        if self.tracker_url_list:
+            for tracker_url in json.loads(self.tracker_url_list):
+                magnet_link += '&tr=%s' % quote(tracker_url)
         
         return magnet_link
 

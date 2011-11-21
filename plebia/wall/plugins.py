@@ -26,6 +26,7 @@ from wall.models import Torrent, Series
 import wall.helpers
 
 import time, re, sys, urllib
+import json
 
 
 # Logging ###########################################################
@@ -126,8 +127,22 @@ class TorrentSearcher(PluginPoint):
         except Torrent.DoesNotExist:
             pass
 
+        # Retreive tracker list
+        tracker_url_list = self.get_tracker_list_for_torrent(torrent)
+        if tracker_url_list:
+            torrent.tracker_url_list = json.dumps(tracker_url_list)
+ 
         torrent.save()
         return torrent
+
+    def get_tracker_list_for_torrent(self, torrent):
+        '''To define in plugins for which getting the trackers list is
+        an expensive operation - will only be called once we are sure
+        we'll be using a given torrent from the results.
+        
+        Should return a list of trackers (python object)'''''
+
+        pass
 
     def search_episode_torrent(self, episode):
         season = episode.season
@@ -231,8 +246,39 @@ class TorrentzSearcher(TorrentSearcher):
         torrent.hash = self.get_result_description_item('hash', result.description)
         torrent.seeds = self.get_result_description_item('seeds', result.description)
         torrent.peers = self.get_result_description_item('peers', result.description)
- 
+        
         return torrent
+
+    def get_tracker_list_for_torrent(self, torrent):
+        '''Get the list of trackers associated with this torrent'''
+
+        from lxml.html import soupparser
+        from lxml.cssselect import CSSSelector
+
+        log.info("Retreiving list of trackers from Torrentz for torrent '%s'", torrent)
+        url = "https://torrentz.eu/%s" % torrent.hash
+        content = wall.helpers.get_url(url)
+
+        # Get the list of torrents results
+        sane_text = wall.helpers.sane_text(content)
+        try:
+            root = soupparser.fromstring(sane_text)
+        except:
+            return None
+
+        sel = CSSSelector(".trackers dl")
+        element_list = sel(root)
+        if element_list is None:
+            return None
+        
+        tracker_list = list()
+        for element in element_list:
+            url = element.cssselect("dt")[0].text_content()
+            if url.startswith('http'):
+                tracker_list.append(url)
+
+        log.info("Trackers found for torrent %s: %s", torrent, tracker_list)
+        return tracker_list
 
     def get_result_description_item(self, name, description):
         '''Extract a single item from a torrentz RSS result description'''
@@ -252,7 +298,6 @@ class IsoHuntSearcher(TorrentSearcher):
     def search_torrent_by_string(self, name, episode_search_string):
         '''Search isoHunt for an entry matching "<name>" AND "<episode_search_string>"'''
 
-        import json
         torrent = Torrent()
 
         if episode_search_string is not None:
@@ -316,7 +361,7 @@ class IsoHuntSearcher(TorrentSearcher):
                     torrent.seeds = result['Seeds']
                     torrent.peers = result['leechers']
                     torrent.details_url = wall.helpers.sane_text(result['link'], length=500)
-                    torrent.tracker_url = wall.helpers.sane_text(result['tracker_url'], length=500)
+                    torrent.tracker_url_list = json.dumps(result['tracker_url'])
                     return torrent
         except KeyError:
             log.error("Wrong format result")

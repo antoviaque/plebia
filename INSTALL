@@ -51,7 +51,6 @@
     $ plebia/manage.py syncdb
     $ plebia/manage.py migrate
     $ plebia/manage.py syncplugins
-    $ plebia/manage.py createcachetable plebia_cache
 
 7) Select the plugin you would like to use for torrent search:
 
