@@ -120,18 +120,18 @@ class TorrentSearcher(PluginPoint):
 
         log.info('Selecting torrent %s', torrent)
 
-        # Check if this torrent is already in the database
         try:
+            # Check if this torrent is already in the database
             existing_torrent = Torrent.objects.get(hash=torrent.hash)
             torrent = existing_torrent
+
+            # Retreive tracker list
+            tracker_url_list = self.get_tracker_list_for_torrent(torrent)
+            if tracker_url_list:
+                torrent.tracker_url_list = json.dumps(tracker_url_list)
         except Torrent.DoesNotExist:
             pass
 
-        # Retreive tracker list
-        tracker_url_list = self.get_tracker_list_for_torrent(torrent)
-        if tracker_url_list:
-            torrent.tracker_url_list = json.dumps(tracker_url_list)
- 
         torrent.save()
         return torrent
 

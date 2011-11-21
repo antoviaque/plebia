@@ -672,7 +672,11 @@ class PlebiaTest(TestCase):
             # based on the retreived torrent info
             def update_queued_torrents(self):
                 for torrent in Torrent.objects.filter(status='Queued'):
-                    # Mark directly as completed
+                    # Mark directly as completed only if enough seeds
+                    if torrent.seeds < 1:
+                        torrent.status = 'Error'
+                        torrent.save()
+                    
                     torrent.status = 'Completed'
                     torrent.save()
 
