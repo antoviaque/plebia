@@ -25,7 +25,7 @@
 
 = 2. Configuration =
 
-0) Make sure your system has a UTF-8 locale configured:
+0) Make sure your system has a UTF-8 locale configured (to support UTF-8 filenames):
 
     $ locale
 
