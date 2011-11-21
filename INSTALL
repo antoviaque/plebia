@@ -25,6 +25,18 @@
 
 = 2. Configuration =
 
+0) Make sure your system has a UTF-8 locale configured:
+
+    $ locale
+
+shows your current configured locale - make sure it indicates UTF-8 (for example, LANG=en_US.UTF-8). 
+
+If it doesn't, under Debian/Ubuntu, reconfigure your locales package:
+
+    $ sudo dpkg-reconfigure locales
+
+then select the ".UTF-8" variant of your locale, and put it as the default locale.
+
 1) Create plebia/settings_local.py and edit the values to fit your local environment:
 
     $ cp plebia/settings_local.py.example plebia/settings_local.py
