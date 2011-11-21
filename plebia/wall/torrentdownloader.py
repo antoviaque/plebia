@@ -67,9 +67,10 @@ class TorrentDownloadManager:
         self.bt.save_dht_state()
 
         # Log
-        log.info("Remaining torrents: %d (DHT: %d, DL: %d), DHT: %s, queue: %s", \
+        log.info("Remaining torrents: %d, DHT: %d (paused=%d), DL: %d, DHT: %s, queue: %s", \
                     Torrent.processing_objects.count(), \
-                    Torrent.objects.filter(Q(status='New')|Q(status='Downloading metadata')).count(), \
+                    Torrent.objects.filter(Q(status='New')|Q(status='Downloading metadata')|Q(status='Paused metadata')).count(), \
+                    Torrent.objects.filter(status='Paused metadata').count(), \
                     Torrent.objects.filter(Q(status='Queued')|Q(status='Downloading')).count(), \
                     self.bt.dht_stats(), \
                     self.bt.queue_stats())
@@ -132,7 +133,11 @@ class TorrentDownloadManager:
             if torrent.is_timeout(settings.BITTORRENT_METADATA_TIMEOUT):
                 log.info("Did not retreive metadata in time for torrent %s, pausing to give room for others.", torrent)
                 self.bt.remove_hash(torrent.hash)
-                torrent.set_status('Paused metadata')
+
+                #torrent.set_status('Paused metadata') XXX 3 next lines are test
+                torrent.set_status('Error')
+                torrent.seeds = -1 # Differentiate from those with metadata but without seeds
+                torrent.save()
 
     def update_queued_torrents(self):
         '''Start queued downloads when there's room'''
@@ -331,15 +336,22 @@ class Bittorrent:
         '''Returns statistics about the torrents currently in the queue'''
 
         status = {}
-        for torrent in self.session.get_torrents():
-            state = torrent.status().state
+        paused = 0
+        for torrent_handle in self.session.get_torrents():
+            # Number of paused torrents
+            if torrent_handle.is_paused():
+                paused +=1
+
+            # Number of torrents in each state
+            state = torrent_handle.status().state
             if state in status:
                 status[state] += 1
             else:
                 status[state] = 1
 
         return {
-                'status': status
+                'status': status,
+                'paused': paused
                 }
 
 
