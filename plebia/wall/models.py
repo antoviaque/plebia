@@ -49,7 +49,6 @@ TORRENT_TYPES = (
 TORRENT_STATUSES = (
     ('New', 'New'),
     ('Downloading metadata', 'Downloading metadata'),
-    ('Paused metadata', 'Paused metadata'),
     ('Queued', 'Queued'),
     ('Downloading', 'Downloading'),
     ('Completed', 'Completed'),
@@ -61,7 +60,6 @@ class ProcessingTorrentManager(models.Manager):
         return super(ProcessingTorrentManager, self).get_query_set().filter(\
                 Q(status='New') | \
                 Q(status='Downloading metadata') | \
-                Q(status='Paused metadata') | \
                 Q(status='Queued') | \
                 Q(status='Downloading'))
 
@@ -78,6 +76,7 @@ class ErrorTorrentManager(models.Manager):
 class Torrent(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     hash = models.CharField('torrent hash/magnet', max_length=200, blank=True, unique=True)
+    has_metadata = models.BooleanField('metadata could be retreived', default=False)
     name = models.CharField('name', max_length=200, blank=True)
     type = models.CharField('type', max_length=20, choices=TORRENT_TYPES, blank=True)
     status = models.CharField('download status', max_length=20, choices=TORRENT_STATUSES, default='New')
@@ -140,6 +139,7 @@ class Torrent(models.Model):
 
         log.debug("Updating torrent %s from torrent %s", self, torrent)
 
+        self.has_metadata = torrent.has_metadata
         self.name = torrent.name
         self.progress = torrent.progress
         self.download_speed = torrent.download_speed

@@ -608,6 +608,9 @@ class PlebiaTest(TestCase):
         default_open_url = None
         default_update_queued_torrents = None
         default_get_url = None
+        default_get_torrent_info_for_hash = None
+        default_add_magnet = None
+        default_remove_hash = None
 
         # FIXME: Tests should cover all plugins
         self.select_plugin(TorrentSearcher, 'torrentz-searcher')
@@ -693,20 +696,50 @@ class PlebiaTest(TestCase):
             default_update_queued_torrents = wall.torrentdownloader.TorrentDownloadManager.update_queued_torrents
             wall.torrentdownloader.TorrentDownloadManager.update_queued_torrents = update_queued_torrents
 
-            # TODO: Add caching of torrent info
+            # Caching of torrent info #
 
-            # Wait until all torrents metadata have been downloaded or paused
+            def get_torrent_info_for_hash(self, hash):
+                cached_content = get_cache(hash)
+                if cached_content:
+                    log.info('Torrent info found in cache for %s', hash)
+                    return cached_content
+                else:
+                    torrent = default_get_torrent_info_for_hash(self, hash)
+                    # Only cache once we've got the metadata
+                    if torrent.has_metadata:
+                        log.error('Adding torrent info in cache for %s', hash)
+                        set_cache(hash, torrent)
+                    return torrent
+            
+            default_get_torrent_info_for_hash = wall.torrentdownloader.Bittorrent.get_torrent_info_for_hash
+            wall.torrentdownloader.Bittorrent.get_torrent_info_for_hash = get_torrent_info_for_hash
+
+            def add_magnet(self, magnet_uri):
+                hash = magnet_uri[20:60]
+                if get_cache(hash) is None:
+                    default_add_magnet(self, magnet_uri)
+                else:
+                    log.info('Not adding magnet, torrent info found in cache for %s', hash)
+
+            default_add_magnet = wall.torrentdownloader.Bittorrent.add_magnet
+            wall.torrentdownloader.Bittorrent.add_magnet = add_magnet
+
+            def remove_hash(self, hash):
+                if get_cache(hash) is None:
+                    default_remove_hash(self, hash)
+                else:
+                    log.info('Not removing hash, torrent info found in cache for %s', hash)
+
+            default_remove_hash = wall.torrentdownloader.Bittorrent.remove_hash
+            wall.torrentdownloader.Bittorrent.remove_hash = remove_hash
+
+            # Wait until all torrents metadata have been downloaded or cancelled #
+
             while Torrent.objects.filter(Q(status="New")|Q(status='Downloading metadata')|Q(status='Queued')).count() > 0:
                 # The actual processing of the torrents objects
                 download_manager.do('torrent_download')
                 time.sleep(1)
             
-            # Mark remaining torrents as failed (we didn't even manage to get the metadata for them)
-            for torrent in Torrent.processing_objects.all():
-                torrent.status = 'Error'
-                torrent.seeds = -1 # Differentiate from those with metadata but without seeds
-                torrent.save()
-
 
             #### Package management ####
 
@@ -745,6 +778,12 @@ class PlebiaTest(TestCase):
                 wall.helpers.get_url = default_get_url
             if default_update_queued_torrents is not None:
                 wall.torrentdownloader.TorrentDownloadManager.update_queued_torrents = default_update_queued_torrents
+            if default_get_torrent_info_for_hash is not None:
+                wall.torrentdownloader.Bittorrent.get_torrent_info_for_hash = default_get_torrent_info_for_hash
+            if default_add_magnet is not None:
+                wall.torrentdownloader.Bittorrent.add_magnet = default_add_magnet
+            if default_remove_hash is not None:
+                wall.torrentdownloader.Bittorrent.remove_hash = default_remove_hash
 
     def dump_test_db(self):
         '''Writes the current DB state to a JSON file

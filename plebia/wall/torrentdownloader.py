@@ -43,10 +43,14 @@ class TorrentDownloadManager:
     '''Bittorrent client'''
 
     def __init__(self):
-        '''Start a bittorrent client'''
+        self.bt = None
 
-        self.bt = Bittorrent()
-        self.resume_downloads()
+    def check_started(self):
+        '''Check if the bittorrent client is already started, and start it if not'''
+
+        if self.bt is None:
+            self.bt = Bittorrent()
+            self.resume_downloads()
 
     def resume_downloads(self):
         '''Use model states to know which torrents were running the last time
@@ -63,14 +67,18 @@ class TorrentDownloadManager:
     def do(self):
         '''Do the periodic update'''
 
+        # Make sure the BT client is started
+        # Doing it now allows to make sure a BT client is only started for torrent_download
+        # and not for the other maintenance routines (each of them is started in his own process)
+        self.check_started()
+
         # Save current DHT state to allow to retreive it later if restarted
         self.bt.save_dht_state()
 
         # Log
-        log.info("Remaining torrents: %d, DHT: %d (paused=%d), DL: %d, DHT: %s, queue: %s", \
+        log.info("Remaining torrents: %d, DHT: %d, DL: %d, DHT: %s, queue: %s", \
                     Torrent.processing_objects.count(), \
-                    Torrent.objects.filter(Q(status='New')|Q(status='Downloading metadata')|Q(status='Paused metadata')).count(), \
-                    Torrent.objects.filter(status='Paused metadata').count(), \
+                    Torrent.objects.filter(Q(status='New')|Q(status='Downloading metadata')).count(), \
                     Torrent.objects.filter(Q(status='Queued')|Q(status='Downloading')).count(), \
                     self.bt.dht_stats(), \
                     self.bt.queue_stats())
@@ -82,21 +90,17 @@ class TorrentDownloadManager:
         self.update_queued_torrents()
 
         # Queue torrents for which metadata has been received,
-        # pause torrents for which metadata retrieval takes too long
+        # Cancel torrents for which metadata retrieval takes too long
         self.update_downloading_metadata_torrents()
 
         # Start downloading metadata for new torrents when there is room
-        self.start_metadata_downloads('New')
+        self.start_metadata_downloads()
 
-        # Last comes trying again paused metadata, after all new torrent had a chance
-        # (this is to avoid getting the queue stuck with not found metadata)
-        self.start_metadata_downloads('Paused metadata')
-
-    def start_metadata_downloads(self, status):
-        '''Start downloading metadata for torrents in <status> when there is room'''
+    def start_metadata_downloads(self):
+        '''Start downloading metadata for new torrents when there is room'''
         
         torrent_list = Torrent.objects.filter(\
-                Q(status=status))\
+                Q(status='New'))\
                 .order_by('last_status_change')
 
         for torrent in torrent_list:
@@ -118,26 +122,24 @@ class TorrentDownloadManager:
                 .order_by('last_status_change')
 
         for torrent in torrent_list:
-            # Queue torrents for which metadata has been received
-            if self.bt.has_metadata_for_hash(torrent.hash):
-                log.info("Retrieved metadata for torrent %s", torrent)
-                
-                # Update misc info of torrent
-                torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
-                torrent.update_from_torrent(torrent_bt)
-                
-                self.bt.remove_hash(torrent.hash)
-                torrent.set_status('Queued')
-
-            # Pause torrents for which metadata retrieval takes too long
+            # Cancel torrents for which metadata retrieval takes too long 
             if torrent.is_timeout(settings.BITTORRENT_METADATA_TIMEOUT):
-                log.info("Did not retreive metadata in time for torrent %s, pausing to give room for others.", torrent)
+                log.warn("Did not retreive metadata in time for torrent %s, cancelling.", torrent)
                 self.bt.remove_hash(torrent.hash)
 
-                #torrent.set_status('Paused metadata') XXX 3 next lines are test
                 torrent.set_status('Error')
                 torrent.seeds = -1 # Differentiate from those with metadata but without seeds
                 torrent.save()
+
+            # Update misc info of torrent
+            torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
+            torrent.update_from_torrent(torrent_bt)
+
+            # Queue torrents for which metadata has been received
+            if torrent_bt.has_metadata:
+                log.info("Retrieved metadata for torrent %s", torrent)
+                self.bt.remove_hash(torrent.hash)
+                torrent.set_status('Queued')
 
     def update_queued_torrents(self):
         '''Start queued downloads when there's room'''
@@ -265,12 +267,6 @@ class Bittorrent:
             del(self.handle_dict[hash])
             return True
 
-    def has_metadata_for_hash(self, hash):
-        '''Return true if the metadata download is completed for hash'''
-
-        handle = self.get_handle_for_hash(hash)
-        return handle.has_metadata()
-
     def get_torrent_info_for_hash(self, hash):
         '''Returns a Torrent() object containing miscanealous info about the torrent
         State is either: 'Downloading', 'Completed' or 'Error'.'''
@@ -281,8 +277,22 @@ class Bittorrent:
         torrent = Torrent()
         handle = self.get_handle_for_hash(hash)
         status = handle.status()
-        info = handle.get_torrent_info()
 
+        # Status
+        log.debug('Built torrent info for BT hash %s (status = %s, error = %s)', hash, status.state, status.error)
+        if status.state == 'seeding':
+            torrent.status = 'Completed'
+        elif status.error or status.state == 'seeding':
+            torrent.status = 'Error'
+        else:
+            torrent.status = 'Downloading'
+
+        # Metadata
+        torrent.has_metadata = handle.has_metadata()
+        if not torrent.has_metadata:
+            return torrent
+
+        info = handle.get_torrent_info()
         torrent.name = info.name()
         torrent.progress = status.progress
         torrent.download_speed = "%.3f MB/s" % (status.download_rate/(1024*1024))
@@ -304,15 +314,6 @@ class Bittorrent:
         for res_file in info.files():
             file_list.append({'path': unicode(res_file.path, 'utf-8'), 'size': res_file.size})
         torrent.file_list = json.dumps(file_list)
-
-        # Status
-        log.info('Built torrent info for BT hash %s (status = %s, error = %s)', hash, status.state, status.error)
-        if status.state == 'seeding':
-            torrent.status = 'Completed'
-        elif status.error or status.state == 'seeding':
-            torrent.status = 'Error'
-        else:
-            torrent.status = 'Downloading'
 
         return torrent
 
