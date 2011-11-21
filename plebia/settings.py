@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import locale
+locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+
 import os
 import sys
 import logging
