@@ -608,7 +608,7 @@ class PlebiaTest(TestCase):
         default_open_url = None
         default_update_queued_torrents = None
         default_get_url = None
-        default_get_torrent_info_for_hash = None
+        default_get_torrent_info = None
         default_add_magnet = None
 
         # FIXME: Tests should cover all plugins
@@ -697,21 +697,34 @@ class PlebiaTest(TestCase):
 
             # Caching of torrent info #
 
-            def get_torrent_info_for_hash(self, hash):
-                cached_content = get_cache(hash)
+            def get_torrent_info(self, torrent):
+                # Dirty hack - make torrent timeout if we have seen it timeout in the past (cache)
+                torrent_timeout_id = '%s_timeout' % torrent.hash
+                if get_cache(torrent_timeout_id):
+                    from datetime import timedelta
+                    log.info('Torrent timeout found in cache for %s', torrent.hash)
+                    torrent.last_status_change -= timedelta(weeks=100)
+                    torrent.save()
+
+                # torrent_info retrieval/cache
+                cached_content = get_cache(torrent.hash)
                 if cached_content:
-                    log.info('Torrent info found in cache for %s', hash)
+                    log.info('Torrent info found in cache for %s', torrent.hash)
                     return cached_content
                 else:
-                    torrent = default_get_torrent_info_for_hash(self, hash)
+                    torrent_bt = default_get_torrent_info(self, torrent)
                     # Only cache once we've got the metadata
-                    if torrent.has_metadata:
-                        log.info('Adding torrent info in cache for %s', hash)
-                        set_cache(hash, torrent)
-                    return torrent
+                    if torrent_bt.has_metadata:
+                        log.info('Adding torrent info in cache for %s', torrent.hash)
+                        set_cache(torrent.hash, torrent_bt)
+                    # Or if the torrent is timeout
+                    elif torrent.is_timeout(settings.BITTORRENT_METADATA_TIMEOUT):
+                        log.info('Recording torrent timeout in cache for %s', torrent.hash)
+                        set_cache(torrent_timeout_id, True)
+                    return torrent_bt
             
-            default_get_torrent_info_for_hash = wall.torrentdownloader.Bittorrent.get_torrent_info_for_hash
-            wall.torrentdownloader.Bittorrent.get_torrent_info_for_hash = get_torrent_info_for_hash
+            default_get_torrent_info = wall.torrentdownloader.Bittorrent.get_torrent_info
+            wall.torrentdownloader.Bittorrent.get_torrent_info = get_torrent_info
 
             def add_magnet(self, magnet_uri):
                 hash = magnet_uri[20:60]
@@ -768,8 +781,8 @@ class PlebiaTest(TestCase):
                 wall.helpers.get_url = default_get_url
             if default_update_queued_torrents is not None:
                 wall.torrentdownloader.TorrentDownloadManager.update_queued_torrents = default_update_queued_torrents
-            if default_get_torrent_info_for_hash is not None:
-                wall.torrentdownloader.Bittorrent.get_torrent_info_for_hash = default_get_torrent_info_for_hash
+            if default_get_torrent_info is not None:
+                wall.torrentdownloader.Bittorrent.get_torrent_info = default_get_torrent_info
             if default_add_magnet is not None:
                 wall.torrentdownloader.Bittorrent.add_magnet = default_add_magnet
 

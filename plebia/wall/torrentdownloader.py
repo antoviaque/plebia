@@ -123,7 +123,7 @@ class TorrentDownloadManager:
 
         for torrent in torrent_list:
             # Update misc info of torrent
-            torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
+            torrent_bt = self.bt.get_torrent_info(torrent)
             torrent.update_from_torrent(torrent_bt)
 
             # Cancel torrents for which metadata retrieval takes too long 
@@ -167,7 +167,7 @@ class TorrentDownloadManager:
                 .order_by('last_status_change')
         
         for torrent_db in torrent_list:
-            torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
+            torrent_bt = self.bt.get_torrent_info(torrent_db)
 
             # Mark torrents which are completed
             if torrent_bt.status == 'Completed':
@@ -267,55 +267,55 @@ class Bittorrent:
             del(self.handle_dict[hash])
             return True
 
-    def get_torrent_info_for_hash(self, hash):
+    def get_torrent_info(self, torrent_db):
         '''Returns a Torrent() object containing miscanealous info about the torrent
         State is either: 'Downloading', 'Completed' or 'Error'.'''
 
         import json
         from datetime import timedelta
 
-        torrent = Torrent()
-        handle = self.get_handle_for_hash(hash)
+        torrent_bt = Torrent()
+        handle = self.get_handle_for_hash(torrent_db.hash)
         status = handle.status()
 
         # Status
-        log.debug('Built torrent info for BT hash %s (status = %s, error = %s)', hash, status.state, status.error)
+        log.debug('Built torrent info for BT hash %s (status = %s, error = %s)', torrent_db.hash, status.state, status.error)
         if status.state == 'seeding':
-            torrent.status = 'Completed'
+            torrent_bt.status = 'Completed'
         elif status.error or status.state == 'seeding':
-            torrent.status = 'Error'
+            torrent_bt.status = 'Error'
         else:
-            torrent.status = 'Downloading'
+            torrent_bt.status = 'Downloading'
 
         # Metadata
-        torrent.has_metadata = handle.has_metadata()
-        if not torrent.has_metadata:
-            return torrent
+        torrent_bt.has_metadata = handle.has_metadata()
+        if not torrent_bt.has_metadata:
+            return torrent_bt
 
         info = handle.get_torrent_info()
-        torrent.name = info.name()
-        torrent.progress = status.progress
-        torrent.download_speed = "%.3f MB/s" % (status.download_rate/(1024*1024))
-        torrent.upload_speed = "%.3f MB/s" % (status.upload_rate/(1024*1024))
-        torrent.active_time = status.active_time
-        torrent.seeds = status.list_seeds
-        torrent.peers = status.list_peers
+        torrent_bt.name = info.name()
+        torrent_bt.progress = status.progress
+        torrent_bt.download_speed = "%.3f MB/s" % (status.download_rate/(1024*1024))
+        torrent_bt.upload_speed = "%.3f MB/s" % (status.upload_rate/(1024*1024))
+        torrent_bt.active_time = status.active_time
+        torrent_bt.seeds = status.list_seeds
+        torrent_bt.peers = status.list_peers
 
         # ETA
         size_left = info.total_size() - status.total_done
         if status.download_rate > 0:
             seconds_left = size_left / status.download_rate
-            torrent.eta = str(timedelta(seconds=seconds_left))
+            torrent_bt.eta = str(timedelta(seconds=seconds_left))
         else:
-            torrent.eta = ""
+            torrent_bt.eta = ""
 
         # Files
         file_list = list()
         for res_file in info.files():
             file_list.append({'path': unicode(res_file.path, 'utf-8'), 'size': res_file.size})
-        torrent.file_list = json.dumps(file_list)
+        torrent_bt.file_list = json.dumps(file_list)
 
-        return torrent
+        return torrent_bt
 
     def get_status(self):
         '''Returns the current server status, including DHT'''
