@@ -90,10 +90,22 @@ class PlebiaTest(TestCase):
         mkdir_p(os.path.join(settings.TEST_DOWNLOAD_DIR, name))
         settings.DOWNLOAD_DIR = settings.TEST_DOWNLOAD_DIR
 
+    def generate_new_hash(self):
+        '''Generates a new (unique) random hash'''
+
+        import random
+
+        hash = None
+        while hash is None or Torrent.objects.filter(hash=hash).exists():
+            hash = "%032x" % random.getrandbits(128)
+
+        return hash
+
     def create_fake_torrent(self, name="Test", status="Downloading", type="episode"):
+
         # Fake the newly downloaded torrent
         torrent = Torrent()
-        torrent.hash = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+        torrent.hash = self.generate_new_hash()
         torrent.name = name
         torrent.type = type
         torrent.status = status
