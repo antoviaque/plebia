@@ -122,6 +122,10 @@ class TorrentDownloadManager:
                 .order_by('last_status_change')
 
         for torrent in torrent_list:
+            # Update misc info of torrent
+            torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
+            torrent.update_from_torrent(torrent_bt)
+
             # Cancel torrents for which metadata retrieval takes too long 
             if torrent.is_timeout(settings.BITTORRENT_METADATA_TIMEOUT):
                 log.warn("Did not retreive metadata in time for torrent %s, cancelling.", torrent)
@@ -130,10 +134,6 @@ class TorrentDownloadManager:
                 torrent.set_status('Error')
                 torrent.seeds = -1 # Differentiate from those with metadata but without seeds
                 torrent.save()
-
-            # Update misc info of torrent
-            torrent_bt = self.bt.get_torrent_info_for_hash(torrent.hash)
-            torrent.update_from_torrent(torrent_bt)
 
             # Queue torrents for which metadata has been received
             if torrent_bt.has_metadata:
