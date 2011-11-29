@@ -304,10 +304,9 @@ class Bittorrent:
         # ETA
         size_left = info.total_size() - status.total_done
         if status.download_rate > 0:
-            seconds_left = size_left / status.download_rate
-            torrent_bt.eta = str(timedelta(seconds=seconds_left))
+            torrent_bt.eta = size_left / status.download_rate
         else:
-            torrent_bt.eta = ""
+            torrent_bt.eta = None
 
         # Files
         file_list = list()

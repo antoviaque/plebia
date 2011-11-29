@@ -56,6 +56,30 @@
         return target;
     }
 
+    /**
+     * Converts a number of seconds into either days, hours, minutes or seconds,
+     * depending on which is the highest non-null
+     * Take a pessimist bet (ie round to the higher value)
+     */
+    $.plebia.human_eta = function(seconds) {
+        // Days
+        if (seconds/(3600*24) >= 1) {
+            var eta = Math.ceil(seconds/(3600*24)) + " days";
+        }
+        // Hours
+        else if (seconds/3600 >= 1) {
+            var eta = Math.ceil(seconds/3600) + " hours";
+        }
+        // Minutes
+        else if (seconds/60 >= 1) {
+            var eta = Math.ceil(seconds/60) + " minutes";
+        }
+        // Seconds
+        else {
+            var eta = Math.ceil(seconds) + " seconds";
+        }
+        return eta;
+    }
 
     // BaseObject (parent of all objects) ///////////////////////////////////////////////
 
@@ -905,7 +929,9 @@
         var progress = Math.round($this.api_obj.torrent.progress*100)/100;
         $('.plebia_percent .plebia_percent_value', $this.dom).html(progress);
         $('.plebia_progress_bar', $this.dom).progressbar('option', 'value', Math.round(progress));
-        $('.plebia_eta .plebia_eta_value', $this.dom).html($this.api_obj.torrent.eta);
+        // ETA
+        var human_eta = $.plebia.human_eta($this.api_obj.torrent.eta);
+        $('.plebia_eta .plebia_eta_value', $this.dom).html(human_eta);
     };
 
     $.plebia.Episode.prototype.update_state_transcoding_not_ready = function(old_state) {
