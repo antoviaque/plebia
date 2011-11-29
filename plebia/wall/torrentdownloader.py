@@ -280,9 +280,9 @@ class Bittorrent:
 
         # Status
         log.debug('Built torrent info for BT hash %s (status = %s, error = %s)', torrent_db.hash, status.state, status.error)
-        if status.state == 'seeding':
+        if 'seeding' in status.state:
             torrent_bt.status = 'Completed'
-        elif status.error or status.state == 'seeding':
+        elif status.error:
             torrent_bt.status = 'Error'
         else:
             torrent_bt.status = 'Downloading'

@@ -902,7 +902,7 @@
         }
 
         // Progress % and progress bar
-        var progress = Math.round($this.api_obj.torrent.progress*100)/100;
+        var progress = Math.round($this.api_obj.torrent.progress*100);
         $('.plebia_percent .plebia_percent_value', $this.dom).html(progress);
         $('.plebia_progress_bar', $this.dom).progressbar('option', 'value', Math.round(progress));
         $('.plebia_eta .plebia_eta_value', $this.dom).html($this.api_obj.torrent.eta);
