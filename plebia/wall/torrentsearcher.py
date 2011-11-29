@@ -21,6 +21,7 @@
 # Includes ##########################################################
 
 from django.db.models import Q
+from django.conf import settings
 from wall.models import Episode, Torrent
 
 from lxml.html import soupparser
@@ -36,7 +37,7 @@ import datetime
 
 cookies = mechanize.CookieJar()
 opener = mechanize.build_opener(mechanize.HTTPCookieProcessor(cookies))
-opener.addheaders = [("User-agent", "Mozilla/5.0 (compatible; Plebia/0.1)")]
+opener.addheaders = [("User-agent", "Mozilla/5.0 (compatible; %s)" % settings.SOFTWARE_USER_AGENT)]
 mechanize.install_opener(opener)
 
 
@@ -50,18 +51,20 @@ class TorrentSearchManager:
     
     def do(self):
         '''Perform the maintenance'''
-        
-        yesterday = datetime.date.today() - datetime.timedelta(days=1)
-        
-        # Get new episodes for which we must find a torrent file
+
+        # Retreive new episodes (previously added series)
+        self.search_new_episodes()
+
+    def search_new_episodes(self):
+        '''Get new episodes for which we must find a torrent file'''
+
+        yesterday = datetime.date.today() - datetime.timedelta(days=1, hours=10)
         new_episode_list = Episode.objects.filter(\
                 Q(torrent=None))\
                 .filter(first_aired__lte=yesterday)\
                 .order_by('date_added')
 
         for new_episode in new_episode_list:
-            # Get the episode to create its torrent 
-            # (eventually searching for it through methods from here)
             new_episode.get_or_create_torrent()
 
 
