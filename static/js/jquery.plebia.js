@@ -62,8 +62,12 @@
      * Take a pessimist bet (ie round to the higher value)
      */
     $.plebia.human_eta = function(seconds) {
+        // No ETA
+        if (!seconds) {
+            var eta = '';
+        }
         // Days
-        if (seconds/(3600*24) >= 1) {
+        else if (seconds/(3600*24) >= 1) {
             var eta = Math.ceil(seconds/(3600*24)) + " days";
         }
         // Hours

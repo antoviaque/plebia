@@ -62,7 +62,8 @@ class TorrentDownloadManager:
                 .order_by('-date_added')
 
         for torrent in torrent_list:
-            self.bt.add_magnet(torrent.get_magnet())
+            # Reset downloads (libtorrent will find the files and resume on his own)
+            torrent.set_status('New')
 
     def do(self):
         '''Do the periodic update'''
