@@ -837,11 +837,11 @@
         } else if($this.api_obj.torrent) {
             var torrent = $this.api_obj.torrent;
 
-            if(torrent.status == 'New') {
+            if(torrent.status == 'New' || torrent.status == 'Downloading metadata') {
                 return 'searching';
-            } else if(torrent.status=='Queued') {
+            } else if(torrent.status == 'Queued') {
                 return 'queued';
-            } else if(torrent.status=='Downloading' || torrent.status=='Completed') {
+            } else if(torrent.status == 'Downloading' || torrent.status == 'Completed') {
                 return 'downloading';
             } else {
                 return 'error';

@@ -51,7 +51,7 @@ class Command(BaseCommand):
         make_option('-n', '--no-repeat', action="store_false", dest='repeat', default=True,
             help='Do not repeat every few seconds for one minute, execute just once'),
         ) + (
-        make_option('-f', '--forever', action="store_false", dest='forever', default=False,
+        make_option('-f', '--forever', action="store_true", dest='forever', default=False,
             help='Keep iterating infinitely (and keep objects running, like the bittorrent client)'),
         )
 
@@ -85,7 +85,7 @@ class Command(BaseCommand):
         - once or repeat=True for a time-limited loop
         - for MAX_RUN_TIME or forever=True for forever'''
 
-        log.debug("Running download manager for command '%s' (repeat=%d)", command, repeat)
+        log.info("Running download manager for command '%s' (repeat=%d, forever=%d)", command, repeat, forever)
 
         if not repeat:
             self.dl_manager.do(command)
