@@ -99,11 +99,11 @@ class TorrentInline(admin.TabularInline):
     model = Torrent
 
 class TorrentAdmin(admin.ModelAdmin):
-    readonly_fields = ("date_added",)
+    readonly_fields = ("date_added","last_status_change")
     fieldsets = [
-        (None,                {'fields': ['name','hash']}),
-        ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
-        ('State information', {'fields': ['status','progress','seeds','peers','type']}),
+        (None,                {'fields': ['name','hash','tracker_url_list','file_list']}),
+        ('Date information',  {'fields': ['date_added','last_status_change'], 'classes': ['collapse']}),
+        ('State information', {'fields': ['status','progress','seeds','peers','type','active_time','has_metadata']}),
     ]
     inlines = [SeasonInline, EpisodeInline]
     list_display = ('name', 'status', 'progress', 'seeds', 'peers')

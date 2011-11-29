@@ -289,82 +289,82 @@ class TorrentzSearcher(TorrentSearcher):
             return wall.helpers.sane_text(m.group(1))
 
 
-class IsoHuntSearcher(TorrentSearcher):
-    name = 'isohunt-searcher'
-    title = 'isoHunt Torrent Searcher'
-
-    def search_torrent_by_string(self, name, episode_search_string):
-        '''Search isoHunt for an entry matching "<name>" AND "<episode_search_string>"'''
-
-        torrent = Torrent()
-
-        if episode_search_string is not None:
-            search_string = '"%s" "%s"' % (name, episode_search_string)
-        else:
-            search_string = '"%s"' % name
-
-        log.info("isoHunt search for '%s'", search_string)
-        url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
-        content = wall.helpers.get_url(url)
-
-        if content is None:
-            return None
-       
-        try:
-            answer = json.loads(content)
-            log.debug("Loaded JSON '%s'", answer)
-        except ValueError:
-            log.warn("Could not load JSON from '%s'", content)
-            return None
-
-        try:
-            if answer['total_results'] == 0:
-                log.info("Empty result set")
-                return None
-
-            result_list = answer['items']['list']
-            if len(result_list) < 1:
-                log.error("Empty result set with wrong total_results value")
-                return None
-
-            # Series whose name contains the name of the series we are looking for
-            similar_series = Series.objects.filter(name__contains=name).exclude(name=name)
-
-            for result in result_list:
-                # Cleanup torrent name
-                result['title'] = re.sub(r'</?b>', '', result['title'])
-                result['title'] = re.sub(r'[\W_]+', ' ', result['title'])
-
-                # IsoHunt returns all results containing a file matching the results - we want to match the title
-                for element in [name, episode_search_string]:
-                    if element is not None:
-                        title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
-                        if title_match is None:
-                            log.debug('Discarded result "%s" (seem unrelated)', result['title'])
-                            break
-                
-                # Discard series containing the searched series name
-                similar_match = False
-                for series in similar_series:
-                     similar_match = re.search(series.name, result['title'])
-                     if similar_match:
-                        log.debug('Discarded result "%s" (seem to be about series "%s")', result['title'], series.name)
-                        break
-
-                if title_match and not similar_match \
-                        and result['Seeds'] != '' and result['Seeds'] >= 1 \
-                        and result['leechers'] != '' and result['category'] == 'TV':
-                    log.info("Accepted result '%s' (%s seeds) %s", result['title'], result['Seeds'], result['hash'])
-                    torrent.hash = result['hash']
-                    torrent.seeds = result['Seeds']
-                    torrent.peers = result['leechers']
-                    torrent.details_url = wall.helpers.sane_text(result['link'], length=500)
-                    torrent.tracker_url_list = json.dumps(result['tracker_url'])
-                    return torrent
-        except KeyError:
-            log.error("Wrong format result")
-            return None
-
-        return None
+# class IsoHuntSearcher(TorrentSearcher):
+#     name = 'isohunt-searcher'
+#     title = 'isoHunt Torrent Searcher'
+# 
+#     def search_torrent_by_string(self, name, episode_search_string):
+#         '''Search isoHunt for an entry matching "<name>" AND "<episode_search_string>"'''
+# 
+#         torrent = Torrent()
+# 
+#         if episode_search_string is not None:
+#             search_string = '"%s" "%s"' % (name, episode_search_string)
+#         else:
+#             search_string = '"%s"' % name
+# 
+#         log.info("isoHunt search for '%s'", search_string)
+#         url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
+#         content = wall.helpers.get_url(url)
+# 
+#         if content is None:
+#             return None
+#        
+#         try:
+#             answer = json.loads(content)
+#             log.debug("Loaded JSON '%s'", answer)
+#         except ValueError:
+#             log.warn("Could not load JSON from '%s'", content)
+#             return None
+# 
+#         try:
+#             if answer['total_results'] == 0:
+#                 log.info("Empty result set")
+#                 return None
+# 
+#             result_list = answer['items']['list']
+#             if len(result_list) < 1:
+#                 log.error("Empty result set with wrong total_results value")
+#                 return None
+# 
+#             # Series whose name contains the name of the series we are looking for
+#             similar_series = Series.objects.filter(name__contains=name).exclude(name=name)
+# 
+#             for result in result_list:
+#                 # Cleanup torrent name
+#                 result['title'] = re.sub(r'</?b>', '', result['title'])
+#                 result['title'] = re.sub(r'[\W_]+', ' ', result['title'])
+# 
+#                 # IsoHunt returns all results containing a file matching the results - we want to match the title
+#                 for element in [name, episode_search_string]:
+#                     if element is not None:
+#                         title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
+#                         if title_match is None:
+#                             log.debug('Discarded result "%s" (seem unrelated)', result['title'])
+#                             break
+#                 
+#                 # Discard series containing the searched series name
+#                 similar_match = False
+#                 for series in similar_series:
+#                      similar_match = re.search(series.name, result['title'])
+#                      if similar_match:
+#                         log.debug('Discarded result "%s" (seem to be about series "%s")', result['title'], series.name)
+#                         break
+# 
+#                 if title_match and not similar_match \
+#                         and result['Seeds'] != '' and result['Seeds'] >= 1 \
+#                         and result['leechers'] != '' and result['category'] == 'TV':
+#                     log.info("Accepted result '%s' (%s seeds) %s", result['title'], result['Seeds'], result['hash'])
+#                     torrent.hash = result['hash']
+#                     torrent.seeds = result['Seeds']
+#                     torrent.peers = result['leechers']
+#                     torrent.details_url = wall.helpers.sane_text(result['link'], length=500)
+#                     torrent.tracker_url_list = json.dumps(list(result['tracker_url']))
+#                     return torrent
+#         except KeyError:
+#             log.error("Wrong format result")
+#             return None
+# 
+#         return None
 
 

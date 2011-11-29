@@ -50,7 +50,7 @@ class Command(BaseCommand):
     option_list = BaseCommand.option_list + (
         make_option('-n', '--no-repeat', action="store_false", dest='repeat', default=True,
             help='Do not repeat every few seconds for one minute, execute just once'),
-        )
+        ) + (
         make_option('-f', '--forever', action="store_false", dest='forever', default=False,
             help='Keep iterating infinitely (and keep objects running, like the bittorrent client)'),
         )
