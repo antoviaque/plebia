@@ -171,21 +171,21 @@ class TorrentDownloadManager:
 
             # Mark torrents which are completed
             if torrent_bt.status == 'Completed':
-                log.info("Completed downloading torrent %s", torrent)
-                self.bt.remove_hash(torrent.hash)
-                torrent.set_status('Completed')
+                log.info("Completed downloading torrent %s", torrent_db)
+                self.bt.remove_hash(torrent_db.hash)
+                torrent_db.set_status('Completed')
 
             # Cancel downloads which don't find seeds/error, etc.
             elif torrent_bt.status == 'Error':
-                log.warn("Error downloading torrent %s", torrent)
-                self.bt.remove_hash(torrent.hash)
-                torrent.set_status('Error')
+                log.warn("Error downloading torrent %s", torrent_db)
+                self.bt.remove_hash(torrent_db.hash)
+                torrent_db.set_status('Error')
 
             # Cancel downloads still without seeds after some time
             elif torrent_db.is_timeout(settings.BITTORRENT_DOWNLOAD_NOSEED_TIMEOUT) and torrent_bt.seeds == 0:
-                log.warn("No seeds found for torrent %s", torrent)
-                self.bt.remove_hash(torrent.hash)
-                torrent.set_status('Error')
+                log.warn("No seeds found for torrent %s", torrent_db)
+                self.bt.remove_hash(torrent_db.hash)
+                torrent_db.set_status('Error')
 
             # Update misc info of torrent
             torrent_db.update_from_torrent(torrent_bt)
@@ -280,7 +280,7 @@ class Bittorrent:
 
         # Status
         log.debug('Built torrent info for BT hash %s (status = %s, error = %s)', torrent_db.hash, status.state, status.error)
-        if 'seeding' in status.state:
+        if 'seeding' in str(status.state):
             torrent_bt.status = 'Completed'
         elif status.error:
             torrent_bt.status = 'Error'
