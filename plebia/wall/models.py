@@ -86,7 +86,7 @@ class Torrent(models.Model):
     peers = models.IntegerField('peers', null=True)
     download_speed = models.CharField('download speed', max_length=20, blank=True)
     upload_speed = models.CharField('upload speed', max_length=20, blank=True)
-    eta = models.CharField('remaining download time', max_length=20, blank=True)
+    eta = models.CharField('remaining download time', max_length=50, blank=True)
     active_time = models.CharField('active time', max_length=20, blank=True)
     details_url = models.CharField('url of detailled info', max_length=500, blank=True)
     tracker_url_list = models.TextField('urls of trackers (JSON)', blank=True)
@@ -140,15 +140,15 @@ class Torrent(models.Model):
         log.debug("Updating torrent %s from torrent %s", self, torrent)
 
         self.has_metadata = torrent.has_metadata
-        self.name = torrent.name
+        self.name = sane_text(torrent.name, length=200)
         self.progress = torrent.progress
-        self.download_speed = torrent.download_speed
-        self.upload_speed = torrent.upload_speed
-        self.eta = torrent.eta
-        self.active_time = torrent.active_time
+        self.download_speed = sane_text(torrent.download_speed, length=20)
+        self.upload_speed = sane_text(torrent.upload_speed, length=20)
+        self.eta = sane_text(torrent.eta, length=50)
+        self.active_time = sane_text(torrent.active_time, length=20)
         self.seeds = torrent.seeds
         self.peers = torrent.peers
-        self.file_list = torrent.file_list
+        self.file_list = sane_text(torrent.file_list)
 
         self.save()
 
