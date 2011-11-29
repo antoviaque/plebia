@@ -173,7 +173,6 @@ class TorrentDownloadManager:
             # Mark torrents which are completed
             if torrent_bt.status == 'Completed':
                 log.info("Completed downloading torrent %s", torrent_db)
-                self.bt.remove_hash(torrent_db.hash)
                 torrent_db.set_status('Completed')
 
             # Cancel downloads which don't find seeds/error, etc.
