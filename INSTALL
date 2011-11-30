@@ -52,7 +52,7 @@ then select the ".UTF-8" variant of your locale, and put it as the default local
 3) Create downloads directory (as previously configured in settings):
 
     $ mkdir -p /var/www/downloads
-    $ mkdir -p /var/www/downloads/series/banners/graphical /var/www/downloads/series/banners/text /var/www/downloads/series/banners/blank /var/www/downloads/series/banners/posters
+    $ mkdir -p /var/www/downloads/cache/banners/graphical /var/www/downloads/cache/banners/text /var/www/downloads/cache/banners/blank /var/www/downloads/cache/banners/posters 
 
 4) Create Mysql database & configure in settings_local.py (login, password, db, host). 
 

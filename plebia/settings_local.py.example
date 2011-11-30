@@ -10,8 +10,8 @@ UNRAR_PATH = u'/usr/bin/unrar'
 
 # Paths
 DOWNLOAD_DIR = u'/var/www/downloads/'
+CACHE_DIR = u'/var/www/downloads/cache'
 LOCK_PATH = u'/var/www/plebia'
-CACHE_DIR = u'/var/www/plebia/plebia/cache'
 
 # Logging
 DEBUG = False # To display errors in browser
