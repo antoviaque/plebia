@@ -45,12 +45,11 @@ class SeriesResource(ModelResource):
         fields = ['id','date_added','name', 'tvdb_id', 'overview', 'language', 'rating', 'first_aired', 'airing_status', 'banner_url', 'poster_url', 'fanart_url', 'imdb_id', 'tvcom_id', 'zap2it_id', 'tvdb_last_updated']
 
 class SeasonResource(ModelResource):
-    torrent = fields.ForeignKey(TorrentResource, 'torrent', null=True)
     series = fields.ForeignKey(SeriesResource, 'series')
     episode_list = fields.ToManyField('wall.api.EpisodeResource', 'episode_set', full=True)
     class Meta:
         queryset = Season.objects.all().order_by('-date_added')
-        fields = ['id','date_added','number','torrent','series']
+        fields = ['id','date_added','number','series']
 
 class EpisodeResource(ModelResource):
     torrent = fields.ForeignKey(TorrentResource, 'torrent', null=True, full=True)

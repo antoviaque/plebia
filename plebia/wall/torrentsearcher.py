@@ -22,7 +22,7 @@
 
 from django.db.models import Q
 from django.conf import settings
-from wall.models import Episode, Torrent
+from wall.models import Series, Episode, Torrent
 
 from lxml.html import soupparser
 from lxml.cssselect import CSSSelector
@@ -52,8 +52,21 @@ class TorrentSearchManager:
     def do(self):
         '''Perform the maintenance'''
 
+        # Retreive new series (newly added, no episode retreived yet)
+        self.search_new_series()
+
         # Retreive new episodes (previously added series)
         self.search_new_episodes()
+
+    def search_new_series(self):
+        '''Get new series, for which to search bulk season(s) packages'''
+
+        # Series for which none of the episodes have an attached torrent yet
+        new_series_list = Series.objects.exclude(season__episode__torrent__isnull=False)\
+                .order_by('date_added')
+
+        for new_series in new_series_list:
+            new_series.find_torrent()
 
     def search_new_episodes(self):
         '''Get new episodes for which we must find a torrent file'''
@@ -65,7 +78,7 @@ class TorrentSearchManager:
                 .order_by('date_added')
 
         for new_episode in new_episode_list:
-            new_episode.get_or_create_torrent()
+            new_episode.find_torrent()
 
 
 

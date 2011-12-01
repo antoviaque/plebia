@@ -69,7 +69,6 @@ class SeasonAdmin(admin.ModelAdmin):
     fieldsets = [
         (None,                {'fields': ['series','number']}),
         ('Date information',  {'fields': ['date_added'], 'classes': ['collapse']}),
-        ('Files',             {'fields': ['torrent']}),
     ]
     inlines = [EpisodeInline]
 

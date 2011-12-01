@@ -436,6 +436,25 @@ class Series(models.Model):
                     episode.update_details(tvdb_episode)
                     episode.save()
 
+    def find_torrent(self):
+        '''Search for bulk torrents for this series' seasons.'''
+
+        log.info("Trying to find season torrents for series %s", self)
+
+        from wall.plugins import TorrentSearcher, get_active_plugin
+        torrent_searcher = get_active_plugin(TorrentSearcher)
+        try:
+            # Retrieve a dict of torrents, one item for each season
+            season_torrent_dict = torrent_searcher.search_season_torrent_dict(self)
+        except:
+            log.exception("Error while searching for season torrents for series %s", self)
+
+        log.info("Season torrent search for series %s returned %s", self, season_torrent_dict)
+        
+        for season_number, season_torrent in season_torrent_dict.items():
+            season = self.season_set.get(number=season_number)
+            season.set_torrent(season_torrent)
+
 
 # Season ##############################
 
@@ -443,10 +462,16 @@ class Season(models.Model):
     date_added = models.DateTimeField('date added', auto_now_add=True)
     number = models.IntegerField('number')
     series = models.ForeignKey(Series)
-    torrent = models.ForeignKey(Torrent, null=True)
     
     def __unicode__(self):
         return ("%s (season %s)" % (self.series, self.number))
+
+    def set_torrent(self, torrent):
+        '''Sets a torrent on each of the individual episodes of this season'''
+
+        for episode in self.episode_set.all():
+            episode.torrent = torrent
+            episode.save()
 
 
 # Episode #############################
@@ -518,7 +543,7 @@ class Episode(models.Model):
         self.imdb_id = sane_text(tvdb_episode.imdb_id, length=50)
         self.tvdb_last_updated = tvdb_episode.last_updated
 
-    def get_or_create_torrent(self):
+    def find_torrent(self):
         '''Get the torrent for this episode (whether from the episode itself, its season or search). 
         Updates self.torrent accordingly.'''
 
@@ -527,18 +552,7 @@ class Episode(models.Model):
         # Check if we already have a torrent attached to this episode
         try:
             if self.torrent is not None:
-                log.info("Torrent already found %s", self.season.torrent)
-                return self.torrent
-        except Torrent.DoesNotExist:
-            pass
-
-        # Check if there is a torrent for the full season
-        try:
-            if self.season.torrent is not None:
-                log.info("Existing season torrent found %s", self.season.torrent)
-                self.torrent = self.season.torrent
-                self.save()
-
+                log.info("Torrent already found %s", self.torrent)
                 return self.torrent
         except Torrent.DoesNotExist:
             pass
@@ -547,18 +561,13 @@ class Episode(models.Model):
         from wall.plugins import TorrentSearcher, get_active_plugin
         torrent_searcher = get_active_plugin(TorrentSearcher)
         try:
-            self.torrent = torrent_searcher.search_torrent(self)
+            self.torrent = torrent_searcher.search_episode_torrent(self)
         except:
             log.exception("Error while searching for torrent for episode %s", self)
             self.torrent = Torrent(status='Error')
             self.torrent.save()
         self.save()
 
-        # If it's a season torrent, register it on the season too
-        if self.torrent.type == 'season':
-            self.season.torrent = self.torrent
-            self.season.save()
-        
         if self.torrent.status == 'Error':
             log.warn('Could not find torrent for episode %s', self)
         else:

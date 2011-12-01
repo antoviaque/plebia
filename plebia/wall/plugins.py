@@ -75,62 +75,181 @@ class TorrentSearcher(PluginPoint):
     """
     
     def search_torrent_by_string(self, name, episode_search_string):
+        '''Returns search results as a list of Torrent() objects,
+        by decreasing number of seeds.
+        Torrent() objects are not saved to not trigger download.'''
+
         pass
+
+    def search_season_torrent_dict(self, series):
+        '''For a given series, try to find season torrents for each of its seasons
+        returns: {1: torrent_object, 2: torrent_object, etc.}
+        Season number not found are not included in the returned dict'''
+
+        # Run search engine query
+        torrent_list = self.search_torrent_by_string(self.clean_name(series.name))
+
+        nb_seasons = series.season_set.count()
+        season_torrent_dict = dict()
+        for torrent in torrent_list:
+            torrent_name = self.clean_name(torrent.name)
+            torrent.type = 'season'
+
+            # Stop processing the list when we reach low seeds torrent results
+            if torrent.seeds < 1:
+                log.info('No seed on torrent "%s", stopping', torrent)
+                break
+
+            # Stop processing when we have all the seasons
+            if len(season_torrent_dict) >= nb_seasons:
+                log.info('Found all seasons for series "%s", stopping', series)
+                break
+
+            # Filter out unrelated or unusable results, and partial seasons
+            if self.is_bad_result(torrent_name, series.name) or self.is_partial_season_result(torrent_name):
+                log.info('Bad result "%s", continuing', torrent)
+                continue
+
+            # Torrents that contain one or several seasons
+            season_number_list = self.get_season_number_list(torrent_name)
+            if len(season_number_list) >= 1:
+                # Keep this torrent
+                torrent = self.update_torrent_with_tracker_list(torrent)
+                torrent.save()
+
+                log.info('Seasons %s found in torrent "%s"', season_number_list, torrent)
+                for season_number in season_number_list:
+                    # Make sure the season numbers exist
+                    if series.season_set.filter(number=season_number).count() == 1:
+                        season_torrent_dict[season_number] = torrent
+                continue
+
+            # Torrents that contain all seasons
+            if self.is_all_seasons_result(torrent_name):
+                # Keep this torrent
+                torrent = self.update_torrent_with_tracker_list(torrent)
+                torrent.save()
+
+                log.info('All seasons found in torrent "%s", stopping', torrent)
+                for season in series.season_set.all():
+                    season_torrent_dict[season.number] = torrent
+                break
+
+        return season_torrent_dict
+
+    def is_bad_result(self, torrent_name, series_name):
+        '''Check if the torrent is obviously unrelated to series or unusuable
+        Note that if False is returned it doesn't garantee that the torrent is actually a good
+        match for this series, only a return value of True is meaningful'''
+
+        # Series whose name contains the name of the series we are looking for
+        similar_series_list = Series.objects.filter(name__contains=series_name).exclude(name=series_name)
+
+        # Discard series containing the searched series name
+        for similar_series in similar_series_list:
+            similar_match = re.search(similar_series.name, torrent_name, re.IGNORECASE)
+            if similar_match:
+                log.info('Result "%s" seem to be about series "%s"', torrent_name, similar_series.name)
+                return True
+
+        # Discard results usually containing an ISO file
+        if re.search(r"\b(disk|disc|iso)\b", torrent_name, re.IGNORECASE):
+            log.info('Result "%s" seem to be an ISO', torrent_name)
+            return True
+
+        # Discard results in other languages
+        if re.search(r"\b(ITA|NL|FR|FRENCH|DUTCH)\b", torrent_name, re.IGNORECASE):
+            log.info('Result "%s" seem to be in another language', torrent_name)
+            return True
+
+        return False
+
+    def is_partial_season_result(self, torrent_name):
+        '''Check if the torrent does not contain a whole season'''
+
+        if re.search(r"\b(Ep|Episodes?) *[0-9]+ [0-9]+\b", torrent_name, re.IGNORECASE) or \
+                re.search(r"\b(S|Seasons?) *[0-9]+ *(E|Ep|Episodes?)? *[0-9]+ *(E|to)? *[0-9]+\b", torrent_name, re.IGNORECASE) or \
+                re.search(r"\bMissing episodes?\b", torrent_name, re.IGNORECASE):
+            log.info('Result "%s" seem to not contain a full season', torrent_name)
+            return True
+
+        return False
     
-    def search_torrent(self, episode):
+    def get_season_number_list(self, torrent_name):
+        '''Check if the torrent contains one or more seasons, and if so returns a list 
+        of the season numbers it contains (empty list otherwise)'''
+
+        season_number_list = list()
+
+        m = re.search(r"\b(?:S|Seasons?|Complete) *([0-9]{1,2})"+ 30*r" *(?:S|through|to|and|&)? *([0-9]{1,2})?\b", torrent_name, re.IGNORECASE)
+        if m:
+            # Retreive extracted season numbers from regex
+            for season_number in m.groups():
+                if season_number is None:
+                    # Reached last result
+                    break
+                season_number_list.append(int(season_number)) # regex extracts strings
+
+            # Explicitly list all season numbers (for results like "season 1 5", add 2 3 4)
+            season_number_list.sort()
+            for i in xrange(len(season_number_list)-1):
+                next_season_number = season_number_list[i]+1
+                while next_season_number < season_number_list[i+1]:
+                    season_number_list.append(next_season_number)
+                    next_season_number += 1
+
+        return season_number_list
+
+    def is_all_seasons_result(self, torrent_name):
+        '''Check if the torrent contains all seasons of a given series'''
+
+        if re.search(r"\b(Complete series|All seasons|Complete boxset|Complete mini *series|Complete mini series|Complete edition|Full series)\b", \
+                torrent_name, re.IGNORECASE):
+            return True
+
+        return False
+    
+    def search_episode_torrent(self, episode):
         '''Find a torrent for the provided episode, returns the Torrent object'''
 
         season = episode.season
         series = season.series
 
-        episode_torrent = self.search_episode_torrent(episode)
-        season_torrent = self.search_season_torrent(season)
+        # Run search engine query
+        search_string = "s%02de%02d" % (season.number, episode.number)
+        torrent_list = self.search_torrent_by_string(self.clean_name(series.name), search_string)
         
-        # When the series has only one season, also try without the season number
-        if season_torrent is None and episode_torrent is None:
-            series_torrent = self.search_series_torrent(series)
-        else:
-            series_torrent = None
+        # Isolate the right torrent
+        torrent = None
+        for torrent_result in torrent_list:
+            if torrent_result.hash is None or torrent_result.seeds is None or torrent_result.seeds <= 0:
+                log.info("Discarded result for lack of seeds or hash: %s", torrent_result)
+            else:
+                torrent = torrent_result
 
-        ## See what we should prefer ##
-
-        if season_torrent is None and episode_torrent is None and series_torrent is None:
+        log.info("Episode lookup for '%s' gave torrent %s", search_string, torrent)
+        
+        if torrent is None:
             torrent = Torrent()
             torrent.status = 'Error'
         
-        # See if we should prefer the season or the episode
-        elif season_torrent is not None or episode_torrent is not None:
-            if season_torrent is None \
-                    or (season_torrent.seeds < 10 and episode_torrent is not None):
-                torrent = episode_torrent
-                torrent.type = 'episode'
-            elif episode_torrent is None \
-                    or episode_torrent.seeds < 10 \
-                    or episode_torrent.seeds*10 < season_torrent.seeds:
-                torrent = season_torrent
-                torrent.type = 'season'
-            else:
-                torrent = episode_torrent
-                torrent.type = 'episode'
-
-        # Only the series name alone
-        else:
-            torrent = series_torrent
-            torrent.type = 'season'
-
-        log.info('Selecting torrent %s', torrent)
-
         try:
             # Check if this torrent is already in the database
             existing_torrent = Torrent.objects.get(hash=torrent.hash)
             torrent = existing_torrent
         except Torrent.DoesNotExist:
-            # Retreive tracker list
-            tracker_url_list = self.get_tracker_list_for_torrent(torrent)
-            if tracker_url_list:
-                torrent.tracker_url_list = json.dumps(tracker_url_list)
+            torrent = self.update_torrent_with_tracker_list(torrent)
 
         torrent.save()
+        return torrent
+
+    def update_torrent_with_tracker_list(self, torrent):
+        '''Get the tracker list for torrent, add it, and save torrent'''
+        
+        tracker_url_list = self.get_tracker_list_for_torrent(torrent)
+        if tracker_url_list:
+            torrent.tracker_url_list = json.dumps(tracker_url_list)
+
         return torrent
 
     def get_tracker_list_for_torrent(self, torrent):
@@ -141,38 +260,6 @@ class TorrentSearcher(PluginPoint):
         Should return a list of trackers (python object)'''''
 
         pass
-
-    def search_episode_torrent(self, episode):
-        season = episode.season
-        series = season.series
-        episode_search_string = "s%02de%02d" % (season.number, episode.number)
-        episode_torrent = self.search_torrent_by_string(self.clean_name(series.name), episode_search_string)
-    
-        log.info("Episode lookup for '%s' gave torrent %s", episode_search_string, episode_torrent)
-
-        return episode_torrent
-
-    def search_season_torrent(self, season):
-        series = season.series
-
-        for season_search_string in ["season %d" % season.number, \
-                                      self.int_to_fullstring('season %s' % season.number)]:
-            season_torrent = self.search_torrent_by_string(self.clean_name(series.name), season_search_string)
-
-            log.info("Season lookup for '%s' gave torrent %s", season_search_string, season_torrent)
-
-            if season_torrent is not None:
-                break
-
-        return season_torrent
-
-    def search_series_torrent(self, series):
-        series_search_string = self.clean_name(series.name)
-        series_torrent = self.search_torrent_by_string(series_search_string, None)
-
-        log.info("Series lookup for '%s' gave torrent %s", series_search_string, series_torrent)
-
-        return series_torrent
 
     def clean_name(self, name):
         '''Remove unwanted characters from name'''
@@ -202,7 +289,7 @@ class TorrentzSearcher(TorrentSearcher):
     name = 'torrentz-searcher'
     title = 'Torrentz Torrent Searcher'
 
-    def search_torrent_by_string(self, name, episode_search_string):
+    def search_torrent_by_string(self, name, episode_search_string=None):
         import feedparser
 
         # Retreive data from torrentz Atom feed
@@ -215,32 +302,29 @@ class TorrentzSearcher(TorrentSearcher):
         content = wall.helpers.get_url(url)
 
         if content is None:
-            return None
+            log.warn("Empty page returned for %s", search_string)
+            return list()
         
         # Get the list of torrents results
         res = feedparser.parse(content)
         if not res.entries:
             log.info("No results found for %s", search_string)
-            return None
+            return list()
 
-        # Build the torrent object
+        # Build the torrent objects list
+        torrent_list = list()
         for element in res.entries:
             torrent = self.get_torrent_from_result(element)
+            torrent_list.append(torrent)
 
-            if torrent.hash is None or torrent.seeds is None or torrent.seeds <= 0:
-                log.info("Discarded result for lack of seeds or hash: %s", element)
-            else:
-                return torrent
-
-        log.info("No good result found for %s", search_string)
-        return None
+        return torrent_list
 
     def get_torrent_from_result(self, result):
         '''Converts a result from the current engine to a Torrent object'''
 
         torrent = Torrent()
 
-        torrent.title = wall.helpers.sane_text(result.title)
+        torrent.name = wall.helpers.sane_text(result.title)
         torrent.hash = self.get_result_description_item('hash', result.description)
         torrent.seeds = self.get_result_description_item('seeds', result.description)
         torrent.peers = self.get_result_description_item('peers', result.description)
@@ -289,82 +373,71 @@ class TorrentzSearcher(TorrentSearcher):
             return wall.helpers.sane_text(m.group(1))
 
 
-class IsoHuntSearcher(TorrentSearcher):
-    name = 'isohunt-searcher'
-    title = 'isoHunt Torrent Searcher'
-
-    def search_torrent_by_string(self, name, episode_search_string):
-        '''Search isoHunt for an entry matching "<name>" AND "<episode_search_string>"'''
-
-        torrent = Torrent()
-
-        if episode_search_string is not None:
-            search_string = '"%s" "%s"' % (name, episode_search_string)
-        else:
-            search_string = '"%s"' % name
-
-        log.info("isoHunt search for '%s'", search_string)
-        url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
-        content = wall.helpers.get_url(url)
-
-        if content is None:
-            return None
-       
-        try:
-            answer = json.loads(content)
-            log.debug("Loaded JSON '%s'", answer)
-        except ValueError:
-            log.warn("Could not load JSON from '%s'", content)
-            return None
-
-        try:
-            if answer['total_results'] == 0:
-                log.info("Empty result set")
-                return None
-
-            result_list = answer['items']['list']
-            if len(result_list) < 1:
-                log.error("Empty result set with wrong total_results value")
-                return None
-
-            # Series whose name contains the name of the series we are looking for
-            similar_series = Series.objects.filter(name__contains=name).exclude(name=name)
-
-            for result in result_list:
-                # Cleanup torrent name
-                result['title'] = re.sub(r'</?b>', '', result['title'])
-                result['title'] = re.sub(r'[\W_]+', ' ', result['title'])
-
-                # IsoHunt returns all results containing a file matching the results - we want to match the title
-                for element in [name, episode_search_string]:
-                    if element is not None:
-                        title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
-                        if title_match is None:
-                            log.debug('Discarded result "%s" (seem unrelated)', result['title'])
-                            break
-                
-                # Discard series containing the searched series name
-                similar_match = False
-                for series in similar_series:
-                     similar_match = re.search(series.name, result['title'])
-                     if similar_match:
-                        log.debug('Discarded result "%s" (seem to be about series "%s")', result['title'], series.name)
-                        break
-
-                if title_match and not similar_match \
-                        and result['Seeds'] != '' and result['Seeds'] >= 1 \
-                        and result['leechers'] != '' and result['category'] == 'TV':
-                    log.info("Accepted result '%s' (%s seeds) %s", result['title'], result['Seeds'], result['hash'])
-                    torrent.hash = result['hash']
-                    torrent.seeds = result['Seeds']
-                    torrent.peers = result['leechers']
-                    torrent.details_url = wall.helpers.sane_text(result['link'], length=500)
-                    torrent.tracker_url_list = json.dumps(list(result['tracker_url']))
-                    return torrent
-        except KeyError:
-            log.error("Wrong format result")
-            return None
-
-        return None
+# class IsoHuntSearcher(TorrentSearcher):
+#     name = 'isohunt-searcher'
+#     title = 'isoHunt Torrent Searcher'
+# 
+#     def search_torrent_by_string(self, name, episode_search_string):
+#         '''Search isoHunt for an entry matching "<name>" AND "<episode_search_string>"'''
+# 
+#         torrent = Torrent()
+# 
+#         if episode_search_string is not None:
+#             search_string = '"%s" "%s"' % (name, episode_search_string)
+#         else:
+#             search_string = '"%s"' % name
+# 
+#         log.info("isoHunt search for '%s'", search_string)
+#         url = "http://ca.isohunt.com/js/json.php?ihq=%s&start=0&rows=20&sort=seeds&iht=3" % urllib.quote_plus(search_string)
+#         content = wall.helpers.get_url(url)
+# 
+#         if content is None:
+#             return None
+#        
+#         try:
+#             answer = json.loads(content)
+#             log.debug("Loaded JSON '%s'", answer)
+#         except ValueError:
+#             log.warn("Could not load JSON from '%s'", content)
+#             return None
+# 
+#         try:
+#             if answer['total_results'] == 0:
+#                 log.info("Empty result set")
+#                 return None
+# 
+#             result_list = answer['items']['list']
+#             if len(result_list) < 1:
+#                 log.error("Empty result set with wrong total_results value")
+#                 return None
+# 
+#             for result in result_list:
+#                 # Cleanup torrent name
+#                 result['title'] = re.sub(r'</?b>', '', result['title'])
+#                 result['title'] = re.sub(r'[\W_]+', ' ', result['title'])
+# 
+#                 # IsoHunt returns all results containing a file matching the results - we want to match the title
+#                 for element in [name, episode_search_string]:
+#                     if element is not None:
+#                         title_match = re.search(r'\b'+element+r'\b', result['title'], re.IGNORECASE)
+#                         if title_match is None:
+#                             log.debug('Discarded result "%s" (seem unrelated)', result['title'])
+#                             break
+#                 
+#                 if title_match and not similar_match \
+#                         and result['Seeds'] != '' and result['Seeds'] >= 1 \
+#                         and result['leechers'] != '' and result['category'] == 'TV':
+#                     log.info("Accepted result '%s' (%s seeds) %s", result['title'], result['Seeds'], result['hash'])
+#                     torrent.hash = result['hash']
+#                     torrent.seeds = result['Seeds']
+#                     torrent.peers = result['leechers']
+#                     torrent.details_url = wall.helpers.sane_text(result['link'], length=500)
+#                     torrent.tracker_url_list = json.dumps(list(result['tracker_url']))
+#                     return torrent
+#         except KeyError:
+#             log.error("Wrong format result")
+#             return None
+# 
+#         return None
 
 
