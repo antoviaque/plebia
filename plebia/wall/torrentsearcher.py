@@ -62,7 +62,9 @@ class TorrentSearchManager:
         '''Get new series, for which to search bulk season(s) packages'''
 
         # Series for which none of the episodes have an attached torrent yet
-        new_series_list = Series.objects.exclude(season__episode__torrent__isnull=False, season__episode__isnull=True)\
+        new_series_list = Series.objects\
+                .exclude(season__episode__isnull=True)\
+                .exclude(season__episode__torrent__isnull=False)\
                 .order_by('date_added')
 
         for new_series in new_series_list:
@@ -73,8 +75,8 @@ class TorrentSearchManager:
 
         yesterday = datetime.date.today() - datetime.timedelta(days=1, hours=10)
         new_episode_list = Episode.objects.filter(\
-                Q(torrent=None))\
-                .filter(first_aired__lte=yesterday)\
+                torrent=None, \
+                first_aired__lte=yesterday)\
                 .order_by('date_added')
 
         for new_episode in new_episode_list:

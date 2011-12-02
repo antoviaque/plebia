@@ -180,6 +180,7 @@ class TorrentSearcher(PluginPoint):
 
         if re.search(r"\b(Ep|Episodes?) *[0-9]+ [0-9]+\b", torrent_name, re.IGNORECASE) or \
                 re.search(r"\b(S|Seasons?) *[0-9]+ *(E|Ep|Episodes?|X) *[0-9]+ *(E|to)? *[0-9]+\b", torrent_name, re.IGNORECASE) or \
+                re.search(r"\bS[0-9]+ [0-9]+\b", torrent_name, re.IGNORECASE) or \
                 re.search(r"\bMissing episodes?\b", torrent_name, re.IGNORECASE):
             log.info('Result "%s" seem to not contain a full season', torrent_name)
             return True
