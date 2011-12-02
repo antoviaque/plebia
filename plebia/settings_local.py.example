@@ -21,6 +21,7 @@ LOG_FILE='/var/www/plebia/server.log'
 RAISE_EXCEPTION_ON_ERROR=False  # Set to True to get all exceptions in unit tests (stops for any ERROR or CRITICAL log message)
 
 BITTORRENT_PORTS=(6881, 6891)
+#PROXIES = {'http': 'http://1.2.3.4:8080'}
 
 # Set this to the number of cores/processors your server has, minus 1
 # (ie set it to 1 if you have 1-2 cores, 3 if you have 4 cores, etc.)

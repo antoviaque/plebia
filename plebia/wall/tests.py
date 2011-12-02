@@ -557,13 +557,13 @@ class PlebiaTest(TestCase):
 
             from wall.downloadmanager import DownloadManager
 
-            def get_url(url, sleep_time=2):
+            def get_url(url):
                 url_id = url.replace('/', '_')
                 cached_content = get_cache(url_id)
                 if cached_content:
                     return cached_content
                 else:
-                    content = default_get_url(url, sleep_time=sleep_time)
+                    content = default_get_url(url)
                     set_cache(url_id, content)
                     return content
 

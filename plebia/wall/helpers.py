@@ -22,6 +22,8 @@
 
 from django.conf import settings
 
+import time
+
 # Logging ###########################################################
 
 from plebia.log import get_logger
@@ -46,17 +48,55 @@ def sane_text(text, length=0):
 
     return sane_text
 
+def get_url_json(url):
+    '''Returns the python object corresponding to the JSON string
+    retreived at the provided URL, None if error'''
 
-def get_url(url, sleep_time=2):
-    '''Returns the content at the provided URL, None if error
-    Pause for sleep_time seconds before making the request, to avoid spamming websites with requests'''
+    import json
 
-    import requests, time
+    content = get_url(url)
 
-    time.sleep(sleep_time)
+    if content is None:
+        return None
+    
+    try:
+        answer = json.loads(content)
+        log.debug("Loaded JSON '%s'", answer)
+    except ValueError:
+        log.warn("Could not load JSON from '%s'", content)
+        return None
+
+    return answer
+
+def get_url_rss(url):
+    '''Returns the list of entries from the RSS feed retreived
+    at the provided URL, None if error'''
+
+    import feedparser
+
+    content = get_url(url)
+
+    if content is None:
+        return None
+    
+    # Get the list of torrents results
+    res = feedparser.parse(content)
+    if not res.entries:
+        log.info("No results found for URL %s", url)
+        return list()
+
+    return res.entries
+
+def get_url(url):
+    '''Returns the content at the provided URL, None if error'''
+
+    import requests
+
+    # Pause before making the request, to avoid spamming websites
+    time.sleep(settings.HTTP_REQUESTS_DELAY)
 
     headers = {'User-Agent': settings.SOFTWARE_USER_AGENT}
-    r = requests.get(url, headers=headers)
+    r = requests.get(url, headers=headers, proxies=settings.PROXIES)
 
     if r.status_code == requests.codes.ok:
         log.debug("Retreived URL %s => %s", url, r.content)
@@ -66,11 +106,17 @@ def get_url(url, sleep_time=2):
         return None
 
 def open_url(url):
-    '''Returns a file handler to the provided URL'''
+    '''Returns a file handler to the provided URL
+    Warning: no pause between requests (FIXME)'''
 
     import urllib
 
-    return urllib.urlopen(url)
+    # Set user agent
+    class AppURLopener(urllib.FancyURLopener):
+        version = settings.SOFTWARE_USER_AGENT
+    urllib._urlopener = AppURLopener()
+
+    return urllib.urlopen(url, proxies=settings.PROXIES)
 
 def mkdir_p(path):
     '''Recursive mkdir that doesn't fail when the directory already exists'''
