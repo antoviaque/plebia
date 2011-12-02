@@ -122,28 +122,38 @@ class TorrentSearcher(PluginPoint):
             # Torrents that contain one or several seasons
             season_number_list = self.get_season_number_list(torrent_name)
             if len(season_number_list) >= 1:
-                # Keep this torrent
-                torrent = self.update_torrent_with_tracker_list(torrent)
-                torrent.save()
-
                 log.info('Seasons %s found in torrent "%s"', season_number_list, torrent)
+                nb_season_used = 0
                 for season_number in season_number_list:
                     # Make sure the season numbers exist & hasn't been found yet
                     if series.season_set.filter(number=season_number).count() == 1 and season_number not in season_torrent_dict:
                         season_torrent_dict[season_number] = torrent
+                        nb_season_used += 1
+                    else:
+                        log.info('Season %d already found for torrent "%s"', season_number, torrent)
+
+                # Keep this torrent only if we need it
+                if nb_season_used >= 1:
+                    torrent = self.update_torrent_with_tracker_list(torrent)
+                    torrent.save()
+
                 continue
 
             # Torrents that contain all seasons
             if self.is_all_seasons_result(torrent_name):
-                # Keep this torrent
-                torrent = self.update_torrent_with_tracker_list(torrent)
-                torrent.save()
-
                 log.info('All seasons found in torrent "%s", stopping', torrent)
                 for season in series.season_set.all():
                     # Check the season hasn't been added yet
                     if season.number not in season_torrent_dict:
                         season_torrent_dict[season.number] = torrent
+                    else:
+                        log.info('Season %d already found for torrent "%s"', season.number, torrent)
+                
+                # Keep this torrent
+                torrent = self.update_torrent_with_tracker_list(torrent)
+                torrent.save()
+
+                # No need for more seasons
                 break
 
         return season_torrent_dict
