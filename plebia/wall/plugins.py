@@ -279,7 +279,7 @@ class TorrentSearcher(PluginPoint):
 
         import json
         
-        log.info("Retreiving list of trackers from Torrentz for torrent '%s'", torrent)
+        log.info("Retreiving list of trackers for torrent '%s'", torrent)
         tracker_url_list = self.get_tracker_list_for_torrent(torrent)
         if tracker_url_list:
             torrent.tracker_url_list = json.dumps(tracker_url_list)
