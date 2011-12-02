@@ -39,8 +39,11 @@ def get_cache(cache_id):
 
     cache_file = os.path.join(settings.CACHE_DIR, cache_id)
     if os.path.isfile(cache_file):
+        log.debug('Cache for %s FOUND', cache_file)
         with open(cache_file) as f:
             return pickle.load(f)
+    else:
+        log.debug('Cache for %s NOT found', cache_file)
 
     return None
 
