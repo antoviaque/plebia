@@ -257,6 +257,7 @@ class TorrentSearcher(PluginPoint):
                 log.info("Discarded result for lack of seeds or hash: %s", torrent_result)
             else:
                 torrent = torrent_result
+                break
 
         log.info("Episode lookup for '%s' gave torrent %s", search_string, torrent)
         
