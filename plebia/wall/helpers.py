@@ -39,8 +39,11 @@ def sane_text(text, length=0):
         log.debug('Provided text is not a string "%s"', text)
         return ''
 
+    # Unicode conversion
+    sane_text = text.decode('utf-8', 'replace')
+
     # HTML NULL entity
-    sane_text = text.replace(u'&#0', u'')
+    sane_text = sane_text.replace(u'&#0', u'')
 
     # Nb of characters
     if length:
