@@ -30,8 +30,8 @@ from wall.helpers import mkdir_p
 from cache import get_cache, set_cache
 
 from mock import Mock, patch
-import json
-import os, shutil
+
+import json, os, shutil, time
 
 
 # Tests #############################################################
@@ -361,6 +361,7 @@ class PlebiaTest(TestCase):
 
         return result
 
+# XXX: Tests for IsoHunt searcher, currently deactivated
 #    @patch('wall.helpers.get_url')
 #    def run_isohunt_search(self, episode, episode_result, season_result, mock_get_url):
 #        '''Run plugin code for searching torrent, based on mock isoHunt results'''
@@ -716,5 +717,215 @@ class PlebiaTest(TestCase):
         mkdir_p(settings.COVERAGE_REPORT_HTML_OUTPUT_DIR)
         with open(os.path.join(settings.COVERAGE_REPORT_HTML_OUTPUT_DIR, "completion.html"), 'w') as f:
             f.write(response.content)
+
+    def check_torrent_magic_object(self, torrent_magic, similar_series=False, unrelated_series=False, iso=False, other_language=False, partial_season=False, complete_series=False, season_number_list=list()):
+        '''Make sure provided attributes are as specified (and False if not provided)'''
+
+        self.assertEqual(torrent_magic.similar_series, similar_series, "Wrong magic torrent guess on %s" % torrent_magic.torrent)
+        self.assertEqual(torrent_magic.unrelated_series, unrelated_series, "Wrong magic torrent guess on %s" % torrent_magic.torrent)
+        self.assertEqual(torrent_magic.iso, iso, "Wrong magic torrent guess on %s" % torrent_magic.torrent)
+        self.assertEqual(torrent_magic.other_language, other_language, "Wrong magic torrent guess on %s" % torrent_magic.torrent)
+        self.assertEqual(torrent_magic.partial_season, partial_season, "Wrong magic torrent guess on %s" % torrent_magic.torrent)
+        self.assertEqual(torrent_magic.complete_series, complete_series, "Wrong magic torrent guess on %s" % torrent_magic.torrent)
+
+        # Compare lists - they should be strictly equal
+        for season_number in season_number_list:
+            self.assertIn(season_number, torrent_magic.season_number_list, "Missing season for magic torrent guess on %s" % torrent_magic.torrent)
+        for season_number in torrent_magic.season_number_list:
+            self.assertIn(season_number, season_number_list, "Superfluous season for magic torrent guess on %s" % torrent_magic.torrent)
+
+    def test_torrent_magic(self):
+        '''Check that we correctly guessed torrent information from name for a series of patterns'''
+
+        from torrentmagic import TorrentMagic
+
+        # Complete series
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series complete series"), series_name="Test series"), \
+                complete_series=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series all series"), series_name="Test series"), \
+                complete_series=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series complete boxset"), series_name="Test series"), \
+                complete_series=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series complete miniseries"), series_name="Test series"), \
+                complete_series=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series complete mini series"), series_name="Test series"), \
+                complete_series=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series Complete edition"), series_name="Test series"), \
+                complete_series=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series full series"), series_name="Test series"), \
+                complete_series=True)
+
+        # Multi seasons
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series S2 S4"), series_name="Test series"), \
+                season_number_list=[2,3,4])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 5"), series_name="Test series"), \
+                season_number_list=[1,2,3,4,5])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series seasons 4 7"), series_name="Test series"), \
+                season_number_list=[4,5,6,7])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series Seasons1 3"), series_name="Test series"), \
+                season_number_list=[1,2,3])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series seasons 1 through 4"), series_name="Test series"), \
+                season_number_list=[1,2,3,4])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1,2,3"), series_name="Test series"), \
+                season_number_list=[1,2,3])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series seasons 1 2 3"), series_name="Test series"), \
+                season_number_list=[1,2,3])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s02 S05"), series_name="Test series"), \
+                season_number_list=[2,3,4,5])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 3, 4 & 5"), series_name="Test series"), \
+                season_number_list=[3,4,5])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1, 2 and 3"), series_name="Test series"), \
+                season_number_list=[1,2,3])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s04 s05 s06"), series_name="Test series"), \
+                season_number_list=[4,5,6])
+
+        # Single season
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1"), series_name="Test series"), \
+                season_number_list=[1])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season2"), series_name="Test series"), \
+                season_number_list=[2])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s03"), series_name="Test series"), \
+                season_number_list=[3])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s4"), series_name="Test series"), \
+                season_number_list=[4])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 5 1998"), series_name="Test series"), \
+                season_number_list=[5])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 6 720p"), series_name="Test series"), \
+                season_number_list=[6])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 7 full 1 20"), series_name="Test series"), \
+                season_number_list=[7])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 8 complete"), series_name="Test series"), \
+                season_number_list=[8])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 09"), series_name="Test series"), \
+                season_number_list=[9])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series complete season 10"), series_name="Test series"), \
+                season_number_list=[10])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s11 complete"), series_name="Test series"), \
+                season_number_list=[11])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 12 all 20 episodes"), series_name="Test series"), \
+                season_number_list=[12])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 13 all episodes"), series_name="Test series"), \
+                season_number_list=[13])
+
+        # Partial season
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 episode 1 5"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series S1 3 4 5"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s01e09 e12"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series S04E12E13"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series Episode 1 5"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series Season 5 ep 01 09"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 7 episode 1 to 4"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s01 ep 1 14"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s01e01 02"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series S1 1, 2, 3, 4, 5"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 7 missing episodes 8 9 10"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series s01e02"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 8 episode 7"), series_name="Test series"), \
+                partial_season=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series 3x09"), series_name="Test series"), \
+                partial_season=True)
+
+        # Languages
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 NL"), series_name="Test series"), \
+                season_number_list=[1], other_language=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 ITA"), series_name="Test series"), \
+                season_number_list=[1], other_language=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 FR"), series_name="Test series"), \
+                season_number_list=[1], other_language=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 French"), series_name="Test series"), \
+                season_number_list=[1], other_language=True)
+
+        # ISO
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 ISO"), series_name="Test series"), \
+                season_number_list=[1], iso=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 disc 1"), series_name="Test series"), \
+                season_number_list=[1], iso=True)
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test series season 1 disk 2"), series_name="Test series"), \
+                season_number_list=[1], iso=True)
+
+        # Similar series
+        Series.objects.get_or_create(name="The great testing series", tvdb_id=1) # Create the similar series
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="The great testing series season 1"), series_name="Testing series"), \
+                season_number_list=[1], similar_series=True)
+
+        # Other series
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Unrelated series season 1"), series_name="Test series"), \
+                season_number_list=[1], unrelated_series=True)
+
+        # UTF-8 & extra characters
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name=u"Test série season 1"), series_name=u"Test série"), \
+                season_number_list=[1])
+        self.check_torrent_magic_object(\
+                TorrentMagic(Torrent(name="Test: series, reloaded - season 1"), series_name="Test:series reloaded"), \
+                season_number_list=[1])
+
+
 
 

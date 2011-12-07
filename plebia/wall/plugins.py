@@ -23,9 +23,10 @@
 from djangoplugins.point import PluginPoint
 
 from wall.models import Torrent, Series
+from wall.torrentmagic import TorrentMagic
 import wall.helpers
 
-import time, re, sys, urllib
+import urllib
 
 
 # Logging ###########################################################
@@ -94,12 +95,11 @@ class TorrentSearcher(PluginPoint):
         Season number not found are not included in the returned dict'''
 
         # Run search engine query
-        torrent_list = self.search_torrent_by_string(self.clean_name(series.name))
+        torrent_list = self.search_torrent_by_string(wall.helpers.normalize_text(series.name))
 
         nb_seasons = series.season_set.count()
         season_torrent_dict = dict()
         for torrent in torrent_list:
-            torrent_name = self.clean_name(torrent.name)
             torrent.type = 'season'
 
             # Stop processing the list when we reach low seeds torrent results
@@ -107,40 +107,21 @@ class TorrentSearcher(PluginPoint):
                 log.info('No seed on torrent "%s", stopping', torrent)
                 break
 
-            # Stop processing when we have all the seasons
-            if len(season_torrent_dict) >= nb_seasons:
-                log.info('Found all seasons for series "%s", stopping', series)
-                break
+            # Make assumptions about the content of the torrent based on
+            # the information we have gathered about it so far
+            torrent_details = TorrentMagic(torrent, series_name=series.name)
 
             # Filter out unrelated or unusable results, and partial seasons
-            if self.is_bad_result(torrent_name, series.name) or \
-                    self.is_partial_season_result(torrent_name) or \
-                    self.is_single_episode_result(torrent_name):
+            if torrent_details.similar_series or \
+                    torrent_details.iso or \
+                    torrent_details.other_language or \
+                    torrent_details.partial_season or \
+                    torrent_details.unrelated_series:
                 log.info('Bad result "%s", continuing', torrent)
                 continue
 
-            # Torrents that contain one or several seasons
-            season_number_list = self.get_season_number_list(torrent_name)
-            if len(season_number_list) >= 1:
-                log.info('Seasons %s found in torrent "%s"', season_number_list, torrent)
-                nb_season_used = 0
-                for season_number in season_number_list:
-                    # Make sure the season numbers exist & hasn't been found yet
-                    if series.season_set.filter(number=season_number).count() == 1 and season_number not in season_torrent_dict:
-                        season_torrent_dict[season_number] = torrent
-                        nb_season_used += 1
-                    else:
-                        log.info('Season %d already found for torrent "%s"', season_number, torrent)
-
-                # Keep this torrent only if we need it
-                if nb_season_used >= 1:
-                    torrent = self.update_torrent_with_tracker_list(torrent)
-                    torrent.save()
-
-                continue
-
             # Torrents that contain all seasons
-            if self.is_all_seasons_result(torrent_name):
+            if torrent_details.complete_series:
                 log.info('All seasons found in torrent "%s", stopping', torrent)
                 for season in series.season_set.all():
                     # Check the season hasn't been added yet
@@ -156,90 +137,32 @@ class TorrentSearcher(PluginPoint):
                 # No need for more seasons
                 break
 
+            # Torrents that contain one or several seasons
+            if len(torrent_details.season_number_list) >= 1:
+                log.info('Seasons %s found in torrent "%s"', torrent_details.season_number_list, torrent)
+                nb_season_used = 0
+                for season_number in torrent_details.season_number_list:
+                    # Make sure the season numbers exist & hasn't been found yet
+                    if series.season_set.filter(number=season_number).count() == 1 and season_number not in season_torrent_dict:
+                        season_torrent_dict[season_number] = torrent
+                        nb_season_used += 1
+                    else:
+                        log.info('Season %d already found for torrent "%s"', season_number, torrent)
+
+                # Keep this torrent only if we need it
+                if nb_season_used >= 1:
+                    torrent = self.update_torrent_with_tracker_list(torrent)
+                    torrent.save()
+
+                continue
+
+            # Stop processing when we have all the seasons
+            if len(season_torrent_dict) >= nb_seasons:
+                log.info('Found all seasons for series "%s", stopping', series)
+                break
+
         return season_torrent_dict
 
-    def is_bad_result(self, torrent_name, series_name):
-        '''Check if the torrent is obviously unrelated to series or unusuable
-        Note that if False is returned it doesn't garantee that the torrent is actually a good
-        match for this series, only a return value of True is meaningful'''
-
-        # Series whose name contains the name of the series we are looking for
-        similar_series_list = Series.objects.filter(name__contains=series_name).exclude(name=series_name)
-
-        # Discard series containing the searched series name
-        for similar_series in similar_series_list:
-            similar_match = re.search(similar_series.name, torrent_name, re.IGNORECASE)
-            if similar_match:
-                log.info('Result "%s" seem to be about series "%s"', torrent_name, similar_series.name)
-                return True
-
-        # Discard results usually containing an ISO file
-        if re.search(r"\b(disk|disc|iso)\b", torrent_name, re.IGNORECASE):
-            log.info('Result "%s" seem to be an ISO', torrent_name)
-            return True
-
-        # Discard results in other languages
-        if re.search(r"\b(ITA|NL|FR|FRENCH|DUTCH)\b", torrent_name, re.IGNORECASE):
-            log.info('Result "%s" seem to be in another language', torrent_name)
-            return True
-
-        return False
-
-    def is_partial_season_result(self, torrent_name):
-        '''Check if the torrent does not contain a whole season'''
-
-        if re.search(r"\b(Ep|Episodes?) *[0-9]+ [0-9]+\b", torrent_name, re.IGNORECASE) or \
-                re.search(r"\b(S|Seasons?) *[0-9]+ *(E|Ep|Episodes?|X) *[0-9]+ *(E|to)? *[0-9]+\b", torrent_name, re.IGNORECASE) or \
-                re.search(r"\bS[0-9]+ [0-9]+\b", torrent_name, re.IGNORECASE) or \
-                re.search(r"\bMissing episodes?\b", torrent_name, re.IGNORECASE):
-            log.info('Result "%s" seem to not contain a full season', torrent_name)
-            return True
-
-        return False
-
-    def is_single_episode_result(self, torrent_name):
-        '''Check if the torrent only contains one episode'''
-
-        if re.search(r"\b(S|Seasons?) *[0-9]+ *(E|Ep|Episodes?|X) *[0-9]+\b", torrent_name, re.IGNORECASE):
-            log.info('Result "%s" seem to be a single episode', torrent_name)
-            return True
-
-        return False
-    
-    def get_season_number_list(self, torrent_name):
-        '''Check if the torrent contains one or more seasons, and if so returns a list 
-        of the season numbers it contains (empty list otherwise)'''
-
-        season_number_list = list()
-
-        m = re.search(r"\b(?:S|Seasons?|Complete) *([0-9]{1,2})"+ 30*r" *(?:S|through|to|and|&)? *([0-9]{1,2})?\b", torrent_name, re.IGNORECASE)
-        if m:
-            # Retreive extracted season numbers from regex
-            for season_number in m.groups():
-                if season_number is None:
-                    # Reached last result
-                    break
-                season_number_list.append(int(season_number)) # regex extracts strings
-
-            # Explicitly list all season numbers (for results like "season 1 5", add 2 3 4)
-            season_number_list.sort()
-            for i in xrange(len(season_number_list)-1):
-                next_season_number = season_number_list[i]+1
-                while next_season_number < season_number_list[i+1]:
-                    season_number_list.append(next_season_number)
-                    next_season_number += 1
-
-        return season_number_list
-
-    def is_all_seasons_result(self, torrent_name):
-        '''Check if the torrent contains all seasons of a given series'''
-
-        if re.search(r"\b(Complete series|All seasons|Complete boxset|Complete mini *series|Complete mini series|Complete edition|Full series)\b", \
-                torrent_name, re.IGNORECASE):
-            return True
-
-        return False
-    
     def search_episode_torrent(self, episode):
         '''Find a torrent for the provided episode, returns the Torrent object'''
 
@@ -248,7 +171,7 @@ class TorrentSearcher(PluginPoint):
 
         # Run search engine query
         search_string = "s%02de%02d" % (season.number, episode.number)
-        torrent_list = self.search_torrent_by_string(self.clean_name(series.name), search_string)
+        torrent_list = self.search_torrent_by_string(wall.helpers.normalize_text(series.name), search_string)
         
         # Isolate the right torrent
         torrent = None
@@ -308,29 +231,6 @@ class TorrentSearcher(PluginPoint):
         log.info("Trackers found for torrent %s: %s", torrent, tracker_list)
         return tracker_list
 
-    def clean_name(self, name):
-        '''Remove unwanted characters from name'''
-
-        clean_name = re.sub(r'[\W_]+', ' ', name).strip()
-        log.debug("Clean name for '%s' is '%s'", name, clean_name)
-
-        return clean_name
-
-    def int_to_fullstring(self, text):
-        '''Replaces all occurences of a 0-20 number as an int in a string, by its full letters counterpart. Ie "Season 2" becomes "Season two"'''
-
-        int_dict = {0: 'zero', 1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", \
-                11: "eleven", 12: "twelve", 13: "thirteen", 14: "fourteen", 15: "fifteen", 16: "sixteen", 17: "seventeen", 18: "eighteen", \
-                19: "nineteen", 20: "twenty"}
-
-        text_full = text
-        for num_int, num_text in int_dict.items():
-            text = re.sub(r'\b%d\b' % num_int, num_text, text)
-
-        log.debug("Fullstring translation of '%s' is '%s'", text, text_full)
-
-        return text
-       
 
 class TorrentzSearcher(TorrentSearcher):
     name = 'torrentz-searcher'
@@ -371,6 +271,8 @@ class TorrentzSearcher(TorrentSearcher):
 
     def get_result_description_item(self, name, description):
         '''Extract a single item from a torrentz RSS result description'''
+
+        import re
 
         m = re.search(r'\b' + name + r': ([0-9a-z]+)\b', description, re.IGNORECASE)
         if m is None:

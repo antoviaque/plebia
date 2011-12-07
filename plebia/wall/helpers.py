@@ -39,8 +39,8 @@ def sane_text(text, length=0):
         log.debug('Provided text is not a string "%s"', text)
         return ''
 
-    # Unicode conversion
-    sane_text = text.decode('utf-8', 'replace')
+    # Make sure we use unicode strings
+    sane_text = to_unicode(text)
 
     # HTML NULL entity
     sane_text = sane_text.replace(u'&#0', u'')
@@ -50,6 +50,31 @@ def sane_text(text, length=0):
         sane_text = sane_text[:length]
 
     return sane_text
+
+def to_unicode(obj, encoding='utf-8'):
+    '''Convert non-unicode strings to unicode'''
+
+    if isinstance(obj, basestring):
+        if not isinstance(obj, unicode):
+            print "Converting"
+            obj = unicode(obj, encoding)
+
+    return obj
+
+def normalize_text(text):
+    '''Remove all non-letter characters and extra spaces from text'''
+
+    import re
+
+    print "Normalizing..."
+    print repr(text)
+    text = to_unicode(text)
+
+    normalized_text = re.sub(ur'[\W_]+', ' ', text).strip()
+    log.debug("Normalized text for '%s' is '%s'", text, normalized_text)
+
+    print repr(normalized_text)
+    return normalized_text
 
 def get_url_json(url):
     '''Returns the python object corresponding to the JSON string
